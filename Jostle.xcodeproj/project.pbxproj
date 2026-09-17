@@ -19,6 +19,7 @@
 		A10000000000000000000011 /* ApplicationIconProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000016 /* ApplicationIconProvider.swift */; };
 		A10000000000000000000013 /* ScreenGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000018 /* ScreenGeometry.swift */; };
 		A10000000000000000000014 /* SnapPreviewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000019 /* SnapPreviewController.swift */; };
+		A10000000000000000000016 /* WindowRestoreStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001B /* WindowRestoreStore.swift */; };
 		A10000000000000000000007 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* Images.xcassets */; };
 		A10000000000000000000008 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* InfoPlist.strings */; };
 		A10000000000000000000009 /* JostleCore in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000002 /* JostleCore */; };
@@ -27,6 +28,7 @@
 		A1000000000000000000000E /* StatusMenuControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000013 /* StatusMenuControllerTests.swift */; };
 		A10000000000000000000012 /* ApplicationIconProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* ApplicationIconProviderTests.swift */; };
 		A10000000000000000000015 /* ScreenGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001A /* ScreenGeometryTests.swift */; };
+		A10000000000000000000017 /* WindowRestoreStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001C /* WindowRestoreStoreTests.swift */; };
 		A1000000000000000000000C /* JostleCore in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000003 /* JostleCore */; };
 /* End PBXBuildFile section */
 
@@ -53,6 +55,7 @@
 		A20000000000000000000016 /* ApplicationIconProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationIconProvider.swift; sourceTree = "<group>"; };
 		A20000000000000000000018 /* ScreenGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenGeometry.swift; sourceTree = "<group>"; };
 		A20000000000000000000019 /* SnapPreviewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapPreviewController.swift; sourceTree = "<group>"; };
+		A2000000000000000000001B /* WindowRestoreStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowRestoreStore.swift; sourceTree = "<group>"; };
 		A20000000000000000000007 /* Jostle-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Jostle-Info.plist"; sourceTree = "<group>"; };
 		A20000000000000000000008 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		A2000000000000000000000A /* SettingsStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStoreTests.swift; sourceTree = "<group>"; };
@@ -60,6 +63,7 @@
 		A20000000000000000000013 /* StatusMenuControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMenuControllerTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000017 /* ApplicationIconProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationIconProviderTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000001A /* ScreenGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenGeometryTests.swift; sourceTree = "<group>"; };
+		A2000000000000000000001C /* WindowRestoreStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowRestoreStoreTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000000C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000000000000000000000D /* Jostle.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Jostle.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2000000000000000000000E /* JostleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JostleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -115,6 +119,7 @@
 				A20000000000000000000016 /* ApplicationIconProvider.swift */,
 				A20000000000000000000018 /* ScreenGeometry.swift */,
 				A20000000000000000000019 /* SnapPreviewController.swift */,
+				A2000000000000000000001B /* WindowRestoreStore.swift */,
 				A20000000000000000000008 /* Images.xcassets */,
 				A20000000000000000000007 /* Jostle-Info.plist */,
 				A20000000000000000000009 /* InfoPlist.strings */,
@@ -130,6 +135,7 @@
 				A20000000000000000000013 /* StatusMenuControllerTests.swift */,
 				A20000000000000000000017 /* ApplicationIconProviderTests.swift */,
 				A2000000000000000000001A /* ScreenGeometryTests.swift */,
+				A2000000000000000000001C /* WindowRestoreStoreTests.swift */,
 				A2000000000000000000000C /* Info.plist */,
 			);
 			path = JostleTests;
@@ -265,6 +271,7 @@
 				A10000000000000000000011 /* ApplicationIconProvider.swift in Sources */,
 				A10000000000000000000013 /* ScreenGeometry.swift in Sources */,
 				A10000000000000000000014 /* SnapPreviewController.swift in Sources */,
+				A10000000000000000000016 /* WindowRestoreStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -277,6 +284,7 @@
 				A1000000000000000000000E /* StatusMenuControllerTests.swift in Sources */,
 				A10000000000000000000012 /* ApplicationIconProviderTests.swift in Sources */,
 				A10000000000000000000015 /* ScreenGeometryTests.swift in Sources */,
+				A10000000000000000000017 /* WindowRestoreStoreTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

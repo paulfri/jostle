@@ -1,6 +1,12 @@
 import AppKit
 import JostleCore
 
+private struct PendingWindowRestore {
+    let savedFrame: Frame
+    let currentFrame: Frame
+    let grabPoint: Point
+}
+
 private func jostleEventTapCallback(
     proxy: CGEventTapProxy,
     type: CGEventType,
@@ -78,12 +84,16 @@ final class EventTapController {
     private let windowSystem: AccessibilityWindowSystem
     private let screenGeometryProvider: ScreenGeometryProvider
     private let snapPreviewController: SnapPreviewController
+    private let windowRestoreStore: WindowRestoreStore
     private let gestureConfiguration: GestureConfiguration
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private var gestureState = GestureState.idle
     private var targetWindow: AccessibilityWindowTarget?
     private var activeSnapFrame: Frame?
+    private var pendingWindowRestore: PendingWindowRestore?
+    private var gestureRestoreFrame: Frame?
+    private var moveDidDrag = false
     private(set) var sessionActive = true
     private(set) var isEnabled = false
 
@@ -92,12 +102,14 @@ final class EventTapController {
         windowSystem: AccessibilityWindowSystem = AccessibilityWindowSystem(),
         screenGeometryProvider: ScreenGeometryProvider = ScreenGeometryProvider(),
         snapPreviewController: SnapPreviewController = SnapPreviewController(),
+        windowRestoreStore: WindowRestoreStore = WindowRestoreStore(),
         gestureConfiguration: GestureConfiguration
     ) {
         self.settingsStore = settingsStore
         self.windowSystem = windowSystem
         self.screenGeometryProvider = screenGeometryProvider
         self.snapPreviewController = snapPreviewController
+        self.windowRestoreStore = windowRestoreStore
         self.gestureConfiguration = gestureConfiguration
     }
 
@@ -194,15 +206,13 @@ final class EventTapController {
             }
             return false
         case .beginMove:
-            let began = beginGesture(at: event.location, resize: false)
-            if began {
-                updateSnapPreview(at: event.location, settings: settings)
-            }
-            return began
+            return beginGesture(at: event.location, resize: false)
         case .beginResize:
             clearSnapPreview()
             return beginGesture(at: event.location, resize: true)
         case .continueMove:
+            moveDidDrag = true
+            guard performPendingWindowRestore() else { return true }
             updateSnapPreview(at: event.location, settings: settings)
             return reduce(.moveBy(
                 deltaX: event.getDoubleValueField(.mouseEventDeltaX),
@@ -216,7 +226,7 @@ final class EventTapController {
                 timestamp: now
             ))
         case .endGesture:
-            if case .moving = gestureState {
+            if moveDidDrag, case .moving = gestureState {
                 updateSnapPreview(at: event.location, settings: settings)
             }
             return endGesture()
@@ -255,6 +265,8 @@ final class EventTapController {
     private func endGesture() -> Bool {
         let snapTarget = activeSnapFrame
         let target = targetWindow
+        let restoreFrame = gestureRestoreFrame
+        let didDrag = moveDidDrag
         let wasMoving: Bool
         if case .moving = gestureState {
             wasMoving = true
@@ -264,13 +276,44 @@ final class EventTapController {
 
         let handled = reduce(.end(timestamp: now))
         clearSnapPreview()
-        if wasMoving, let snapTarget, let target {
-            _ = windowSystem.apply(
-                [.setSize(snapTarget.size), .setPosition(snapTarget.origin)],
-                to: target
-            )
+
+        if wasMoving, didDrag, let target {
+            if let snapTarget,
+               windowSystem.apply(
+                   [.setSize(snapTarget.size), .setPosition(snapTarget.origin)],
+                   to: target
+               ),
+               let restoreFrame {
+                windowRestoreStore.remember(restoreFrame, for: target.identity)
+            } else {
+                windowRestoreStore.removeFrame(for: target.identity)
+            }
         }
+        resetMoveTracking()
         return handled
+    }
+
+    private func performPendingWindowRestore() -> Bool {
+        guard let pendingWindowRestore, let targetWindow else { return true }
+        self.pendingWindowRestore = nil
+        let restoredFrame = WindowRestorePolicy.restoredFrame(
+            savedFrame: pendingWindowRestore.savedFrame,
+            currentFrame: pendingWindowRestore.currentFrame,
+            grabbedAt: pendingWindowRestore.grabPoint
+        )
+        guard windowSystem.apply(
+            [.setSize(restoredFrame.size), .setPosition(restoredFrame.origin)],
+            to: targetWindow
+        ) else {
+            cancelGesture()
+            return false
+        }
+        gestureState = GestureEngine.reduce(
+            state: .idle,
+            input: .beginMove(frame: restoredFrame, timestamp: now),
+            configuration: gestureConfiguration
+        ).state
+        return true
     }
 
     private func clearSnapPreview() {
@@ -289,22 +332,27 @@ final class EventTapController {
             return false
         }
 
-        let frame: Frame
-        if resize {
-            guard let fullFrame = windowSystem.frame(of: target) else {
-                cancelGesture()
-                return false
-            }
-            frame = fullFrame
-        } else {
-            guard let origin = windowSystem.origin(of: target) else {
-                cancelGesture()
-                return false
-            }
-            frame = Frame(origin: origin, size: Size(width: 0, height: 0))
+        guard let frame = windowSystem.frame(of: target) else {
+            cancelGesture()
+            return false
         }
 
         targetWindow = target
+        if resize {
+            windowRestoreStore.removeFrame(for: target.identity)
+            resetMoveTracking()
+        } else {
+            moveDidDrag = false
+            let savedFrame = windowRestoreStore.frame(for: target.identity)
+            gestureRestoreFrame = savedFrame ?? frame
+            pendingWindowRestore = savedFrame.map {
+                PendingWindowRestore(
+                    savedFrame: $0,
+                    currentFrame: frame,
+                    grabPoint: Point(x: point.x, y: point.y)
+                )
+            }
+        }
         if let applicationInfo = target.applicationInfo {
             onRecentApplication?(applicationInfo)
         }
@@ -346,6 +394,11 @@ final class EventTapController {
 
     private func cancelGesture() {
         clearSnapPreview()
+        if moveDidDrag,
+           pendingWindowRestore == nil,
+           let targetWindow {
+            windowRestoreStore.removeFrame(for: targetWindow.identity)
+        }
         let transition = GestureEngine.reduce(
             state: gestureState,
             input: .cancel(timestamp: now),
@@ -353,5 +406,12 @@ final class EventTapController {
         )
         gestureState = transition.state
         targetWindow = nil
+        resetMoveTracking()
+    }
+
+    private func resetMoveTracking() {
+        pendingWindowRestore = nil
+        gestureRestoreFrame = nil
+        moveDidDrag = false
     }
 }

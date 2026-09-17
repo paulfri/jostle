@@ -25,7 +25,13 @@ struct RunningApplicationInfo: Equatable {
     }
 }
 
+struct AccessibilityWindowIdentity: Hashable {
+    let processIdentifier: pid_t
+    let elementHash: CFHashCode
+}
+
 struct AccessibilityWindowTarget {
+    let identity: AccessibilityWindowIdentity
     let element: AXUIElement
     let application: NSRunningApplication?
     let applicationInfo: RunningApplicationInfo?
@@ -64,6 +70,10 @@ final class AccessibilityWindowSystem {
         let applicationInfo = application.flatMap(RunningApplicationInfo.init(application:))
 
         return AccessibilityWindowTarget(
+            identity: AccessibilityWindowIdentity(
+                processIdentifier: processIdentifier,
+                elementHash: CFHash(windowElement)
+            ),
             element: windowElement,
             application: application,
             applicationInfo: applicationInfo
