@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 — Unreleased
+## 2026.9.0 — Unreleased
 
 - Rebrand the project as Jostle.
 - Rewrite the menu-bar application in native Swift.
