@@ -189,9 +189,20 @@ struct ExcludedApplicationsSettingsPane: View {
             } else {
                 List(applications, id: \.key) { application in
                     HStack(spacing: 10) {
-                        Image(systemName: "app.dashed")
-                            .foregroundStyle(.secondary)
-                            .frame(width: 20)
+                        if let icon = ApplicationIconProvider.icon(
+                            applicationKey: application.key,
+                            displayName: application.name
+                        ) {
+                            Image(nsImage: icon)
+                                .frame(width: 32, height: 32)
+                                .accessibilityHidden(true)
+                        } else {
+                            Image(systemName: "app.dashed")
+                                .font(.system(size: 24))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 32, height: 32)
+                                .accessibilityHidden(true)
+                        }
                         VStack(alignment: .leading, spacing: 2) {
                             Text(application.name)
                             if application.key != application.name {
