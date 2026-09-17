@@ -82,6 +82,7 @@ final class StatusMenuControllerTests: XCTestCase {
             commandItems(in: controller).first { $0.title == "Exclude Example Editor" }
         )
         XCTAssertTrue(item.isEnabled)
+        XCTAssertEqual(item.state, .off)
 
         XCTAssertTrue(NSApplication.shared.sendAction(item.action!, to: item.target, from: item))
         XCTAssertEqual(
@@ -90,7 +91,7 @@ final class StatusMenuControllerTests: XCTestCase {
         )
     }
 
-    func testRecentApplicationAndSettingsChangesRefreshMenu() throws {
+    func testRecentApplicationExclusionIsAnEnabledToggle() throws {
         let settingsStore = SettingsStore(userDefaults: userDefaults)
         let controller = makeController(settingsStore: settingsStore)
         let application = RunningApplicationInfo(key: "com.example.Game", name: "Example Game")
@@ -100,6 +101,7 @@ final class StatusMenuControllerTests: XCTestCase {
             commandItems(in: controller).first { $0.title == "Exclude Example Game" }
         )
         XCTAssertTrue(excludeItem.isEnabled)
+        XCTAssertEqual(excludeItem.state, .off)
 
         settingsStore.update { settings in
             settings.setApplicationExcluded(
@@ -111,7 +113,21 @@ final class StatusMenuControllerTests: XCTestCase {
         excludeItem = try XCTUnwrap(
             commandItems(in: controller).first { $0.title == "Exclude Example Game" }
         )
-        XCTAssertFalse(excludeItem.isEnabled)
+        XCTAssertTrue(excludeItem.isEnabled)
+        XCTAssertEqual(excludeItem.state, .on)
+
+        XCTAssertTrue(
+            NSApplication.shared.sendAction(
+                excludeItem.action!,
+                to: excludeItem.target,
+                from: excludeItem
+            )
+        )
+        XCTAssertNil(settingsStore.settings.excludedApplications[application.key])
+        XCTAssertEqual(
+            commandItems(in: controller).first { $0.title == "Exclude Example Game" }?.state,
+            .off
+        )
     }
 
     func testPermissionFailureAddsOneActionableStatusItem() {

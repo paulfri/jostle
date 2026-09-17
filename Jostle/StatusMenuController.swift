@@ -109,7 +109,8 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
             keyEquivalent: ""
         )
         excludeItem.target = self
-        excludeItem.isEnabled = canExcludeRecentApplication
+        excludeItem.isEnabled = recentApplication != nil
+        excludeItem.state = isRecentApplicationExcluded ? .on : .off
         menu.addItem(excludeItem)
 
         let settingsItem = NSMenuItem(
@@ -132,9 +133,9 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         menu.addItem(quitItem)
     }
 
-    private var canExcludeRecentApplication: Bool {
+    private var isRecentApplicationExcluded: Bool {
         guard let recentApplication else { return false }
-        return settingsStore.settings.excludedApplications[recentApplication.key] == nil
+        return settingsStore.settings.excludedApplications[recentApplication.key] != nil
     }
 
     private func updateCurrentApplication() {
@@ -162,12 +163,13 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     }
 
     @objc private func excludeRecentApplication(_ sender: NSMenuItem) {
-        guard canExcludeRecentApplication, let recentApplication else { return }
+        guard let recentApplication else { return }
+        let shouldExclude = !isRecentApplicationExcluded
         settingsStore.update { settings in
             settings.setApplicationExcluded(
                 key: recentApplication.key,
-                displayName: recentApplication.name,
-                excluded: true
+                displayName: shouldExclude ? recentApplication.name : nil,
+                excluded: shouldExclude
             )
         }
     }
