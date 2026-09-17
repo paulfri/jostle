@@ -1,26 +1,7 @@
-import SwiftUI
 import JostleCore
+import SwiftUI
 
-struct JostleSettingsView: View {
-    @ObservedObject var settingsStore: SettingsStore
-
-    var body: some View {
-        TabView {
-            GeneralSettingsView(settingsStore: settingsStore)
-                .tabItem {
-                    Label("General", systemImage: "gearshape")
-                }
-
-            ExcludedApplicationsSettingsView(settingsStore: settingsStore)
-                .tabItem {
-                    Label("Excluded Apps", systemImage: "nosign")
-                }
-        }
-        .frame(width: 520, height: 360)
-    }
-}
-
-private struct GeneralSettingsView: View {
+struct GeneralSettingsPane: View {
     @ObservedObject var settingsStore: SettingsStore
     @State private var confirmsReset = false
 
@@ -33,46 +14,65 @@ private struct GeneralSettingsView: View {
     ]
 
     var body: some View {
-        Form {
-            Section("Activation") {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Modifier keys")
-                    HStack(spacing: 16) {
-                        ForEach(modifierOptions, id: \.modifier) { option in
-                            Toggle(option.title, isOn: modifierBinding(option.modifier))
-                                .toggleStyle(.checkbox)
-                                .disabled(isOnlySelectedModifier(option.modifier))
-                        }
+        VStack(alignment: .leading, spacing: 12) {
+            PreferenceRow(label: "Modifier keys:") {
+                HStack(spacing: 14) {
+                    ForEach(modifierOptions, id: \.modifier) { option in
+                        Toggle(option.title, isOn: modifierBinding(option.modifier))
+                            .toggleStyle(.checkbox)
+                            .fixedSize()
+                            .disabled(isOnlySelectedModifier(option.modifier))
                     }
-                    Text("Hold this exact combination while dragging a window.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                 }
-                .padding(.vertical, 4)
             }
 
-            Section("Window Behavior") {
-                Picker("Resize with", selection: middleClickResizeBinding) {
+            PreferenceRow(label: "") {
+                Text("Hold this exact combination while dragging a window.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Divider()
+
+            Text("Window Behavior")
+                .font(.headline)
+
+            PreferenceRow(label: "Resize with:") {
+                Picker("", selection: middleClickResizeBinding) {
                     Text("Right Click").tag(false)
                     Text("Middle Click").tag(true)
                 }
-
-                Toggle("Bring the window to the front when a drag begins", isOn: bringToFrontBinding)
-                Toggle("Resize only; let modifier-left-drag pass through", isOn: resizeOnlyBinding)
+                .labelsHidden()
+                .frame(width: 170)
             }
 
-            Section {
-                HStack {
-                    Spacer()
-                    Button("Reset All Settings…") {
-                        confirmsReset = true
-                    }
+            PreferenceRow(label: "") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Toggle("Bring windows to the front", isOn: bringToFrontBinding)
+                        .toggleStyle(.checkbox)
+                    Toggle("Resize only", isOn: resizeOnlyBinding)
+                        .toggleStyle(.checkbox)
+                    Text("Resize Only lets modifier-left-drag pass through to the current app.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Spacer(minLength: 0)
+            Divider()
+
+            HStack {
+                Spacer()
+                Button("Restore Defaults…") {
+                    confirmsReset = true
                 }
             }
         }
-        .padding(20)
-        .alert("Reset all Jostle settings?", isPresented: $confirmsReset) {
-            Button("Reset", role: .destructive) {
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
+        .frame(width: 660, height: 330)
+        .alert("Restore Jostle defaults?", isPresented: $confirmsReset) {
+            Button("Restore", role: .destructive) {
                 settingsStore.reset()
             }
             Button("Cancel", role: .cancel) {}
@@ -125,7 +125,7 @@ private struct GeneralSettingsView: View {
     }
 }
 
-private struct ExcludedApplicationsSettingsView: View {
+struct ExcludedApplicationsSettingsPane: View {
     @ObservedObject var settingsStore: SettingsStore
 
     private var applications: [(key: String, name: String)] {
@@ -138,28 +138,28 @@ private struct ExcludedApplicationsSettingsView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Excluded Applications")
+                .font(.headline)
+            Text("Jostle ignores windows belonging to these applications.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+
             if applications.isEmpty {
-                VStack(spacing: 12) {
+                VStack(spacing: 10) {
                     Image(systemName: "checkmark.circle")
-                        .font(.system(size: 34, weight: .light))
+                        .font(.system(size: 32, weight: .light))
                         .foregroundStyle(.secondary)
-                    Text("No Excluded Applications")
+                    Text("No excluded applications")
                         .font(.headline)
-                    Text("After dragging a window, use “Exclude” in the Jostle menu to add its app here.")
+                    Text("After dragging a window, choose Exclude from the Jostle menu.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: 340)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                Text("Jostle ignores windows belonging to these applications.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-
                 List(applications, id: \.key) { application in
-                    HStack(spacing: 12) {
+                    HStack(spacing: 10) {
                         Image(systemName: "app.dashed")
                             .foregroundStyle(.secondary)
                             .frame(width: 20)
@@ -189,11 +189,27 @@ private struct ExcludedApplicationsSettingsView: View {
                         .help("Remove \(application.name) from exclusions")
                         .accessibilityLabel("Remove \(application.name)")
                     }
-                    .padding(.vertical, 4)
+                    .padding(.vertical, 3)
                 }
                 .listStyle(.inset)
             }
         }
-        .padding(20)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
+        .frame(width: 660, height: 330)
+    }
+}
+
+private struct PreferenceRow<Content: View>: View {
+    let label: String
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(label)
+                .frame(width: 108, alignment: .trailing)
+            content()
+            Spacer(minLength: 0)
+        }
     }
 }
