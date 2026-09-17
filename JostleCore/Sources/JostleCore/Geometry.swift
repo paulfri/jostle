@@ -94,7 +94,8 @@ public enum GeometryPolicy {
         _ frame: Frame,
         section: ResizeSection,
         deltaX: Double,
-        deltaY: Double
+        deltaY: Double,
+        minimumSize: Size = Size(width: 0, height: 0)
     ) -> Frame {
         var result = frame
         let truncatedX = deltaX.rounded(.towardZero)
@@ -118,6 +119,24 @@ public enum GeometryPolicy {
             result.origin.y += truncatedY
         case .none:
             break
+        }
+
+        let minimumWidth = max(0, minimumSize.width)
+        if section.horizontalEdge != .none, result.size.width < minimumWidth {
+            if section.horizontalEdge == .left {
+                let rightEdge = result.origin.x + result.size.width
+                result.origin.x = rightEdge - minimumWidth
+            }
+            result.size.width = minimumWidth
+        }
+
+        let minimumHeight = max(0, minimumSize.height)
+        if section.verticalEdge != .none, result.size.height < minimumHeight {
+            if section.verticalEdge == .top {
+                let bottomEdge = result.origin.y + result.size.height
+                result.origin.y = bottomEdge - minimumHeight
+            }
+            result.size.height = minimumHeight
         }
 
         return result

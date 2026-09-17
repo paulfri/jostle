@@ -519,6 +519,14 @@ final class EventTapController {
                 cancelGesture()
                 return true
             }
+            if case .resizing = gestureState,
+               let constrainedFrame = windowSystem.frame(of: targetWindow) {
+                gestureState = GestureEngine.reduce(
+                    state: gestureState,
+                    input: .synchronizeFrame(constrainedFrame),
+                    configuration: gestureConfiguration
+                ).state
+            }
         }
         if !gestureState.isActive {
             targetWindow = nil

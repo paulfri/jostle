@@ -43,6 +43,7 @@ public enum GestureInput: Equatable, Sendable {
     case beginResize(frame: Frame, section: ResizeSection, timestamp: MonotonicTime)
     case moveBy(deltaX: Double, deltaY: Double, timestamp: MonotonicTime)
     case resizeBy(deltaX: Double, deltaY: Double, timestamp: MonotonicTime)
+    case synchronizeFrame(Frame)
     case end(timestamp: MonotonicTime)
     case cancel(timestamp: MonotonicTime)
 }
@@ -50,10 +51,16 @@ public enum GestureInput: Equatable, Sendable {
 public struct GestureConfiguration: Equatable, Sendable {
     public var moveThrottleInterval: MonotonicTime
     public var resizeThrottleInterval: MonotonicTime
+    public var minimumWindowSize: Size
 
-    public init(moveThrottleInterval: MonotonicTime, resizeThrottleInterval: MonotonicTime) {
+    public init(
+        moveThrottleInterval: MonotonicTime,
+        resizeThrottleInterval: MonotonicTime,
+        minimumWindowSize: Size = Size(width: 160, height: 100)
+    ) {
         self.moveThrottleInterval = moveThrottleInterval
         self.resizeThrottleInterval = resizeThrottleInterval
+        self.minimumWindowSize = minimumWindowSize
     }
 }
 
@@ -125,7 +132,8 @@ public enum GestureEngine {
                 context.frame,
                 section: context.resizeSection,
                 deltaX: deltaX,
-                deltaY: deltaY
+                deltaY: deltaY,
+                minimumSize: configuration.minimumWindowSize
             )
             context.geometryDirty = true
             var commands: [GestureCommand] = []
@@ -139,6 +147,20 @@ public enum GestureEngine {
                 context.geometryDirty = false
             }
             return GestureTransition(state: .resizing(context), commands: commands)
+
+        case let .synchronizeFrame(frame):
+            switch state {
+            case .idle:
+                return GestureTransition(state: state, commands: [])
+            case var .moving(context):
+                context.frame = frame
+                context.geometryDirty = false
+                return GestureTransition(state: .moving(context), commands: [])
+            case var .resizing(context):
+                context.frame = frame
+                context.geometryDirty = false
+                return GestureTransition(state: .resizing(context), commands: [])
+            }
 
         case .end:
             let commands: [GestureCommand]

@@ -85,6 +85,51 @@ final class GestureEngineTests: XCTestCase {
         ])
     }
 
+    func testResizeUsesConfiguredMinimumWindowSize() {
+        let resizing = GestureEngine.reduce(
+            state: .idle,
+            input: .beginResize(
+                frame: Frame(x: 0, y: 0, width: 200, height: 200),
+                section: ResizeSection(horizontalEdge: .right, verticalEdge: .none),
+                timestamp: 100
+            ),
+            configuration: configuration
+        ).state
+        let resized = GestureEngine.reduce(
+            state: resizing,
+            input: .resizeBy(deltaX: -500, deltaY: 0, timestamp: 111),
+            configuration: configuration
+        )
+
+        XCTAssertEqual(resized.commands, [.setSize(Size(width: 160, height: 200))])
+        XCTAssertEqual(resized.state.context?.frame, Frame(x: 0, y: 0, width: 160, height: 200))
+    }
+
+    func testSynchronizeFrameAdoptsApplicationConstraints() {
+        let section = ResizeSection(horizontalEdge: .right, verticalEdge: .bottom)
+        let resizing = GestureEngine.reduce(
+            state: .idle,
+            input: .beginResize(frame: frame, section: section, timestamp: 100),
+            configuration: configuration
+        ).state
+        let synchronized = GestureEngine.reduce(
+            state: resizing,
+            input: .synchronizeFrame(Frame(x: 100, y: 200, width: 480, height: 240)),
+            configuration: configuration
+        )
+
+        XCTAssertEqual(synchronized.commands, [])
+        XCTAssertEqual(
+            synchronized.state,
+            .resizing(GestureContext(
+                frame: Frame(x: 100, y: 200, width: 480, height: 240),
+                resizeSection: section,
+                lastWriteTime: 100,
+                geometryDirty: false
+            ))
+        )
+    }
+
     func testCancelDropsPendingGeometry() {
         let moving = GestureEngine.reduce(
             state: .idle,

@@ -40,6 +40,33 @@ final class GeometryTests: XCTestCase {
         )
     }
 
+    func testMinimumSizePreservesOppositeEdges() {
+        let frame = Frame(x: 100, y: 200, width: 300, height: 200)
+        let result = GeometryPolicy.resize(
+            frame,
+            section: ResizeSection(horizontalEdge: .left, verticalEdge: .top),
+            deltaX: 500,
+            deltaY: 500,
+            minimumSize: Size(width: 160, height: 100)
+        )
+
+        XCTAssertEqual(result, Frame(x: 240, y: 300, width: 160, height: 100))
+        XCTAssertEqual(result.origin.x + result.size.width, 400)
+        XCTAssertEqual(result.origin.y + result.size.height, 400)
+    }
+
+    func testMinimumSizeOnlyConstrainsDimensionsBeingResized() {
+        let result = GeometryPolicy.resize(
+            Frame(x: 0, y: 0, width: 120, height: 200),
+            section: ResizeSection(horizontalEdge: .none, verticalEdge: .bottom),
+            deltaX: 0,
+            deltaY: 500,
+            minimumSize: Size(width: 160, height: 100)
+        )
+
+        XCTAssertEqual(result, Frame(x: 0, y: 0, width: 120, height: 700))
+    }
+
     func testTopLeftResizeTruncatesEachDeltaAndPreservesOppositeEdges() {
         let frame = Frame(x: 100, y: 200, width: 600, height: 300)
         let section = ResizeSection(horizontalEdge: .left, verticalEdge: .top)
