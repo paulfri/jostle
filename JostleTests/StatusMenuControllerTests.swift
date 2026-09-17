@@ -22,9 +22,9 @@ final class StatusMenuControllerTests: XCTestCase {
 
     func testSettingsItemInvokesOwnedWindowPresenter() throws {
         var presentationCount = 0
-        let controller = makeController {
+        let controller = makeController(onOpenSettings: {
             presentationCount += 1
-        }
+        })
         let item = try XCTUnwrap(
             commandItems(in: controller).first { $0.title == "Settings…" }
         )
@@ -64,6 +64,29 @@ final class StatusMenuControllerTests: XCTestCase {
         XCTAssertEqual(
             commandItems(in: controller).first { $0.title == "Start at Login" }?.state,
             .on
+        )
+    }
+
+    func testMenuOpeningTargetsCurrentApplicationWithoutAccessibility() throws {
+        let application = RunningApplicationInfo(key: "com.example.Editor", name: "Example Editor")
+        let settingsStore = SettingsStore(userDefaults: userDefaults)
+        let controller = makeController(
+            settingsStore: settingsStore,
+            currentApplicationProvider: { application }
+        )
+        controller.setAccessibilityAvailable(false)
+
+        controller.menuWillOpen(controller.renderedMenu)
+
+        let item = try XCTUnwrap(
+            commandItems(in: controller).first { $0.title == "Exclude Example Editor" }
+        )
+        XCTAssertTrue(item.isEnabled)
+
+        XCTAssertTrue(NSApplication.shared.sendAction(item.action!, to: item.target, from: item))
+        XCTAssertEqual(
+            settingsStore.settings.excludedApplications[application.key],
+            application.name
         )
     }
 
@@ -110,6 +133,7 @@ final class StatusMenuControllerTests: XCTestCase {
     private func makeController(
         settingsStore: SettingsStore? = nil,
         loginItemService: LoginItemServicing? = nil,
+        currentApplicationProvider: @escaping () -> RunningApplicationInfo? = { nil },
         onOpenSettings: @escaping () -> Void = {}
     ) -> StatusMenuController {
         let store = settingsStore ?? SettingsStore(userDefaults: userDefaults)
@@ -127,6 +151,7 @@ final class StatusMenuControllerTests: XCTestCase {
             settingsStore: store,
             eventTapController: eventTapController,
             loginItemController: loginItemController,
+            currentApplicationProvider: currentApplicationProvider,
             onOpenSettings: onOpenSettings
         )
     }

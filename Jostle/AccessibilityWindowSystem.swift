@@ -5,6 +5,24 @@ import JostleCore
 struct RunningApplicationInfo: Equatable {
     let key: String
     let name: String
+
+    init(key: String, name: String) {
+        self.key = key
+        self.name = name
+    }
+
+    init?(application: NSRunningApplication) {
+        guard let key = ApplicationIdentity.key(
+            bundleIdentifier: application.bundleIdentifier,
+            localizedName: application.localizedName
+        ) else {
+            return nil
+        }
+        self.init(
+            key: key,
+            name: application.localizedName.flatMap { $0.isEmpty ? nil : $0 } ?? key
+        )
+    }
 }
 
 struct AccessibilityWindowTarget {
@@ -43,18 +61,7 @@ final class AccessibilityWindowSystem {
             application = nil
         }
 
-        let applicationInfo = application.flatMap { application -> RunningApplicationInfo? in
-            guard let key = ApplicationIdentity.key(
-                bundleIdentifier: application.bundleIdentifier,
-                localizedName: application.localizedName
-            ) else {
-                return nil
-            }
-            return RunningApplicationInfo(
-                key: key,
-                name: application.localizedName.flatMap { $0.isEmpty ? nil : $0 } ?? key
-            )
-        }
+        let applicationInfo = application.flatMap(RunningApplicationInfo.init(application:))
 
         return AccessibilityWindowTarget(
             element: windowElement,

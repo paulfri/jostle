@@ -1,9 +1,10 @@
 import AppKit
 
-final class StatusMenuController: NSObject {
+final class StatusMenuController: NSObject, NSMenuDelegate {
     private let settingsStore: SettingsStore
     private let eventTapController: EventTapController
     private let loginItemController: LoginItemController
+    private let currentApplicationProvider: () -> RunningApplicationInfo?
     private let onOpenSettings: () -> Void
     private let statusItem: NSStatusItem
     private let menu = NSMenu()
@@ -17,16 +18,25 @@ final class StatusMenuController: NSObject {
         settingsStore: SettingsStore,
         eventTapController: EventTapController,
         loginItemController: LoginItemController,
+        currentApplicationProvider: @escaping () -> RunningApplicationInfo? = {
+            guard let application = NSWorkspace.shared.frontmostApplication,
+                  application.bundleIdentifier != Bundle.main.bundleIdentifier else {
+                return nil
+            }
+            return RunningApplicationInfo(application: application)
+        },
         onOpenSettings: @escaping () -> Void
     ) {
         self.settingsStore = settingsStore
         self.eventTapController = eventTapController
         self.loginItemController = loginItemController
+        self.currentApplicationProvider = currentApplicationProvider
         self.onOpenSettings = onOpenSettings
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         super.init()
 
         menu.autoenablesItems = false
+        menu.delegate = self
         statusItem.menu = menu
         let image = NSImage(named: "MenuIcon")
             ?? NSImage(systemSymbolName: "rectangle.on.rectangle.angled", accessibilityDescription: "Jostle")
@@ -34,6 +44,7 @@ final class StatusMenuController: NSObject {
         statusItem.button?.image = image
         settingsStore.onChange = { [weak self] in self?.refresh() }
         loginItemController.onChange = { [weak self] in self?.refresh() }
+        updateCurrentApplication()
         refresh()
     }
 
@@ -50,6 +61,11 @@ final class StatusMenuController: NSObject {
 
     func setAccessibilityAvailable(_ available: Bool) {
         accessibilityAvailable = available
+        refresh()
+    }
+
+    func menuWillOpen(_ menu: NSMenu) {
+        updateCurrentApplication()
         refresh()
     }
 
@@ -117,8 +133,13 @@ final class StatusMenuController: NSObject {
     }
 
     private var canExcludeRecentApplication: Bool {
-        guard accessibilityAvailable, let recentApplication else { return false }
+        guard let recentApplication else { return false }
         return settingsStore.settings.excludedApplications[recentApplication.key] == nil
+    }
+
+    private func updateCurrentApplication() {
+        guard let application = currentApplicationProvider() else { return }
+        recentApplication = application
     }
 
     @objc private func toggleOverallDisabled(_ sender: NSMenuItem) {
