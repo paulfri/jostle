@@ -76,21 +76,28 @@ final class EventTapController {
 
     private let settingsStore: SettingsStore
     private let windowSystem: AccessibilityWindowSystem
+    private let screenGeometryProvider: ScreenGeometryProvider
+    private let snapPreviewController: SnapPreviewController
     private let gestureConfiguration: GestureConfiguration
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private var gestureState = GestureState.idle
     private var targetWindow: AccessibilityWindowTarget?
+    private var activeSnapFrame: Frame?
     private(set) var sessionActive = true
     private(set) var isEnabled = false
 
     init(
         settingsStore: SettingsStore,
         windowSystem: AccessibilityWindowSystem = AccessibilityWindowSystem(),
+        screenGeometryProvider: ScreenGeometryProvider = ScreenGeometryProvider(),
+        snapPreviewController: SnapPreviewController = SnapPreviewController(),
         gestureConfiguration: GestureConfiguration
     ) {
         self.settingsStore = settingsStore
         self.windowSystem = windowSystem
+        self.screenGeometryProvider = screenGeometryProvider
+        self.snapPreviewController = snapPreviewController
         self.gestureConfiguration = gestureConfiguration
     }
 
@@ -187,10 +194,16 @@ final class EventTapController {
             }
             return false
         case .beginMove:
-            return beginGesture(at: event.location, resize: false)
+            let began = beginGesture(at: event.location, resize: false)
+            if began {
+                updateSnapPreview(at: event.location, settings: settings)
+            }
+            return began
         case .beginResize:
+            clearSnapPreview()
             return beginGesture(at: event.location, resize: true)
         case .continueMove:
+            updateSnapPreview(at: event.location, settings: settings)
             return reduce(.moveBy(
                 deltaX: event.getDoubleValueField(.mouseEventDeltaX),
                 deltaY: event.getDoubleValueField(.mouseEventDeltaY),
@@ -203,12 +216,66 @@ final class EventTapController {
                 timestamp: now
             ))
         case .endGesture:
-            return reduce(.end(timestamp: now))
+            if case .moving = gestureState {
+                updateSnapPreview(at: event.location, settings: settings)
+            }
+            return endGesture()
         }
     }
 
     private var now: MonotonicTime {
         DispatchTime.now().uptimeNanoseconds
+    }
+
+    private func updateSnapPreview(at point: CGPoint, settings: JostleSettings) {
+        guard settings.snapEnabled,
+              case .moving = gestureState,
+              let screen = screenGeometryProvider.geometry(
+                containing: Point(x: point.x, y: point.y)
+              ),
+              let target = SnapPolicy.target(
+                for: Point(x: point.x, y: point.y),
+                in: screen.frame,
+                activationDistance: 12
+              ) else {
+            clearSnapPreview()
+            return
+        }
+
+        let frame = SnapPolicy.frame(
+            for: target,
+            in: screen.visibleFrame,
+            gap: settings.snapGap,
+            screenMargin: settings.snapScreenMargin
+        )
+        activeSnapFrame = frame
+        snapPreviewController.show(frame: frame)
+    }
+
+    private func endGesture() -> Bool {
+        let snapTarget = activeSnapFrame
+        let target = targetWindow
+        let wasMoving: Bool
+        if case .moving = gestureState {
+            wasMoving = true
+        } else {
+            wasMoving = false
+        }
+
+        let handled = reduce(.end(timestamp: now))
+        clearSnapPreview()
+        if wasMoving, let snapTarget, let target {
+            _ = windowSystem.apply(
+                [.setSize(snapTarget.size), .setPosition(snapTarget.origin)],
+                to: target
+            )
+        }
+        return handled
+    }
+
+    private func clearSnapPreview() {
+        activeSnapFrame = nil
+        snapPreviewController.hide()
     }
 
     private func beginGesture(at point: CGPoint, resize: Bool) -> Bool {
@@ -278,6 +345,7 @@ final class EventTapController {
     }
 
     private func cancelGesture() {
+        clearSnapPreview()
         let transition = GestureEngine.reduce(
             state: gestureState,
             input: .cancel(timestamp: now),

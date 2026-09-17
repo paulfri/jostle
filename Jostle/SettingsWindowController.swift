@@ -24,6 +24,17 @@ final class SettingsWindowController: NSWindowController {
         )
         tabController.addTabViewItem(generalItem)
 
+        let snappingController = NSHostingController(
+            rootView: SnappingSettingsPane(settingsStore: settingsStore)
+        )
+        let snappingItem = NSTabViewItem(viewController: snappingController)
+        snappingItem.label = "Snapping"
+        snappingItem.image = NSImage(
+            systemSymbolName: "rectangle.split.2x1",
+            accessibilityDescription: "Snapping"
+        )
+        tabController.addTabViewItem(snappingItem)
+
         let exclusionsController = NSHostingController(
             rootView: ExcludedApplicationsSettingsPane(settingsStore: settingsStore)
         )

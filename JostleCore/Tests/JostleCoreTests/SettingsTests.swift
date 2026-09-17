@@ -8,6 +8,9 @@ final class SettingsTests: XCTestCase {
         XCTAssertFalse(JostleSettings.defaults.bringWindowToFront)
         XCTAssertFalse(JostleSettings.defaults.middleClickResize)
         XCTAssertFalse(JostleSettings.defaults.resizeOnly)
+        XCTAssertTrue(JostleSettings.defaults.snapEnabled)
+        XCTAssertEqual(JostleSettings.defaults.snapGap, 8)
+        XCTAssertEqual(JostleSettings.defaults.snapScreenMargin, 0)
         XCTAssertEqual(JostleSettings.defaults.excludedApplications, [:])
     }
 
@@ -17,11 +20,35 @@ final class SettingsTests: XCTestCase {
             bringWindowToFront: true,
             middleClickResize: true,
             resizeOnly: true,
+            snapEnabled: false,
+            snapGap: 14,
+            snapScreenMargin: 6,
             excludedApplications: ["com.example.Game": "Game"]
         )
 
         let data = try JSONEncoder().encode(settings)
         XCTAssertEqual(try JSONDecoder().decode(JostleSettings.self, from: data), settings)
+    }
+
+    func testOlderDocumentsReceiveSnappingDefaults() throws {
+        let data = Data("""
+        {
+          "modifiers": ["option"],
+          "bringWindowToFront": true,
+          "middleClickResize": false,
+          "resizeOnly": false,
+          "excludedApplications": {"com.example.Game": "Game"}
+        }
+        """.utf8)
+
+        let settings = try JSONDecoder().decode(JostleSettings.self, from: data)
+
+        XCTAssertEqual(settings.modifiers, [.option])
+        XCTAssertTrue(settings.bringWindowToFront)
+        XCTAssertTrue(settings.snapEnabled)
+        XCTAssertEqual(settings.snapGap, 8)
+        XCTAssertEqual(settings.snapScreenMargin, 0)
+        XCTAssertEqual(settings.excludedApplications, ["com.example.Game": "Game"])
     }
 
     func testMutationsAreTypedAndIdempotent() {

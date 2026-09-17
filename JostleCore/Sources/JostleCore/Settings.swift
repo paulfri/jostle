@@ -3,6 +3,9 @@ public struct JostleSettings: Codable, Equatable, Sendable {
     public var bringWindowToFront: Bool
     public var middleClickResize: Bool
     public var resizeOnly: Bool
+    public var snapEnabled: Bool
+    public var snapGap: Double
+    public var snapScreenMargin: Double
     public var excludedApplications: [String: String]
 
     public init(
@@ -10,12 +13,18 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         bringWindowToFront: Bool = false,
         middleClickResize: Bool = false,
         resizeOnly: Bool = false,
+        snapEnabled: Bool = true,
+        snapGap: Double = 8,
+        snapScreenMargin: Double = 0,
         excludedApplications: [String: String] = [:]
     ) {
         self.modifiers = modifiers
         self.bringWindowToFront = bringWindowToFront
         self.middleClickResize = middleClickResize
         self.resizeOnly = resizeOnly
+        self.snapEnabled = snapEnabled
+        self.snapGap = snapGap
+        self.snapScreenMargin = snapScreenMargin
         self.excludedApplications = excludedApplications
     }
 
@@ -40,6 +49,51 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         } else {
             excludedApplications.removeValue(forKey: key)
         }
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case modifiers
+        case bringWindowToFront
+        case middleClickResize
+        case resizeOnly
+        case snapEnabled
+        case snapGap
+        case snapScreenMargin
+        case excludedApplications
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        modifiers = try container.decodeIfPresent(Set<Modifier>.self, forKey: .modifiers)
+            ?? Self.defaults.modifiers
+        bringWindowToFront = try container.decodeIfPresent(Bool.self, forKey: .bringWindowToFront)
+            ?? Self.defaults.bringWindowToFront
+        middleClickResize = try container.decodeIfPresent(Bool.self, forKey: .middleClickResize)
+            ?? Self.defaults.middleClickResize
+        resizeOnly = try container.decodeIfPresent(Bool.self, forKey: .resizeOnly)
+            ?? Self.defaults.resizeOnly
+        snapEnabled = try container.decodeIfPresent(Bool.self, forKey: .snapEnabled)
+            ?? Self.defaults.snapEnabled
+        snapGap = try container.decodeIfPresent(Double.self, forKey: .snapGap)
+            ?? Self.defaults.snapGap
+        snapScreenMargin = try container.decodeIfPresent(Double.self, forKey: .snapScreenMargin)
+            ?? Self.defaults.snapScreenMargin
+        excludedApplications = try container.decodeIfPresent(
+            [String: String].self,
+            forKey: .excludedApplications
+        ) ?? Self.defaults.excludedApplications
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(modifiers, forKey: .modifiers)
+        try container.encode(bringWindowToFront, forKey: .bringWindowToFront)
+        try container.encode(middleClickResize, forKey: .middleClickResize)
+        try container.encode(resizeOnly, forKey: .resizeOnly)
+        try container.encode(snapEnabled, forKey: .snapEnabled)
+        try container.encode(snapGap, forKey: .snapGap)
+        try container.encode(snapScreenMargin, forKey: .snapScreenMargin)
+        try container.encode(excludedApplications, forKey: .excludedApplications)
     }
 }
 

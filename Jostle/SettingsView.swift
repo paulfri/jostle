@@ -154,6 +154,93 @@ struct GeneralSettingsPane: View {
     }
 }
 
+struct SnappingSettingsPane: View {
+    @ObservedObject var settingsStore: SettingsStore
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Edge Snapping")
+                .font(.headline)
+
+            PreferenceRow(label: "") {
+                Toggle("Snap windows when dragged to a screen edge", isOn: snapEnabledBinding)
+                    .toggleStyle(.checkbox)
+            }
+
+            PreferenceRow(label: "") {
+                Text("Drag to the left or right edge for a half, a corner for a quarter, or the top edge to fill the usable screen.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: 430, alignment: .leading)
+            }
+
+            Divider()
+
+            Text("Spacing")
+                .font(.headline)
+
+            PreferenceRow(label: "Tile gap:") {
+                Stepper(value: snapGapBinding, in: 0...32, step: 1) {
+                    Text("\(Int(settingsStore.settings.snapGap)) pt")
+                        .monospacedDigit()
+                        .frame(width: 48, alignment: .leading)
+                }
+                .disabled(!settingsStore.settings.snapEnabled)
+            }
+
+            PreferenceRow(label: "Screen margin:") {
+                Stepper(value: snapScreenMarginBinding, in: 0...64, step: 1) {
+                    Text("\(Int(settingsStore.settings.snapScreenMargin)) pt")
+                        .monospacedDigit()
+                        .frame(width: 48, alignment: .leading)
+                }
+                .disabled(!settingsStore.settings.snapEnabled)
+            }
+
+            PreferenceRow(label: "") {
+                Text("The tile gap separates adjacent windows. The screen margin reserves space around the usable display area.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: 430, alignment: .leading)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
+        .frame(width: 660, height: 470)
+    }
+
+    private var snapEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings.snapEnabled },
+            set: { value in
+                settingsStore.update { $0.snapEnabled = value }
+            }
+        )
+    }
+
+    private var snapGapBinding: Binding<Double> {
+        Binding(
+            get: { settingsStore.settings.snapGap },
+            set: { value in
+                settingsStore.update { $0.snapGap = value }
+            }
+        )
+    }
+
+    private var snapScreenMarginBinding: Binding<Double> {
+        Binding(
+            get: { settingsStore.settings.snapScreenMargin },
+            set: { value in
+                settingsStore.update { $0.snapScreenMargin = value }
+            }
+        )
+    }
+}
+
 struct ExcludedApplicationsSettingsPane: View {
     @ObservedObject var settingsStore: SettingsStore
 
