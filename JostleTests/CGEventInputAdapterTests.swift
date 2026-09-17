@@ -15,6 +15,7 @@ final class CGEventInputAdapterTests: XCTestCase {
             (.leftMouseUp, .mouseUp, .left),
             (.rightMouseUp, .mouseUp, .right),
             (.otherMouseUp, .mouseUp, .other),
+            (.keyDown, .keyDown, .none),
             (.tapDisabledByTimeout, .tapDisabledByTimeout, .none),
             (.tapDisabledByUserInput, .tapDisabledByUserInput, .none)
         ]
@@ -24,6 +25,17 @@ final class CGEventInputAdapterTests: XCTestCase {
             XCTAssertEqual(input.type, expectedType)
             XCTAssertEqual(input.button, expectedButton)
         }
+    }
+
+    func testPreservesKeyboardKeyCode() {
+        XCTAssertEqual(
+            CGEventInputAdapter.input(
+                type: .keyDown,
+                flags: [],
+                keyCode: 53
+            ).keyCode,
+            53
+        )
     }
 
     func testPreservesMouseClickCount() {

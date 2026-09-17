@@ -81,6 +81,27 @@ final class EventPolicyTests: XCTestCase {
         )
     }
 
+    func testEscapeCancelsAnActiveGestureWithoutModifiersOrSession() {
+        let escape = InputEvent(
+            type: .keyDown,
+            button: .none,
+            modifiers: [],
+            keyCode: 53
+        )
+
+        XCTAssertEqual(
+            EventPolicy.intent(
+                for: escape,
+                configuration: configuration(sessionActive: false, gestureActive: true)
+            ),
+            .cancelGesture
+        )
+        XCTAssertEqual(
+            EventPolicy.intent(for: escape, configuration: configuration()),
+            .passThrough
+        )
+    }
+
     func testOwnedActionMouseUpIsConsumedWithoutModifiers() {
         let mouseUp = InputEvent(type: .mouseUp, button: .right, modifiers: [])
 

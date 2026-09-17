@@ -307,7 +307,7 @@ private final class SwiftGestureContractRunner {
             state = transition.state
             commands.append(contentsOf: normalizedCommands(transition.commands))
 
-        case .toggleMaximize, .snapByRegion, .endActionClick:
+        case .toggleMaximize, .snapByRegion, .endActionClick, .cancelGesture:
             break
 
         case .endGesture:

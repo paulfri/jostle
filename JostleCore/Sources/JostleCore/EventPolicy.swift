@@ -18,6 +18,7 @@ public enum InputEventType: Equatable, Sendable {
     case mouseDown
     case mouseDragged
     case mouseUp
+    case keyDown
     case tapDisabledByTimeout
     case tapDisabledByUserInput
     case unknown
@@ -28,17 +29,20 @@ public struct InputEvent: Equatable, Sendable {
     public var button: MouseButton
     public var modifiers: Set<Modifier>
     public var clickCount: Int
+    public var keyCode: Int?
 
     public init(
         type: InputEventType,
         button: MouseButton,
         modifiers: Set<Modifier>,
-        clickCount: Int = 1
+        clickCount: Int = 1,
+        keyCode: Int? = nil
     ) {
         self.type = type
         self.button = button
         self.modifiers = modifiers
         self.clickCount = clickCount
+        self.keyCode = keyCode
     }
 }
 
@@ -80,6 +84,7 @@ public enum EventIntent: Equatable, Sendable {
     case toggleMaximize
     case snapByRegion
     case endActionClick
+    case cancelGesture
     case endGesture
 }
 
@@ -89,6 +94,12 @@ public enum EventPolicy {
 
         if input.type == .tapDisabledByTimeout || input.type == .tapDisabledByUserInput {
             return .reenableEventTap
+        }
+
+        if configuration.gestureActive,
+           input.type == .keyDown,
+           input.keyCode == 53 {
+            return .cancelGesture
         }
 
         if let ownedActionButton = configuration.ownedActionButton,
@@ -137,7 +148,7 @@ public enum EventPolicy {
             if input.button == resizeButton {
                 return .continueResize
             }
-        case .mouseUp, .tapDisabledByTimeout, .tapDisabledByUserInput, .unknown:
+        case .mouseUp, .keyDown, .tapDisabledByTimeout, .tapDisabledByUserInput, .unknown:
             break
         }
 

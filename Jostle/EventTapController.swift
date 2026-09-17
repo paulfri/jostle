@@ -24,7 +24,8 @@ enum CGEventInputAdapter {
     static func input(
         type: CGEventType,
         flags: CGEventFlags,
-        clickCount: Int64 = 1
+        clickCount: Int64 = 1,
+        keyCode: Int64? = nil
     ) -> InputEvent {
         let eventType: InputEventType
         let button: MouseButton
@@ -56,6 +57,9 @@ enum CGEventInputAdapter {
         case .otherMouseUp:
             eventType = .mouseUp
             button = .other
+        case .keyDown:
+            eventType = .keyDown
+            button = .none
         case .tapDisabledByTimeout:
             eventType = .tapDisabledByTimeout
             button = .none
@@ -70,7 +74,8 @@ enum CGEventInputAdapter {
             type: eventType,
             button: button,
             modifiers: modifiers(from: flags),
-            clickCount: Int(clickCount)
+            clickCount: Int(clickCount),
+            keyCode: keyCode.map(Int.init)
         )
     }
 
@@ -102,6 +107,8 @@ final class EventTapController {
     private var activeSnapFrame: Frame?
     private var pendingWindowRestore: PendingWindowRestore?
     private var gestureRestoreFrame: Frame?
+    private var gestureInitialFrame: Frame?
+    private var gestureInitialRestoreRecord: WindowRestoreRecord?
     private var moveDidDrag = false
     private var resizeDidDrag = false
     private var ownedActionButton: MouseButton?
@@ -139,7 +146,8 @@ final class EventTapController {
             .otherMouseDragged,
             .leftMouseUp,
             .rightMouseUp,
-            .otherMouseUp
+            .otherMouseUp,
+            .keyDown
         ].reduce(CGEventMask(0)) { $0 | (CGEventMask(1) << $1.rawValue) }
 
         guard let tap = CGEvent.tapCreate(
@@ -202,7 +210,10 @@ final class EventTapController {
         let input = CGEventInputAdapter.input(
             type: type,
             flags: event.flags,
-            clickCount: event.getIntegerValueField(.mouseEventClickState)
+            clickCount: event.getIntegerValueField(.mouseEventClickState),
+            keyCode: type == .keyDown
+                ? event.getIntegerValueField(.keyboardEventKeycode)
+                : nil
         )
         let configuration = EventPolicyConfiguration(
             sessionActive: sessionActive,
@@ -257,6 +268,16 @@ final class EventTapController {
         case .endActionClick:
             ownedActionButton = nil
             return true
+        case .cancelGesture:
+            let button: MouseButton
+            if case .resizing = gestureState {
+                button = settings.middleClickResize ? .other : .right
+            } else {
+                button = .left
+            }
+            let handled = cancelGestureAndRestore()
+            ownedActionButton = handled ? button : nil
+            return handled
         case .endGesture:
             if moveDidDrag, case .moving = gestureState {
                 updateSnapPreview(at: event.location, settings: settings)
@@ -451,12 +472,12 @@ final class EventTapController {
             return false
         }
 
+        resetMoveTracking()
         targetWindow = target
-        if resize {
-            resetMoveTracking()
-        } else {
-            moveDidDrag = false
-            let savedFrame = windowRestoreStore.frame(for: target.identity)
+        gestureInitialFrame = frame
+        gestureInitialRestoreRecord = windowRestoreStore.record(for: target.identity)
+        if !resize {
+            let savedFrame = gestureInitialRestoreRecord?.frame
             gestureRestoreFrame = savedFrame ?? frame
             pendingWindowRestore = savedFrame.map {
                 PendingWindowRestore(
@@ -505,6 +526,29 @@ final class EventTapController {
         return true
     }
 
+    private func cancelGestureAndRestore() -> Bool {
+        guard gestureState.isActive else { return false }
+        let target = targetWindow
+        let initialFrame = gestureInitialFrame
+        let initialRecord = gestureInitialRestoreRecord
+
+        cancelGesture()
+
+        if let target, let initialFrame {
+            _ = windowSystem.setFrame(initialFrame, of: target)
+            if let initialRecord {
+                windowRestoreStore.remember(
+                    initialRecord.frame,
+                    kind: initialRecord.kind,
+                    for: target.identity
+                )
+            } else {
+                windowRestoreStore.removeFrame(for: target.identity)
+            }
+        }
+        return true
+    }
+
     private func cancelGesture() {
         clearSnapPreview()
         if moveDidDrag,
@@ -526,6 +570,8 @@ final class EventTapController {
     private func resetMoveTracking() {
         pendingWindowRestore = nil
         gestureRestoreFrame = nil
+        gestureInitialFrame = nil
+        gestureInitialRestoreRecord = nil
         moveDidDrag = false
         resizeDidDrag = false
     }
