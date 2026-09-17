@@ -30,7 +30,7 @@ final class SettingsWindowController: NSWindowController {
         tabController.addTabViewItem(exclusionsItem)
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 660, height: 330),
+            contentRect: NSRect(x: 0, y: 0, width: 660, height: 360),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -42,8 +42,7 @@ final class SettingsWindowController: NSWindowController {
         window.tabbingMode = .disallowed
         window.standardWindowButton(.miniaturizeButton)?.isHidden = true
         window.standardWindowButton(.zoomButton)?.isHidden = true
-        window.setContentSize(NSSize(width: 660, height: 330))
-        window.setFrameAutosaveName("JostleSettingsWindow")
+        window.setContentSize(NSSize(width: 660, height: 360))
         window.center()
 
         super.init(window: window)

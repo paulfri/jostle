@@ -16,7 +16,7 @@ struct GeneralSettingsPane: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             PreferenceRow(label: "Modifier keys:") {
-                HStack(spacing: 14) {
+                VStack(alignment: .leading, spacing: 6) {
                     ForEach(modifierOptions, id: \.modifier) { option in
                         Toggle(option.title, isOn: modifierBinding(option.modifier))
                             .toggleStyle(.checkbox)
@@ -44,6 +44,7 @@ struct GeneralSettingsPane: View {
                 }
                 .labelsHidden()
                 .frame(width: 170)
+                .offset(x: -24)
             }
 
             PreferenceRow(label: "") {
@@ -70,7 +71,7 @@ struct GeneralSettingsPane: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
-        .frame(width: 660, height: 330)
+        .frame(width: 660, height: 360)
         .alert("Restore Jostle defaults?", isPresented: $confirmsReset) {
             Button("Restore", role: .destructive) {
                 settingsStore.reset()
@@ -196,7 +197,7 @@ struct ExcludedApplicationsSettingsPane: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
-        .frame(width: 660, height: 330)
+        .frame(width: 660, height: 360)
     }
 }
 
