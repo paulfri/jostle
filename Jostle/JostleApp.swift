@@ -1,12 +1,13 @@
-import SwiftUI
+import AppKit
 
 @main
-struct JostleApplication: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+enum JostleApplication {
+    private static let appDelegate = AppDelegate()
 
-    var body: some Scene {
-        Settings {
-            JostleSettingsView(settingsStore: appDelegate.settingsStore)
-        }
+    static func main() {
+        let application = NSApplication.shared
+        application.delegate = appDelegate
+        application.setActivationPolicy(.accessory)
+        application.run()
     }
 }

@@ -20,14 +20,17 @@ final class StatusMenuControllerTests: XCTestCase {
         super.tearDown()
     }
 
-    func testSwiftUISettingsSceneInstallsTheStandardSettingsAction() {
-        XCTAssertNotNil(
-            NSApplication.shared.target(
-                forAction: Selector(("showSettingsWindow:")),
-                to: nil,
-                from: nil
-            )
+    func testSettingsItemInvokesOwnedWindowPresenter() throws {
+        var presentationCount = 0
+        let controller = makeController {
+            presentationCount += 1
+        }
+        let item = try XCTUnwrap(
+            commandItems(in: controller).first { $0.title == "Settings…" }
         )
+
+        XCTAssertTrue(NSApplication.shared.sendAction(item.action!, to: item.target, from: item))
+        XCTAssertEqual(presentationCount, 1)
     }
 
     func testMenuContainsOnlyEssentialCommands() throws {
@@ -85,7 +88,10 @@ final class StatusMenuControllerTests: XCTestCase {
         XCTAssertEqual(commandItems(in: controller)[1].state, .off)
     }
 
-    private func makeController(settingsStore: SettingsStore? = nil) -> StatusMenuController {
+    private func makeController(
+        settingsStore: SettingsStore? = nil,
+        onOpenSettings: @escaping () -> Void = {}
+    ) -> StatusMenuController {
         let store = settingsStore ?? SettingsStore(userDefaults: userDefaults)
         let eventTapController = EventTapController(
             settingsStore: store,
@@ -96,7 +102,8 @@ final class StatusMenuControllerTests: XCTestCase {
         )
         return StatusMenuController(
             settingsStore: store,
-            eventTapController: eventTapController
+            eventTapController: eventTapController,
+            onOpenSettings: onOpenSettings
         )
     }
 

@@ -6,6 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let settingsStore = SettingsStore()
     private var eventTapController: EventTapController?
     private var statusMenuController: StatusMenuController?
+    private var settingsWindowController: SettingsWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let throttleInterval = Self.minimumRefreshIntervalNanoseconds()
@@ -16,9 +17,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 resizeThrottleInterval: throttleInterval
             )
         )
+        let settingsWindowController = SettingsWindowController(settingsStore: settingsStore)
         let statusMenuController = StatusMenuController(
             settingsStore: settingsStore,
-            eventTapController: eventTapController
+            eventTapController: eventTapController,
+            onOpenSettings: { [weak settingsWindowController] in
+                settingsWindowController?.present()
+            }
         )
         eventTapController.onRecentApplication = { [weak statusMenuController] application in
             DispatchQueue.main.async {
@@ -28,6 +33,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         self.eventTapController = eventTapController
         self.statusMenuController = statusMenuController
+        self.settingsWindowController = settingsWindowController
+        if ProcessInfo.processInfo.arguments.contains("--show-settings") {
+            DispatchQueue.main.async {
+                settingsWindowController.present()
+            }
+        }
 
         let trusted = Self.requestAccessibilityAccess()
         let started = trusted && eventTapController.start()

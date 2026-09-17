@@ -3,6 +3,7 @@ import AppKit
 final class StatusMenuController: NSObject {
     private let settingsStore: SettingsStore
     private let eventTapController: EventTapController
+    private let onOpenSettings: () -> Void
     private let statusItem: NSStatusItem
     private let menu = NSMenu()
     private var recentApplication: RunningApplicationInfo?
@@ -11,9 +12,14 @@ final class StatusMenuController: NSObject {
 
     var renderedMenu: NSMenu { menu }
 
-    init(settingsStore: SettingsStore, eventTapController: EventTapController) {
+    init(
+        settingsStore: SettingsStore,
+        eventTapController: EventTapController,
+        onOpenSettings: @escaping () -> Void
+    ) {
         self.settingsStore = settingsStore
         self.eventTapController = eventTapController
+        self.onOpenSettings = onOpenSettings
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         super.init()
 
@@ -119,12 +125,7 @@ final class StatusMenuController: NSObject {
     }
 
     @objc private func openSettings(_ sender: NSMenuItem) {
-        NSApplication.shared.activate(ignoringOtherApps: true)
-        NSApplication.shared.sendAction(
-            Selector(("showSettingsWindow:")),
-            to: nil,
-            from: self
-        )
+        onOpenSettings()
     }
 
     @objc private func openAccessibilitySettings(_ sender: NSMenuItem) {
