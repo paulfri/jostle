@@ -89,7 +89,7 @@ final class GestureEngineTests: XCTestCase {
         let resizing = GestureEngine.reduce(
             state: .idle,
             input: .beginResize(
-                frame: Frame(x: 0, y: 0, width: 200, height: 200),
+                frame: Frame(x: 0, y: 0, width: 400, height: 300),
                 section: ResizeSection(horizontalEdge: .right, verticalEdge: .none),
                 timestamp: 100
             ),
@@ -101,8 +101,8 @@ final class GestureEngineTests: XCTestCase {
             configuration: configuration
         )
 
-        XCTAssertEqual(resized.commands, [.setSize(Size(width: 160, height: 200))])
-        XCTAssertEqual(resized.state.context?.frame, Frame(x: 0, y: 0, width: 160, height: 200))
+        XCTAssertEqual(resized.commands, [.setSize(Size(width: 320, height: 300))])
+        XCTAssertEqual(resized.state.context?.frame, Frame(x: 0, y: 0, width: 320, height: 300))
     }
 
     func testSynchronizeFrameAdoptsApplicationConstraints() {

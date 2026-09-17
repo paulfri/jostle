@@ -506,6 +506,12 @@ final class EventTapController {
 
     @discardableResult
     private func reduce(_ input: GestureInput) -> Bool {
+        let minimumWindowSize: Size?
+        if case .resizing = gestureState {
+            minimumWindowSize = gestureConfiguration.minimumWindowSize
+        } else {
+            minimumWindowSize = nil
+        }
         let transition = GestureEngine.reduce(
             state: gestureState,
             input: input,
@@ -515,7 +521,11 @@ final class EventTapController {
 
         if !transition.commands.isEmpty {
             guard let targetWindow,
-                  windowSystem.apply(transition.commands, to: targetWindow) else {
+                  windowSystem.apply(
+                    transition.commands,
+                    to: targetWindow,
+                    minimumWindowSize: minimumWindowSize
+                  ) else {
                 cancelGesture()
                 return true
             }

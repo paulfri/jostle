@@ -121,8 +121,19 @@ final class AccessibilityWindowSystem {
         ]
     }
 
+    static func constrainedSize(_ size: Size, minimumSize: Size) -> Size {
+        Size(
+            width: max(size.width, minimumSize.width),
+            height: max(size.height, minimumSize.height)
+        )
+    }
+
     @discardableResult
-    func apply(_ commands: [GestureCommand], to target: AccessibilityWindowTarget) -> Bool {
+    func apply(
+        _ commands: [GestureCommand],
+        to target: AccessibilityWindowTarget,
+        minimumWindowSize: Size? = nil
+    ) -> Bool {
         for command in commands {
             let error: AXError
             switch command {
@@ -135,6 +146,9 @@ final class AccessibilityWindowSystem {
                     value
                 )
             case let .setSize(size):
+                let size = minimumWindowSize.map {
+                    Self.constrainedSize(size, minimumSize: $0)
+                } ?? size
                 var cgSize = CGSize(width: size.width, height: size.height)
                 guard let value = AXValueCreate(.cgSize, &cgSize) else { return false }
                 error = AXUIElementSetAttributeValue(

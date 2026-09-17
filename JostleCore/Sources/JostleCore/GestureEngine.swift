@@ -49,6 +49,8 @@ public enum GestureInput: Equatable, Sendable {
 }
 
 public struct GestureConfiguration: Equatable, Sendable {
+    public static let defaultMinimumWindowSize = Size(width: 320, height: 200)
+
     public var moveThrottleInterval: MonotonicTime
     public var resizeThrottleInterval: MonotonicTime
     public var minimumWindowSize: Size
@@ -56,7 +58,7 @@ public struct GestureConfiguration: Equatable, Sendable {
     public init(
         moveThrottleInterval: MonotonicTime,
         resizeThrottleInterval: MonotonicTime,
-        minimumWindowSize: Size = Size(width: 160, height: 100)
+        minimumWindowSize: Size = GestureConfiguration.defaultMinimumWindowSize
     ) {
         self.moveThrottleInterval = moveThrottleInterval
         self.resizeThrottleInterval = resizeThrottleInterval
