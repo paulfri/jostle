@@ -15,6 +15,9 @@ struct GeneralSettingsPane: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            Text("Activation")
+                .font(.headline)
+
             PreferenceRow(label: "Modifier keys:") {
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(modifierOptions, id: \.modifier) { option in
@@ -71,7 +74,7 @@ struct GeneralSettingsPane: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
-        .frame(width: 660, height: 360)
+        .frame(width: 660, height: 390)
         .alert("Restore Jostle defaults?", isPresented: $confirmsReset) {
             Button("Restore", role: .destructive) {
                 settingsStore.reset()
@@ -197,7 +200,7 @@ struct ExcludedApplicationsSettingsPane: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
-        .frame(width: 660, height: 360)
+        .frame(width: 660, height: 390)
     }
 }
 
