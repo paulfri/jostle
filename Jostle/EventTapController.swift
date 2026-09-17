@@ -114,7 +114,16 @@ final class EventTapController {
     private var resizeDidDrag = false
     private var ownedActionButton: MouseButton?
     private(set) var sessionActive = true
-    private(set) var isEnabled = false
+    private(set) var requestedEnabled = true
+
+    var isOperational: Bool {
+        guard let eventTap, CFMachPortIsValid(eventTap) else { return false }
+        return CGEvent.tapIsEnabled(tap: eventTap)
+    }
+
+    var isEnabled: Bool {
+        requestedEnabled && isOperational
+    }
 
     init(
         settingsStore: SettingsStore,
@@ -138,8 +147,53 @@ final class EventTapController {
         stop()
     }
 
+    @discardableResult
     func start() -> Bool {
-        guard eventTap == nil else { return true }
+        requestedEnabled = true
+        return ensureOperational()
+    }
+
+    @discardableResult
+    func ensureOperational() -> Bool {
+        guard requestedEnabled else { return true }
+
+        if let eventTap, CFMachPortIsValid(eventTap) {
+            if !CGEvent.tapIsEnabled(tap: eventTap) {
+                CGEvent.tapEnable(tap: eventTap, enable: true)
+            }
+            if CGEvent.tapIsEnabled(tap: eventTap) {
+                return true
+            }
+        }
+
+        tearDownEventTap()
+        return createEventTap()
+    }
+
+    func suspend() {
+        tearDownEventTap()
+    }
+
+    func stop() {
+        requestedEnabled = false
+        tearDownEventTap()
+    }
+
+    @discardableResult
+    func setEnabled(_ enabled: Bool) -> Bool {
+        requestedEnabled = enabled
+        if enabled {
+            return ensureOperational()
+        }
+
+        cancelGesture()
+        if let eventTap, CFMachPortIsValid(eventTap) {
+            CGEvent.tapEnable(tap: eventTap, enable: false)
+        }
+        return true
+    }
+
+    private func createEventTap() -> Bool {
         let eventMask = [
             CGEventType.leftMouseDown,
             .rightMouseDown,
@@ -171,12 +225,15 @@ final class EventTapController {
         eventTap = tap
         runLoopSource = source
         CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
-        isEnabled = true
         CGEvent.tapEnable(tap: tap, enable: true)
+        guard CGEvent.tapIsEnabled(tap: tap) else {
+            tearDownEventTap()
+            return false
+        }
         return true
     }
 
-    func stop() {
+    private func tearDownEventTap() {
         cancelGesture()
         if let source = runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
@@ -186,19 +243,6 @@ final class EventTapController {
         }
         runLoopSource = nil
         eventTap = nil
-        isEnabled = false
-    }
-
-    func setEnabled(_ enabled: Bool) {
-        guard let eventTap else {
-            isEnabled = false
-            return
-        }
-        if !enabled {
-            cancelGesture()
-        }
-        CGEvent.tapEnable(tap: eventTap, enable: enabled)
-        isEnabled = enabled
     }
 
     func setSessionActive(_ active: Bool) {
@@ -232,7 +276,7 @@ final class EventTapController {
         case .passThrough:
             return false
         case .reenableEventTap:
-            if let eventTap, isEnabled {
+            if let eventTap, requestedEnabled, CFMachPortIsValid(eventTap) {
                 CGEvent.tapEnable(tap: eventTap, enable: true)
             }
             return false

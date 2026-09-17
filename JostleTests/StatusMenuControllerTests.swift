@@ -50,6 +50,25 @@ final class StatusMenuControllerTests: XCTestCase {
         XCTAssertEqual(settingsItem.keyEquivalentModifierMask, [.command])
     }
 
+    func testEnabledItemTracksEventTapIntent() throws {
+        var refreshCount = 0
+        let controller = makeController(onRuntimeRefresh: {
+            refreshCount += 1
+        })
+        let item = try XCTUnwrap(
+            commandItems(in: controller).first { $0.title == "Jostle Enabled" }
+        )
+        XCTAssertEqual(item.state, .on)
+
+        XCTAssertTrue(NSApplication.shared.sendAction(item.action!, to: item.target, from: item))
+
+        XCTAssertEqual(
+            commandItems(in: controller).first { $0.title == "Jostle Enabled" }?.state,
+            .off
+        )
+        XCTAssertEqual(refreshCount, 1)
+    }
+
     func testStartAtLoginMenuItemTogglesTheLoginItemService() throws {
         let service = TestLoginItemService()
         let controller = makeController(loginItemService: service)
@@ -74,7 +93,7 @@ final class StatusMenuControllerTests: XCTestCase {
             settingsStore: settingsStore,
             currentApplicationProvider: { application }
         )
-        controller.setAccessibilityAvailable(false)
+        controller.setRuntimeAvailability(.accessibilityRequired)
 
         controller.menuWillOpen(controller.renderedMenu)
 
@@ -132,10 +151,10 @@ final class StatusMenuControllerTests: XCTestCase {
 
     func testPermissionFailureAddsOneActionableStatusItem() {
         let controller = makeController()
-        controller.setAccessibilityAvailable(false)
+        controller.setRuntimeAvailability(.accessibilityRequired)
 
         XCTAssertEqual(commandItems(in: controller).map(\.title), [
-            "Accessibility Access Required",
+            "Accessibility Access Required…",
             "Jostle Enabled",
             "Start at Login",
             "Exclude Current App",
@@ -146,10 +165,37 @@ final class StatusMenuControllerTests: XCTestCase {
         XCTAssertEqual(commandItems(in: controller)[1].state, .off)
     }
 
+    func testEventMonitorFailureOffersRetry() throws {
+        var retryCount = 0
+        let controller = makeController(onRuntimeRefresh: {
+            retryCount += 1
+        })
+        controller.setRuntimeAvailability(.eventTapUnavailable)
+
+        XCTAssertEqual(commandItems(in: controller).map(\.title), [
+            "Event Monitor Unavailable — Retry",
+            "Jostle Enabled",
+            "Start at Login",
+            "Exclude Current App",
+            "Settings…",
+            "Quit Jostle"
+        ])
+        let retryItem = try XCTUnwrap(commandItems(in: controller).first)
+        XCTAssertTrue(
+            NSApplication.shared.sendAction(
+                retryItem.action!,
+                to: retryItem.target,
+                from: retryItem
+            )
+        )
+        XCTAssertEqual(retryCount, 1)
+    }
+
     private func makeController(
         settingsStore: SettingsStore? = nil,
         loginItemService: LoginItemServicing? = nil,
         currentApplicationProvider: @escaping () -> RunningApplicationInfo? = { nil },
+        onRuntimeRefresh: @escaping () -> Void = {},
         onOpenSettings: @escaping () -> Void = {}
     ) -> StatusMenuController {
         let store = settingsStore ?? SettingsStore(userDefaults: userDefaults)
@@ -168,6 +214,7 @@ final class StatusMenuControllerTests: XCTestCase {
             eventTapController: eventTapController,
             loginItemController: loginItemController,
             currentApplicationProvider: currentApplicationProvider,
+            onRuntimeRefresh: onRuntimeRefresh,
             onOpenSettings: onOpenSettings
         )
     }

@@ -32,6 +32,8 @@
 		A10000000000000000000018 /* AccessibilityWindowSystemTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001D /* AccessibilityWindowSystemTests.swift */; };
 		A10000000000000000000019 /* ResizeFeedbackController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001E /* ResizeFeedbackController.swift */; };
 		A1000000000000000000001A /* ResizeIndicatorGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001F /* ResizeIndicatorGeometryTests.swift */; };
+		A1000000000000000000001B /* RuntimeHealth.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* RuntimeHealth.swift */; };
+		A1000000000000000000001C /* RuntimeHealthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* RuntimeHealthTests.swift */; };
 		A1000000000000000000000C /* JostleCore in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000003 /* JostleCore */; };
 /* End PBXBuildFile section */
 
@@ -70,6 +72,8 @@
 		A2000000000000000000001D /* AccessibilityWindowSystemTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityWindowSystemTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000001E /* ResizeFeedbackController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResizeFeedbackController.swift; sourceTree = "<group>"; };
 		A2000000000000000000001F /* ResizeIndicatorGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResizeIndicatorGeometryTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000020 /* RuntimeHealth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeHealth.swift; sourceTree = "<group>"; };
+		A20000000000000000000021 /* RuntimeHealthTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeHealthTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000000C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000000000000000000000D /* Jostle.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Jostle.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2000000000000000000000E /* JostleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JostleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -127,6 +131,7 @@
 				A20000000000000000000019 /* SnapPreviewController.swift */,
 				A2000000000000000000001B /* WindowRestoreStore.swift */,
 				A2000000000000000000001E /* ResizeFeedbackController.swift */,
+				A20000000000000000000020 /* RuntimeHealth.swift */,
 				A20000000000000000000008 /* Images.xcassets */,
 				A20000000000000000000007 /* Jostle-Info.plist */,
 				A20000000000000000000009 /* InfoPlist.strings */,
@@ -145,6 +150,7 @@
 				A2000000000000000000001C /* WindowRestoreStoreTests.swift */,
 				A2000000000000000000001D /* AccessibilityWindowSystemTests.swift */,
 				A2000000000000000000001F /* ResizeIndicatorGeometryTests.swift */,
+				A20000000000000000000021 /* RuntimeHealthTests.swift */,
 				A2000000000000000000000C /* Info.plist */,
 			);
 			path = JostleTests;
@@ -282,6 +288,7 @@
 				A10000000000000000000014 /* SnapPreviewController.swift in Sources */,
 				A10000000000000000000016 /* WindowRestoreStore.swift in Sources */,
 				A10000000000000000000019 /* ResizeFeedbackController.swift in Sources */,
+				A1000000000000000000001B /* RuntimeHealth.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -297,6 +304,7 @@
 				A10000000000000000000017 /* WindowRestoreStoreTests.swift in Sources */,
 				A10000000000000000000018 /* AccessibilityWindowSystemTests.swift in Sources */,
 				A1000000000000000000001A /* ResizeIndicatorGeometryTests.swift in Sources */,
+				A1000000000000000000001C /* RuntimeHealthTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -5,12 +5,12 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     private let eventTapController: EventTapController
     private let loginItemController: LoginItemController
     private let currentApplicationProvider: () -> RunningApplicationInfo?
+    private let onRuntimeRefresh: () -> Void
     private let onOpenSettings: () -> Void
     private let statusItem: NSStatusItem
     private let menu = NSMenu()
     private var recentApplication: RunningApplicationInfo?
-    private var overallDisabled = false
-    private var accessibilityAvailable = true
+    private var runtimeAvailability = RuntimeAvailability.ready
 
     var renderedMenu: NSMenu { menu }
 
@@ -25,12 +25,14 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
             }
             return RunningApplicationInfo(application: application)
         },
+        onRuntimeRefresh: @escaping () -> Void = {},
         onOpenSettings: @escaping () -> Void
     ) {
         self.settingsStore = settingsStore
         self.eventTapController = eventTapController
         self.loginItemController = loginItemController
         self.currentApplicationProvider = currentApplicationProvider
+        self.onRuntimeRefresh = onRuntimeRefresh
         self.onOpenSettings = onOpenSettings
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         super.init()
@@ -59,27 +61,43 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         refresh()
     }
 
-    func setAccessibilityAvailable(_ available: Bool) {
-        accessibilityAvailable = available
+    func setRuntimeAvailability(_ availability: RuntimeAvailability) {
+        guard runtimeAvailability != availability else { return }
+        runtimeAvailability = availability
         refresh()
     }
 
     func menuWillOpen(_ menu: NSMenu) {
+        onRuntimeRefresh()
         updateCurrentApplication()
         refresh()
     }
 
     func refresh() {
         menu.removeAllItems()
+        statusItem.button?.appearsDisabled = runtimeAvailability != .ready
+            || !eventTapController.requestedEnabled
 
-        if !accessibilityAvailable {
+        switch runtimeAvailability {
+        case .ready:
+            break
+        case .accessibilityRequired:
             let permissionItem = NSMenuItem(
-                title: "Accessibility Access Required",
+                title: "Accessibility Access Required…",
                 action: #selector(openAccessibilitySettings(_:)),
                 keyEquivalent: ""
             )
             permissionItem.target = self
             menu.addItem(permissionItem)
+            menu.addItem(.separator())
+        case .eventTapUnavailable:
+            let retryItem = NSMenuItem(
+                title: "Event Monitor Unavailable — Retry",
+                action: #selector(retryEventMonitor(_:)),
+                keyEquivalent: ""
+            )
+            retryItem.target = self
+            menu.addItem(retryItem)
             menu.addItem(.separator())
         }
 
@@ -89,8 +107,9 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
             keyEquivalent: ""
         )
         enabledItem.target = self
-        enabledItem.state = accessibilityAvailable && !overallDisabled ? .on : .off
-        enabledItem.isEnabled = accessibilityAvailable
+        enabledItem.state = runtimeAvailability == .ready
+            && eventTapController.requestedEnabled ? .on : .off
+        enabledItem.isEnabled = runtimeAvailability == .ready
         menu.addItem(enabledItem)
 
         let startAtLoginItem = NSMenuItem(
@@ -144,8 +163,8 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     }
 
     @objc private func toggleOverallDisabled(_ sender: NSMenuItem) {
-        overallDisabled.toggle()
-        eventTapController.setEnabled(!overallDisabled)
+        eventTapController.setEnabled(!eventTapController.requestedEnabled)
+        onRuntimeRefresh()
         refresh()
     }
 
@@ -176,6 +195,10 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
 
     @objc private func openSettings(_ sender: NSMenuItem) {
         onOpenSettings()
+    }
+
+    @objc private func retryEventMonitor(_ sender: NSMenuItem) {
+        onRuntimeRefresh()
     }
 
     @objc private func openAccessibilitySettings(_ sender: NSMenuItem) {
