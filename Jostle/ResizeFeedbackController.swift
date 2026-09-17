@@ -11,7 +11,8 @@ enum ResizeIndicatorGeometry {
         for section: ResizeSection,
         in size: Size,
         length: Double = 36,
-        inset: Double = 4
+        inset: Double = 8,
+        cornerClearance: Double = 8
     ) -> [ResizeIndicatorSegment] {
         guard section != .none, size.width > 0, size.height > 0 else { return [] }
 
@@ -19,26 +20,38 @@ enum ResizeIndicatorGeometry {
         let right = max(left, size.width - left)
         let bottom = min(max(0, inset), size.height / 2)
         let top = max(bottom, size.height - bottom)
-        let horizontalLength = min(max(0, length), max(0, right - left))
-        let verticalLength = min(max(0, length), max(0, top - bottom))
+        let horizontalSpan = max(0, right - left)
+        let verticalSpan = max(0, top - bottom)
+        let horizontalLength = min(max(0, length), horizontalSpan)
+        let verticalLength = min(max(0, length), verticalSpan)
+        let horizontalClearance = min(max(0, cornerClearance), horizontalSpan)
+        let verticalClearance = min(max(0, cornerClearance), verticalSpan)
+        let cornerHorizontalLength = min(horizontalLength, horizontalSpan - horizontalClearance)
+        let cornerVerticalLength = min(verticalLength, verticalSpan - verticalClearance)
         var result: [ResizeIndicatorSegment] = []
 
         switch (section.horizontalEdge, section.verticalEdge) {
         case let (horizontal, vertical) where horizontal != .none && vertical != .none:
             let x = horizontal == .left ? left : right
             let y = vertical == .top ? top : bottom
+            let horizontalStartX = horizontal == .left
+                ? x + horizontalClearance
+                : x - horizontalClearance
             let horizontalEndX = horizontal == .left
-                ? x + horizontalLength
-                : x - horizontalLength
+                ? horizontalStartX + cornerHorizontalLength
+                : horizontalStartX - cornerHorizontalLength
+            let verticalStartY = vertical == .top
+                ? y - verticalClearance
+                : y + verticalClearance
             let verticalEndY = vertical == .top
-                ? y - verticalLength
-                : y + verticalLength
+                ? verticalStartY - cornerVerticalLength
+                : verticalStartY + cornerVerticalLength
             result.append(ResizeIndicatorSegment(
-                start: Point(x: x, y: y),
+                start: Point(x: horizontalStartX, y: y),
                 end: Point(x: horizontalEndX, y: y)
             ))
             result.append(ResizeIndicatorSegment(
-                start: Point(x: x, y: y),
+                start: Point(x: x, y: verticalStartY),
                 end: Point(x: x, y: verticalEndY)
             ))
 

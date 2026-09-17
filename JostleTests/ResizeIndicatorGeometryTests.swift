@@ -11,14 +11,15 @@ final class ResizeIndicatorGeometryTests: XCTestCase {
 
         XCTAssertEqual(segments, [
             ResizeIndicatorSegment(
-                start: Point(x: 4, y: 396),
-                end: Point(x: 40, y: 396)
+                start: Point(x: 16, y: 392),
+                end: Point(x: 52, y: 392)
             ),
             ResizeIndicatorSegment(
-                start: Point(x: 4, y: 396),
-                end: Point(x: 4, y: 360)
+                start: Point(x: 8, y: 384),
+                end: Point(x: 8, y: 348)
             )
         ])
+        XCTAssertNotEqual(segments[0].start, segments[1].start)
     }
 
     func testRightEdgeProducesOneCenteredSegment() {
@@ -28,8 +29,8 @@ final class ResizeIndicatorGeometryTests: XCTestCase {
                 in: Size(width: 600, height: 400)
             ),
             [ResizeIndicatorSegment(
-                start: Point(x: 596, y: 182),
-                end: Point(x: 596, y: 218)
+                start: Point(x: 592, y: 182),
+                end: Point(x: 592, y: 218)
             )]
         )
     }
