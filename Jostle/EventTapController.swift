@@ -98,6 +98,7 @@ final class EventTapController {
     private let windowSystem: AccessibilityWindowSystem
     private let screenGeometryProvider: ScreenGeometryProvider
     private let snapPreviewController: SnapPreviewController
+    private let resizeFeedbackController: ResizeFeedbackController
     private let windowRestoreStore: WindowRestoreStore
     private let gestureConfiguration: GestureConfiguration
     private var eventTap: CFMachPort?
@@ -120,6 +121,7 @@ final class EventTapController {
         windowSystem: AccessibilityWindowSystem = AccessibilityWindowSystem(),
         screenGeometryProvider: ScreenGeometryProvider = ScreenGeometryProvider(),
         snapPreviewController: SnapPreviewController = SnapPreviewController(),
+        resizeFeedbackController: ResizeFeedbackController = ResizeFeedbackController(),
         windowRestoreStore: WindowRestoreStore = WindowRestoreStore(),
         gestureConfiguration: GestureConfiguration
     ) {
@@ -127,6 +129,7 @@ final class EventTapController {
         self.windowSystem = windowSystem
         self.screenGeometryProvider = screenGeometryProvider
         self.snapPreviewController = snapPreviewController
+        self.resizeFeedbackController = resizeFeedbackController
         self.windowRestoreStore = windowRestoreStore
         self.gestureConfiguration = gestureConfiguration
     }
@@ -234,10 +237,13 @@ final class EventTapController {
             }
             return false
         case .beginMove:
+            clearResizeFeedback()
             return beginGesture(at: event.location, resize: false)
         case .beginResize:
             clearSnapPreview()
-            return beginGesture(at: event.location, resize: true)
+            let began = beginGesture(at: event.location, resize: true)
+            updateResizeFeedback(settings: settings)
+            return began
         case .continueMove:
             moveDidDrag = true
             guard performPendingWindowRestore() else { return true }
@@ -252,11 +258,13 @@ final class EventTapController {
                 windowRestoreStore.removeFrame(for: targetWindow.identity)
             }
             resizeDidDrag = true
-            return reduce(.resizeBy(
+            let handled = reduce(.resizeBy(
                 deltaX: event.getDoubleValueField(.mouseEventDeltaX),
                 deltaY: event.getDoubleValueField(.mouseEventDeltaY),
                 timestamp: now
             ))
+            updateResizeFeedback(settings: settings)
+            return handled
         case .toggleMaximize:
             let handled = toggleMaximize(at: event.location, settings: settings)
             ownedActionButton = handled ? input.button : nil
@@ -413,6 +421,7 @@ final class EventTapController {
 
         let handled = reduce(.end(timestamp: now))
         clearSnapPreview()
+        clearResizeFeedback()
 
         if wasMoving, didDrag, let target {
             if let snapTarget,
@@ -454,6 +463,22 @@ final class EventTapController {
     private func clearSnapPreview() {
         activeSnapFrame = nil
         snapPreviewController.hide()
+    }
+
+    private func updateResizeFeedback(settings: JostleSettings) {
+        guard settings.resizeFeedbackEnabled,
+              case let .resizing(context) = gestureState else {
+            clearResizeFeedback()
+            return
+        }
+        resizeFeedbackController.show(
+            frame: context.frame,
+            section: context.resizeSection
+        )
+    }
+
+    private func clearResizeFeedback() {
+        resizeFeedbackController.hide()
     }
 
     private func beginGesture(at point: CGPoint, resize: Bool) -> Bool {
@@ -569,6 +594,7 @@ final class EventTapController {
 
     private func cancelGesture() {
         clearSnapPreview()
+        clearResizeFeedback()
         if moveDidDrag,
            pendingWindowRestore == nil,
            let targetWindow {

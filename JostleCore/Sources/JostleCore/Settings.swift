@@ -3,6 +3,7 @@ public struct JostleSettings: Codable, Equatable, Sendable {
     public var bringWindowToFront: Bool
     public var middleClickResize: Bool
     public var resizeOnly: Bool
+    public var resizeFeedbackEnabled: Bool
     public var doubleClickActionsEnabled: Bool
     public var snapEnabled: Bool
     public var snapGap: Double
@@ -14,6 +15,7 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         bringWindowToFront: Bool = false,
         middleClickResize: Bool = false,
         resizeOnly: Bool = false,
+        resizeFeedbackEnabled: Bool = true,
         doubleClickActionsEnabled: Bool = true,
         snapEnabled: Bool = true,
         snapGap: Double = 8,
@@ -24,6 +26,7 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         self.bringWindowToFront = bringWindowToFront
         self.middleClickResize = middleClickResize
         self.resizeOnly = resizeOnly
+        self.resizeFeedbackEnabled = resizeFeedbackEnabled
         self.doubleClickActionsEnabled = doubleClickActionsEnabled
         self.snapEnabled = snapEnabled
         self.snapGap = snapGap
@@ -59,6 +62,7 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         case bringWindowToFront
         case middleClickResize
         case resizeOnly
+        case resizeFeedbackEnabled
         case doubleClickActionsEnabled
         case snapEnabled
         case snapGap
@@ -76,6 +80,8 @@ public struct JostleSettings: Codable, Equatable, Sendable {
             ?? Self.defaults.middleClickResize
         resizeOnly = try container.decodeIfPresent(Bool.self, forKey: .resizeOnly)
             ?? Self.defaults.resizeOnly
+        resizeFeedbackEnabled = try container.decodeIfPresent(Bool.self, forKey: .resizeFeedbackEnabled)
+            ?? Self.defaults.resizeFeedbackEnabled
         doubleClickActionsEnabled = try container.decodeIfPresent(
             Bool.self,
             forKey: .doubleClickActionsEnabled
@@ -98,6 +104,7 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         try container.encode(bringWindowToFront, forKey: .bringWindowToFront)
         try container.encode(middleClickResize, forKey: .middleClickResize)
         try container.encode(resizeOnly, forKey: .resizeOnly)
+        try container.encode(resizeFeedbackEnabled, forKey: .resizeFeedbackEnabled)
         try container.encode(doubleClickActionsEnabled, forKey: .doubleClickActionsEnabled)
         try container.encode(snapEnabled, forKey: .snapEnabled)
         try container.encode(snapGap, forKey: .snapGap)

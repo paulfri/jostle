@@ -8,6 +8,7 @@ final class SettingsTests: XCTestCase {
         XCTAssertFalse(JostleSettings.defaults.bringWindowToFront)
         XCTAssertFalse(JostleSettings.defaults.middleClickResize)
         XCTAssertFalse(JostleSettings.defaults.resizeOnly)
+        XCTAssertTrue(JostleSettings.defaults.resizeFeedbackEnabled)
         XCTAssertTrue(JostleSettings.defaults.doubleClickActionsEnabled)
         XCTAssertTrue(JostleSettings.defaults.snapEnabled)
         XCTAssertEqual(JostleSettings.defaults.snapGap, 8)
@@ -21,6 +22,7 @@ final class SettingsTests: XCTestCase {
             bringWindowToFront: true,
             middleClickResize: true,
             resizeOnly: true,
+            resizeFeedbackEnabled: false,
             doubleClickActionsEnabled: false,
             snapEnabled: false,
             snapGap: 14,
@@ -47,6 +49,7 @@ final class SettingsTests: XCTestCase {
 
         XCTAssertEqual(settings.modifiers, [.option])
         XCTAssertTrue(settings.bringWindowToFront)
+        XCTAssertTrue(settings.resizeFeedbackEnabled)
         XCTAssertTrue(settings.doubleClickActionsEnabled)
         XCTAssertTrue(settings.snapEnabled)
         XCTAssertEqual(settings.snapGap, 8)

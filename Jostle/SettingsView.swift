@@ -60,6 +60,8 @@ struct GeneralSettingsPane: View {
                     Text("Resize Only lets modifier-left-drag pass through to the current app.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                    Toggle("Show active resize edge", isOn: resizeFeedbackBinding)
+                        .toggleStyle(.checkbox)
                 }
             }
 
@@ -142,6 +144,15 @@ struct GeneralSettingsPane: View {
             get: { settingsStore.settings.resizeOnly },
             set: { value in
                 settingsStore.update { $0.resizeOnly = value }
+            }
+        )
+    }
+
+    private var resizeFeedbackBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings.resizeFeedbackEnabled },
+            set: { value in
+                settingsStore.update { $0.resizeFeedbackEnabled = value }
             }
         )
     }

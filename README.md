@@ -18,6 +18,7 @@ The default modifier combination is **Command + Control**:
 - Modifier-double-left-click maximizes or restores a window. Modifier-double-click with the configured resize button tiles toward the clicked edge or corner.
 - Press **Escape** during a move or resize gesture to cancel it and restore the exact frame from before the gesture began.
 - Resizing enforces a practical 320×200-point fallback minimum and synchronizes with larger size constraints imposed by the target application.
+- A subtle accent-colored bracket shows the active resize edge or corner; it can be disabled in General Settings.
 
 The compact menu-bar menu lets you enable or disable Jostle, toggle exclusion for the current app, open Settings, or quit. The native macOS Settings window contains modifier keys, resize-button selection, window behavior, snapping controls, reset, and excluded-app management. Tile gaps and screen margins are configurable in the Snapping pane.
 
