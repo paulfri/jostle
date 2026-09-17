@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Validate property lists
+        run: |
+          plutil -lint Jostle/Jostle-Info.plist
+          plutil -lint JostleTests/Info.plist
+
+      - name: Build
+        run: |
+          xcodebuild \
+            -project Jostle.xcodeproj \
+            -scheme Jostle \
+            -configuration Release \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            clean build
+
+      - name: Test Swift app
+        run: |
+          xcodebuild \
+            -project Jostle.xcodeproj \
+            -scheme Jostle \
+            -destination 'platform=macOS' \
+            -derivedDataPath build-tests \
+            CODE_SIGNING_ALLOWED=NO \
+            test
+
+      - name: Test Swift core
+        run: swift test --package-path JostleCore

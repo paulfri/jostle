@@ -1,0 +1,105 @@
+{
+  "$schema": "../../schemas/gesture-case.schema.json",
+  "schemaVersion": 1,
+  "id": "gesture.resize-final-flush",
+  "title": "Flush pending leading-edge resize geometry on mouse-up",
+  "behaviorIds": ["GEO-003", "GEO-005", "GEO-014", "GEO-015", "END-001"],
+  "mode": "parity",
+  "given": {
+    "configuration": {
+      "sessionActive": true,
+      "overallEnabled": true,
+      "requiredModifiers": ["control", "command"],
+      "bringToFront": false,
+      "middleClickResize": false,
+      "resizeOnly": false,
+      "moveThrottleNanoseconds": 16666667,
+      "resizeThrottleNanoseconds": 16666667
+    },
+    "initialState": { "kind": "idle", "gesture": null }
+  },
+  "steps": [
+    {
+      "event": {
+        "type": "mouseDown",
+        "timestampNanoseconds": 5000000000,
+        "modifiers": ["control", "command"],
+        "button": "right",
+        "pointer": { "x": 110, "y": 210 },
+        "target": {
+          "outcome": "usable",
+          "windowId": "window-1",
+          "applicationId": "app-1",
+          "appKey": "com.example.App",
+          "frame": { "x": 100, "y": 200, "width": 600, "height": 300 }
+        }
+      },
+      "expected": {
+        "state": {
+          "kind": "resizing",
+          "gesture": {
+            "windowId": "window-1",
+            "applicationId": "app-1",
+            "frame": { "x": 100, "y": 200, "width": 600, "height": 300 },
+            "horizontalEdge": "left",
+            "verticalEdge": "top",
+            "lastWriteTimeNanoseconds": 5000000000
+          }
+        },
+        "commands": [],
+        "disposition": "consume",
+        "diagnostics": []
+      }
+    },
+    {
+      "event": {
+        "type": "mouseDragged",
+        "timestampNanoseconds": 5005000000,
+        "modifiers": ["control", "command"],
+        "button": "right",
+        "delta": { "x": -10, "y": -8 }
+      },
+      "expected": {
+        "state": {
+          "kind": "resizing",
+          "gesture": {
+            "windowId": "window-1",
+            "applicationId": "app-1",
+            "frame": { "x": 90, "y": 192, "width": 610, "height": 308 },
+            "horizontalEdge": "left",
+            "verticalEdge": "top",
+            "lastWriteTimeNanoseconds": 5000000000
+          }
+        },
+        "commands": [],
+        "disposition": "consume",
+        "diagnostics": []
+      }
+    },
+    {
+      "event": {
+        "type": "mouseUp",
+        "timestampNanoseconds": 5006000000,
+        "modifiers": ["control", "command"],
+        "button": "right"
+      },
+      "expected": {
+        "state": { "kind": "idle", "gesture": null },
+        "commands": [
+          {
+            "type": "setPosition",
+            "windowId": "window-1",
+            "position": { "x": 90, "y": 192 }
+          },
+          {
+            "type": "setSize",
+            "windowId": "window-1",
+            "size": { "width": 610, "height": 308 }
+          }
+        ],
+        "disposition": "consume",
+        "diagnostics": []
+      }
+    }
+  ]
+}

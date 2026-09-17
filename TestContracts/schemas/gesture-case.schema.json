@@ -1,0 +1,288 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jostle.fm/contracts/v1/gesture-case.schema.json",
+  "title": "Jostle gesture contract case",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "id", "title", "behaviorIds", "mode", "given", "steps"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": 1 },
+    "id": { "type": "string", "pattern": "^gesture\\.[a-z0-9]+(?:[.-][a-z0-9]+)*$" },
+    "title": { "type": "string", "minLength": 1 },
+    "behaviorIds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^[A-Z]+-[0-9]{3}$" }
+    },
+    "mode": { "enum": ["parity", "characterization", "approvedDivergence"] },
+    "decision": { "$ref": "#/$defs/decision" },
+    "given": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["configuration", "initialState"],
+      "properties": {
+        "configuration": { "$ref": "#/$defs/configuration" },
+        "initialState": { "$ref": "#/$defs/state" }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/step" }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "mode": { "const": "approvedDivergence" } }, "required": ["mode"] },
+      "then": { "required": ["decision"] }
+    }
+  ],
+  "$defs": {
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reference", "rationale"],
+      "properties": {
+        "reference": { "type": "string", "minLength": 1 },
+        "rationale": { "type": "string", "minLength": 1 }
+      }
+    },
+    "modifier": {
+      "enum": ["control", "option", "shift", "command", "capsLock", "function"]
+    },
+    "configuration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sessionActive",
+        "overallEnabled",
+        "requiredModifiers",
+        "bringToFront",
+        "middleClickResize",
+        "resizeOnly",
+        "moveThrottleNanoseconds",
+        "resizeThrottleNanoseconds"
+      ],
+      "properties": {
+        "sessionActive": { "type": "boolean" },
+        "overallEnabled": { "type": "boolean" },
+        "requiredModifiers": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/modifier" }
+        },
+        "bringToFront": { "type": "boolean" },
+        "middleClickResize": { "type": "boolean" },
+        "resizeOnly": { "type": "boolean" },
+        "moveThrottleNanoseconds": { "type": "integer", "minimum": 0 },
+        "resizeThrottleNanoseconds": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" }
+      }
+    },
+    "size": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["width", "height"],
+      "properties": {
+        "width": { "type": "number" },
+        "height": { "type": "number" }
+      }
+    },
+    "frame": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "width", "height"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "width": { "type": "number" },
+        "height": { "type": "number" }
+      }
+    },
+    "gesture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "windowId",
+        "applicationId",
+        "frame",
+        "horizontalEdge",
+        "verticalEdge",
+        "lastWriteTimeNanoseconds"
+      ],
+      "properties": {
+        "windowId": { "type": "string", "minLength": 1 },
+        "applicationId": { "type": ["string", "null"] },
+        "frame": { "$ref": "#/$defs/frame" },
+        "horizontalEdge": { "enum": ["none", "left", "right"] },
+        "verticalEdge": { "enum": ["none", "top", "bottom"] },
+        "lastWriteTimeNanoseconds": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "gesture"],
+      "properties": {
+        "kind": { "enum": ["idle", "moving", "resizing"] },
+        "gesture": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/gesture" }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "idle" } }, "required": ["kind"] },
+          "then": { "properties": { "gesture": { "type": "null" } } },
+          "else": { "properties": { "gesture": { "$ref": "#/$defs/gesture" } } }
+        }
+      ]
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome"],
+      "properties": {
+        "outcome": { "enum": ["usable", "excluded", "notFound", "queryFailed"] },
+        "windowId": { "type": "string", "minLength": 1 },
+        "applicationId": { "type": ["string", "null"] },
+        "appKey": { "type": ["string", "null"] },
+        "frame": { "$ref": "#/$defs/frame" },
+        "diagnostic": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "outcome": { "const": "usable" } }, "required": ["outcome"] },
+          "then": { "required": ["windowId", "applicationId", "appKey", "frame"] }
+        }
+      ]
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "timestampNanoseconds", "modifiers"],
+      "properties": {
+        "type": {
+          "enum": [
+            "tapDisabledByTimeout",
+            "tapDisabledByUserInput",
+            "mouseDown",
+            "mouseDragged",
+            "mouseUp",
+            "sessionBecameActive",
+            "sessionBecameInactive",
+            "overallEnabled",
+            "overallDisabled",
+            "targetInvalidated",
+            "accessibilityTrustLost"
+          ]
+        },
+        "timestampNanoseconds": { "type": "integer", "minimum": 0 },
+        "modifiers": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/modifier" }
+        },
+        "button": { "enum": ["none", "left", "right", "other"] },
+        "pointer": { "$ref": "#/$defs/point" },
+        "delta": { "$ref": "#/$defs/point" },
+        "target": { "$ref": "#/$defs/target" }
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "enum": [
+            "reenableEventTap",
+            "activateApplication",
+            "raiseWindow",
+            "setPosition",
+            "setSize",
+            "reportFailure"
+          ]
+        },
+        "windowId": { "type": "string", "minLength": 1 },
+        "applicationId": { "type": "string", "minLength": 1 },
+        "position": { "$ref": "#/$defs/point" },
+        "size": { "$ref": "#/$defs/size" },
+        "code": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "activateApplication" } }, "required": ["type"] },
+          "then": { "required": ["applicationId"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "raiseWindow" } }, "required": ["type"] },
+          "then": { "required": ["windowId"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "setPosition" } }, "required": ["type"] },
+          "then": { "required": ["windowId", "position"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "setSize" } }, "required": ["type"] },
+          "then": { "required": ["windowId", "size"] }
+        },
+        {
+          "if": { "properties": { "type": { "const": "reportFailure" } }, "required": ["type"] },
+          "then": { "required": ["code"] }
+        }
+      ]
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "commands", "disposition", "diagnostics"],
+      "properties": {
+        "state": { "$ref": "#/$defs/state" },
+        "commands": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/command" }
+        },
+        "disposition": { "enum": ["passThrough", "consume", "notApplicable"] },
+        "diagnostics": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[A-Z][A-Z0-9_]*$" }
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event"],
+      "properties": {
+        "event": { "$ref": "#/$defs/event" },
+        "expected": { "$ref": "#/$defs/output" },
+        "expectations": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["objective-c", "swift"],
+          "properties": {
+            "objective-c": { "$ref": "#/$defs/output" },
+            "swift": { "$ref": "#/$defs/output" }
+          }
+        }
+      },
+      "oneOf": [
+        { "required": ["expected"] },
+        { "required": ["expectations"] }
+      ]
+    }
+  }
+}

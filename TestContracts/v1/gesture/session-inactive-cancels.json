@@ -1,0 +1,93 @@
+{
+  "$schema": "../../schemas/gesture-case.schema.json",
+  "schemaVersion": 1,
+  "id": "gesture.session-inactive-cancels",
+  "title": "Session resignation cancels pending movement without writing",
+  "behaviorIds": ["LIFE-005", "END-005"],
+  "mode": "parity",
+  "given": {
+    "configuration": {
+      "sessionActive": true,
+      "overallEnabled": true,
+      "requiredModifiers": ["control", "command"],
+      "bringToFront": false,
+      "middleClickResize": false,
+      "resizeOnly": false,
+      "moveThrottleNanoseconds": 16666667,
+      "resizeThrottleNanoseconds": 16666667
+    },
+    "initialState": { "kind": "idle", "gesture": null }
+  },
+  "steps": [
+    {
+      "event": {
+        "type": "mouseDown",
+        "timestampNanoseconds": 6000000000,
+        "modifiers": ["control", "command"],
+        "button": "left",
+        "pointer": { "x": 250, "y": 350 },
+        "target": {
+          "outcome": "usable",
+          "windowId": "window-1",
+          "applicationId": "app-1",
+          "appKey": "com.example.App",
+          "frame": { "x": 100, "y": 200, "width": 800, "height": 600 }
+        }
+      },
+      "expected": {
+        "state": {
+          "kind": "moving",
+          "gesture": {
+            "windowId": "window-1",
+            "applicationId": "app-1",
+            "frame": { "x": 100, "y": 200, "width": 800, "height": 600 },
+            "horizontalEdge": "none",
+            "verticalEdge": "none",
+            "lastWriteTimeNanoseconds": 6000000000
+          }
+        },
+        "commands": [],
+        "disposition": "consume",
+        "diagnostics": []
+      }
+    },
+    {
+      "event": {
+        "type": "mouseDragged",
+        "timestampNanoseconds": 6005000000,
+        "modifiers": ["control", "command"],
+        "button": "left",
+        "delta": { "x": 9, "y": -3 }
+      },
+      "expected": {
+        "state": {
+          "kind": "moving",
+          "gesture": {
+            "windowId": "window-1",
+            "applicationId": "app-1",
+            "frame": { "x": 109, "y": 197, "width": 800, "height": 600 },
+            "horizontalEdge": "none",
+            "verticalEdge": "none",
+            "lastWriteTimeNanoseconds": 6000000000
+          }
+        },
+        "commands": [],
+        "disposition": "consume",
+        "diagnostics": []
+      }
+    },
+    {
+      "event": {
+        "type": "sessionBecameInactive",
+        "timestampNanoseconds": 6006000000,
+        "modifiers": []
+      },
+      "expected": {
+        "state": { "kind": "idle", "gesture": null },
+        "commands": [],
+        "disposition": "notApplicable",
+        "diagnostics": []
+      }
+    }
+  ]
+}

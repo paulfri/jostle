@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jostle — Tension Production Icon</title>
+<style>
+  :root { color-scheme: light dark; --paper:#f3efe6; --ink:#211f1b; --muted:#746e64; --rule:#c9c1b3; --accent:#a43a20; }
+  * { box-sizing:border-box; }
+  body { margin:0; color:var(--ink); background:var(--paper); font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif; -webkit-font-smoothing:antialiased; }
+  main { width:min(1120px,calc(100% - 48px)); margin:auto; padding:58px 0 80px; }
+  header { padding-bottom:38px; border-bottom:1px solid var(--ink); }
+  .eyebrow { margin:0 0 12px; color:var(--accent); font:600 11px/1.2 ui-monospace,"SFMono-Regular",monospace; letter-spacing:.15em; text-transform:uppercase; }
+  h1 { margin:0; font:500 clamp(42px,7vw,78px)/.98 ui-serif,Georgia,serif; letter-spacing:-.04em; }
+  .lede { max-width:720px; margin:24px 0 0; color:var(--muted); font-size:16px; line-height:1.55; }
+  section { padding:40px 0; border-bottom:1px solid var(--rule); }
+  h2 { margin:0 0 24px; font:500 28px/1.1 ui-serif,Georgia,serif; }
+  .scale-row { display:flex; align-items:flex-end; flex-wrap:wrap; gap:28px; min-height:294px; }
+  figure { margin:0; display:grid; justify-items:center; gap:10px; }
+  figcaption { color:var(--muted); font:500 10px/1 ui-monospace,"SFMono-Regular",monospace; }
+  img { display:block; }
+  .app { filter:drop-shadow(0 12px 16px rgba(61,26,14,.16)); }
+  .menu-grid { display:grid; grid-template-columns:repeat(2,minmax(260px,1fr)); gap:18px; }
+  .menubar { height:38px; padding:0 14px; display:flex; align-items:center; justify-content:flex-end; gap:10px; border:1px solid rgba(0,0,0,.14); box-shadow:0 4px 14px rgba(46,38,28,.08); font-size:12px; }
+  .menubar.light { color:#181817; background:#f6f6f3; }
+  .menubar.dark { color:#f6f5f0; background:#2b2b29; border-color:rgba(255,255,255,.12); }
+  .menu-icon { width:16px; height:16px; }
+  .dark .menu-icon { filter:invert(1); }
+  .pixel-tests { display:flex; flex-wrap:wrap; gap:28px; margin-top:28px; }
+  .pixel-box { width:272px; padding:8px; background:#fff; border:1px solid var(--rule); }
+  .pixel-box.dark { background:#282826; }
+  .nearest { width:256px; height:256px; image-rendering:pixelated; }
+  .note { max-width:700px; margin:20px 0 0; color:var(--muted); font-size:13px; line-height:1.55; }
+  .tokens { display:flex; flex-wrap:wrap; gap:14px; }
+  .token { display:flex; align-items:center; gap:8px; color:var(--muted); font:500 11px/1 ui-monospace,monospace; }
+  .swatch { width:18px; height:18px; border:1px solid rgba(0,0,0,.15); }
+  @media (max-width:700px) { .menu-grid { grid-template-columns:1fr; } }
+  @media (prefers-color-scheme:dark) { :root { --paper:#201e1a; --ink:#eee9df; --muted:#ada59a; --rule:#4a453d; } .pixel-box { background:#f7f6f2; } }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <p class="eyebrow">Jostle / Production artwork / Tension</p>
+  <h1>A window held under tension.</h1>
+  <p class="lede">Opposing cream brackets establish the frame. A warm gold diagonal pulls across it, with perpendicular grips at each end to suggest force rather than a generic four-way movement control.</p>
+</header>
+<section>
+  <h2>App icon reduction</h2>
+  <div class="scale-row">
+    <figure><img class="app" src="../../Jostle/Images.xcassets/AppIcon.appiconset/icon_256x256.png" width="256" height="256" alt="Tension app icon at 256 pixels"><figcaption>256 PX</figcaption></figure>
+    <figure><img class="app" src="../../Jostle/Images.xcassets/AppIcon.appiconset/icon_128x128.png" width="128" height="128" alt="Tension app icon at 128 pixels"><figcaption>128 PX</figcaption></figure>
+    <figure><img class="app" src="../../Jostle/Images.xcassets/AppIcon.appiconset/icon_32x32@2.png" width="64" height="64" alt="Tension app icon at 64 pixels"><figcaption>64 PX</figcaption></figure>
+    <figure><img class="app" src="../../Jostle/Images.xcassets/AppIcon.appiconset/icon_32x32.png" width="32" height="32" alt="Tension app icon at 32 pixels"><figcaption>32 PX</figcaption></figure>
+    <figure><img class="app" src="../../Jostle/Images.xcassets/AppIcon.appiconset/icon_16x16.png" width="16" height="16" alt="Tension app icon at 16 pixels"><figcaption>16 PX</figcaption></figure>
+  </div>
+  <div class="tokens"><span class="token"><i class="swatch" style="background:#a43a20"></i>#A43A20</span><span class="token"><i class="swatch" style="background:#FFF1DC"></i>#FFF1DC</span><span class="token"><i class="swatch" style="background:#F5B75D"></i>#F5B75D</span></div>
+  <p class="note">Each raster slot is rendered independently with optical minimum stroke weights at 16 and 32 pixels. Transparent outer corners, restrained depth, and a quiet inset highlight provide the native macOS finish.</p>
+</section>
+<section>
+  <h2>Template menu icon</h2>
+  <div class="menu-grid">
+    <div class="menubar light"><span>Wed 4:12</span><img class="menu-icon" src="../../Jostle/Images.xcassets/MenuIcon.imageset/menu_icon.png" alt="Menu icon on light material"></div>
+    <div class="menubar dark"><span>Wed 4:12</span><img class="menu-icon" src="../../Jostle/Images.xcassets/MenuIcon.imageset/menu_icon@2x.png" alt="Menu icon on dark material"></div>
+  </div>
+  <div class="pixel-tests">
+    <figure><div class="pixel-box"><img class="nearest" src="../../Jostle/Images.xcassets/MenuIcon.imageset/menu_icon.png" alt="16 pixel menu icon enlarged with nearest-neighbor rendering"></div><figcaption>1× PIXEL INSPECTION</figcaption></figure>
+    <figure><div class="pixel-box dark"><img class="nearest menu-icon" style="width:256px;height:256px" src="../../Jostle/Images.xcassets/MenuIcon.imageset/menu_icon@2x.png" alt="32 pixel menu icon enlarged on dark material"></div><figcaption>2× PIXEL INSPECTION</figcaption></figure>
+  </div>
+  <p class="note">The asset contains only black plus alpha. AppKit applies menu-bar appearance and highlight color through explicit template rendering.</p>
+</section>
+</main>
+</body>
+</html>
