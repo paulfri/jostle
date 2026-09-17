@@ -158,7 +158,8 @@ echo "==> Creating DMG"
 mkdir -p "$DMG_ROOT"
 ditto "$APP_PATH" "$DMG_ROOT/Jostle.app"
 ln -s /Applications "$DMG_ROOT/Applications"
-if diskutil image create from --help >/dev/null 2>&1; then
+DISKUTIL_IMAGE_HELP="$(diskutil image create from --help 2>&1 || true)"
+if grep -q -- '--volumeName' <<< "$DISKUTIL_IMAGE_HELP"; then
     diskutil image create from \
         --volumeName "Jostle $VERSION" \
         --format UDZO \
