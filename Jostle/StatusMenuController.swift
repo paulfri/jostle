@@ -44,7 +44,10 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         menu.delegate = self
         statusItem.menu = menu
         let image = NSImage(named: "MenuIcon")
-            ?? NSImage(systemSymbolName: "rectangle.on.rectangle.angled", accessibilityDescription: "Jostle")
+            ?? NSImage(
+                systemSymbolName: "rectangle.on.rectangle.angled",
+                accessibilityDescription: applicationName
+            )
         image?.isTemplate = true
         statusItem.button?.image = image
         settingsStore.onChange = { [weak self] in self?.refresh() }

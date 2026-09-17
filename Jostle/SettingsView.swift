@@ -72,7 +72,7 @@ struct GeneralSettingsPane: View {
 
             PreferenceRow(label: "") {
                 VStack(alignment: .leading, spacing: 6) {
-                    Toggle("Start Jostle at login", isOn: startAtLoginBinding)
+                    Toggle("Start \(AppBrand.applicationName) at login", isOn: startAtLoginBinding)
                         .toggleStyle(.checkbox)
                     if let errorMessage = loginItemController.errorMessage {
                         Text(errorMessage)
@@ -95,7 +95,7 @@ struct GeneralSettingsPane: View {
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
         .frame(width: 660, height: 470)
-        .alert("Restore Jostle defaults?", isPresented: $confirmsReset) {
+        .alert("Restore \(AppBrand.applicationName) defaults?", isPresented: $confirmsReset) {
             Button("Restore", role: .destructive) {
                 settingsStore.reset()
             }
@@ -290,7 +290,7 @@ struct ExcludedApplicationsSettingsPane: View {
         VStack(alignment: .leading, spacing: 14) {
             Text("Excluded Applications")
                 .font(.headline)
-            Text("Jostle ignores windows belonging to these applications.")
+            Text("\(AppBrand.applicationName) ignores windows belonging to these applications.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
 
@@ -301,7 +301,7 @@ struct ExcludedApplicationsSettingsPane: View {
                         .foregroundStyle(.secondary)
                     Text("No excluded applications")
                         .font(.headline)
-                    Text("After dragging a window, choose Exclude from the Jostle menu.")
+                    Text("After dragging a window, choose Exclude from the \(AppBrand.applicationName) menu.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
