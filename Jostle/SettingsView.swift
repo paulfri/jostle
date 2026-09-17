@@ -3,6 +3,7 @@ import SwiftUI
 
 struct GeneralSettingsPane: View {
     @ObservedObject var settingsStore: SettingsStore
+    @ObservedObject var loginItemController: LoginItemController
     @State private var confirmsReset = false
 
     private let modifierOptions: [(modifier: JostleCore.Modifier, title: String)] = [
@@ -62,6 +63,23 @@ struct GeneralSettingsPane: View {
                 }
             }
 
+            Divider()
+
+            Text("Startup")
+                .font(.headline)
+
+            PreferenceRow(label: "") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Toggle("Start Jostle at login", isOn: startAtLoginBinding)
+                        .toggleStyle(.checkbox)
+                    if let errorMessage = loginItemController.errorMessage {
+                        Text(errorMessage)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                }
+            }
+
             Spacer(minLength: 0)
             Divider()
 
@@ -74,7 +92,7 @@ struct GeneralSettingsPane: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
-        .frame(width: 660, height: 410)
+        .frame(width: 660, height: 470)
         .alert("Restore Jostle defaults?", isPresented: $confirmsReset) {
             Button("Restore", role: .destructive) {
                 settingsStore.reset()
@@ -125,6 +143,13 @@ struct GeneralSettingsPane: View {
             set: { value in
                 settingsStore.update { $0.resizeOnly = value }
             }
+        )
+    }
+
+    private var startAtLoginBinding: Binding<Bool> {
+        Binding(
+            get: { loginItemController.isEnabled },
+            set: { loginItemController.setEnabled($0) }
         )
     }
 }
@@ -200,7 +225,7 @@ struct ExcludedApplicationsSettingsPane: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
-        .frame(width: 660, height: 410)
+        .frame(width: 660, height: 470)
     }
 }
 

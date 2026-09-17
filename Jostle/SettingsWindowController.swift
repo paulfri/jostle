@@ -2,13 +2,19 @@ import AppKit
 import SwiftUI
 
 final class SettingsWindowController: NSWindowController {
-    init(settingsStore: SettingsStore) {
+    private let loginItemController: LoginItemController
+
+    init(settingsStore: SettingsStore, loginItemController: LoginItemController) {
+        self.loginItemController = loginItemController
         let tabController = NSTabViewController()
         tabController.tabStyle = .toolbar
         tabController.transitionOptions = []
 
         let generalController = NSHostingController(
-            rootView: GeneralSettingsPane(settingsStore: settingsStore)
+            rootView: GeneralSettingsPane(
+                settingsStore: settingsStore,
+                loginItemController: loginItemController
+            )
         )
         let generalItem = NSTabViewItem(viewController: generalController)
         generalItem.label = "General"
@@ -30,7 +36,7 @@ final class SettingsWindowController: NSWindowController {
         tabController.addTabViewItem(exclusionsItem)
 
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 660, height: 410),
+            contentRect: NSRect(x: 0, y: 0, width: 660, height: 470),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
@@ -42,7 +48,7 @@ final class SettingsWindowController: NSWindowController {
         window.tabbingMode = .disallowed
         window.standardWindowButton(.miniaturizeButton)?.isHidden = true
         window.standardWindowButton(.zoomButton)?.isHidden = true
-        window.setContentSize(NSSize(width: 660, height: 410))
+        window.setContentSize(NSSize(width: 660, height: 470))
         window.center()
 
         super.init(window: window)
@@ -54,6 +60,7 @@ final class SettingsWindowController: NSWindowController {
     }
 
     func present() {
+        loginItemController.refresh()
         showWindow(nil)
         window?.makeKeyAndOrderFront(nil)
         NSApplication.shared.activate(ignoringOtherApps: true)

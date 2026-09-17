@@ -15,6 +15,7 @@
 		A10000000000000000000006 /* StatusMenuController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* StatusMenuController.swift */; };
 		A1000000000000000000000D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* SettingsView.swift */; };
 		A1000000000000000000000F /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* SettingsWindowController.swift */; };
+		A10000000000000000000010 /* LoginItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000015 /* LoginItemController.swift */; };
 		A10000000000000000000007 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* Images.xcassets */; };
 		A10000000000000000000008 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* InfoPlist.strings */; };
 		A10000000000000000000009 /* JostleCore in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000002 /* JostleCore */; };
@@ -43,6 +44,7 @@
 		A20000000000000000000006 /* StatusMenuController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMenuController.swift; sourceTree = "<group>"; };
 		A20000000000000000000012 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A20000000000000000000014 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
+		A20000000000000000000015 /* LoginItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginItemController.swift; sourceTree = "<group>"; };
 		A20000000000000000000007 /* Jostle-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Jostle-Info.plist"; sourceTree = "<group>"; };
 		A20000000000000000000008 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		A2000000000000000000000A /* SettingsStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStoreTests.swift; sourceTree = "<group>"; };
@@ -99,6 +101,7 @@
 				A20000000000000000000006 /* StatusMenuController.swift */,
 				A20000000000000000000012 /* SettingsView.swift */,
 				A20000000000000000000014 /* SettingsWindowController.swift */,
+				A20000000000000000000015 /* LoginItemController.swift */,
 				A20000000000000000000008 /* Images.xcassets */,
 				A20000000000000000000007 /* Jostle-Info.plist */,
 				A20000000000000000000009 /* InfoPlist.strings */,
@@ -243,6 +246,7 @@
 				A10000000000000000000006 /* StatusMenuController.swift in Sources */,
 				A1000000000000000000000D /* SettingsView.swift in Sources */,
 				A1000000000000000000000F /* SettingsWindowController.swift in Sources */,
+				A10000000000000000000010 /* LoginItemController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

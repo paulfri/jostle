@@ -3,6 +3,7 @@ import AppKit
 final class StatusMenuController: NSObject {
     private let settingsStore: SettingsStore
     private let eventTapController: EventTapController
+    private let loginItemController: LoginItemController
     private let onOpenSettings: () -> Void
     private let statusItem: NSStatusItem
     private let menu = NSMenu()
@@ -15,10 +16,12 @@ final class StatusMenuController: NSObject {
     init(
         settingsStore: SettingsStore,
         eventTapController: EventTapController,
+        loginItemController: LoginItemController,
         onOpenSettings: @escaping () -> Void
     ) {
         self.settingsStore = settingsStore
         self.eventTapController = eventTapController
+        self.loginItemController = loginItemController
         self.onOpenSettings = onOpenSettings
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         super.init()
@@ -30,11 +33,13 @@ final class StatusMenuController: NSObject {
         image?.isTemplate = true
         statusItem.button?.image = image
         settingsStore.onChange = { [weak self] in self?.refresh() }
+        loginItemController.onChange = { [weak self] in self?.refresh() }
         refresh()
     }
 
     deinit {
         settingsStore.onChange = nil
+        loginItemController.onChange = nil
         NSStatusBar.system.removeStatusItem(statusItem)
     }
 
@@ -71,6 +76,15 @@ final class StatusMenuController: NSObject {
         enabledItem.state = accessibilityAvailable && !overallDisabled ? .on : .off
         enabledItem.isEnabled = accessibilityAvailable
         menu.addItem(enabledItem)
+
+        let startAtLoginItem = NSMenuItem(
+            title: "Start at Login",
+            action: #selector(toggleStartAtLogin(_:)),
+            keyEquivalent: ""
+        )
+        startAtLoginItem.target = self
+        startAtLoginItem.state = loginItemController.isEnabled ? .on : .off
+        menu.addItem(startAtLoginItem)
         menu.addItem(.separator())
 
         let excludeItem = NSMenuItem(
@@ -111,6 +125,19 @@ final class StatusMenuController: NSObject {
         overallDisabled.toggle()
         eventTapController.setEnabled(!overallDisabled)
         refresh()
+    }
+
+    @objc private func toggleStartAtLogin(_ sender: NSMenuItem) {
+        loginItemController.setEnabled(!loginItemController.isEnabled)
+        guard let errorMessage = loginItemController.errorMessage else { return }
+
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "Couldn’t Update Start at Login"
+        alert.informativeText = errorMessage
+        alert.runModal()
+        loginItemController.clearError()
     }
 
     @objc private func excludeRecentApplication(_ sender: NSMenuItem) {

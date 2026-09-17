@@ -38,6 +38,7 @@ final class StatusMenuControllerTests: XCTestCase {
 
         XCTAssertEqual(commandItems(in: controller).map(\.title), [
             "Jostle Enabled",
+            "Start at Login",
             "Exclude Current App",
             "Settings…",
             "Quit Jostle"
@@ -47,6 +48,23 @@ final class StatusMenuControllerTests: XCTestCase {
         )
         XCTAssertEqual(settingsItem.keyEquivalent, ",")
         XCTAssertEqual(settingsItem.keyEquivalentModifierMask, [.command])
+    }
+
+    func testStartAtLoginMenuItemTogglesTheLoginItemService() throws {
+        let service = TestLoginItemService()
+        let controller = makeController(loginItemService: service)
+        let item = try XCTUnwrap(
+            commandItems(in: controller).first { $0.title == "Start at Login" }
+        )
+        XCTAssertEqual(item.state, .off)
+
+        XCTAssertTrue(NSApplication.shared.sendAction(item.action!, to: item.target, from: item))
+
+        XCTAssertTrue(service.isEnabled)
+        XCTAssertEqual(
+            commandItems(in: controller).first { $0.title == "Start at Login" }?.state,
+            .on
+        )
     }
 
     func testRecentApplicationAndSettingsChangesRefreshMenu() throws {
@@ -80,6 +98,7 @@ final class StatusMenuControllerTests: XCTestCase {
         XCTAssertEqual(commandItems(in: controller).map(\.title), [
             "Accessibility Access Required",
             "Jostle Enabled",
+            "Start at Login",
             "Exclude Current App",
             "Settings…",
             "Quit Jostle"
@@ -90,6 +109,7 @@ final class StatusMenuControllerTests: XCTestCase {
 
     private func makeController(
         settingsStore: SettingsStore? = nil,
+        loginItemService: LoginItemServicing? = nil,
         onOpenSettings: @escaping () -> Void = {}
     ) -> StatusMenuController {
         let store = settingsStore ?? SettingsStore(userDefaults: userDefaults)
@@ -100,14 +120,26 @@ final class StatusMenuControllerTests: XCTestCase {
                 resizeThrottleInterval: 1
             )
         )
+        let loginItemController = LoginItemController(
+            service: loginItemService ?? TestLoginItemService()
+        )
         return StatusMenuController(
             settingsStore: store,
             eventTapController: eventTapController,
+            loginItemController: loginItemController,
             onOpenSettings: onOpenSettings
         )
     }
 
     private func commandItems(in controller: StatusMenuController) -> [NSMenuItem] {
         controller.renderedMenu.items.filter { !$0.isSeparatorItem }
+    }
+}
+
+private final class TestLoginItemService: LoginItemServicing {
+    var isEnabled = false
+
+    func setEnabled(_ enabled: Bool) throws {
+        isEnabled = enabled
     }
 }

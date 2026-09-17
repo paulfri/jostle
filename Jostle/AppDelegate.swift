@@ -4,6 +4,7 @@ import JostleCore
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let settingsStore = SettingsStore()
+    let loginItemController = LoginItemController()
     private var eventTapController: EventTapController?
     private var statusMenuController: StatusMenuController?
     private var settingsWindowController: SettingsWindowController?
@@ -17,10 +18,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 resizeThrottleInterval: throttleInterval
             )
         )
-        let settingsWindowController = SettingsWindowController(settingsStore: settingsStore)
+        let settingsWindowController = SettingsWindowController(
+            settingsStore: settingsStore,
+            loginItemController: loginItemController
+        )
         let statusMenuController = StatusMenuController(
             settingsStore: settingsStore,
             eventTapController: eventTapController,
+            loginItemController: loginItemController,
             onOpenSettings: { [weak settingsWindowController] in
                 settingsWindowController?.present()
             }
