@@ -1,5 +1,4 @@
 import AppKit
-import JostleCore
 
 final class StatusMenuController: NSObject {
     private let settingsStore: SettingsStore
@@ -9,6 +8,8 @@ final class StatusMenuController: NSObject {
     private var recentApplication: RunningApplicationInfo?
     private var overallDisabled = false
     private var accessibilityAvailable = true
+
+    var renderedMenu: NSMenu { menu }
 
     init(settingsStore: SettingsStore, eventTapController: EventTapController) {
         self.settingsStore = settingsStore
@@ -22,7 +23,13 @@ final class StatusMenuController: NSObject {
             ?? NSImage(systemSymbolName: "rectangle.on.rectangle.angled", accessibilityDescription: "Jostle")
         image?.isTemplate = true
         statusItem.button?.image = image
+        settingsStore.onChange = { [weak self] in self?.refresh() }
         refresh()
+    }
+
+    deinit {
+        settingsStore.onChange = nil
+        NSStatusBar.system.removeStatusItem(statusItem)
     }
 
     func setRecentApplication(_ application: RunningApplicationInfo) {
@@ -36,86 +43,62 @@ final class StatusMenuController: NSObject {
     }
 
     func refresh() {
-        let settings = settingsStore.settings
-        let model = MenuPolicy.model(for: MenuModelInput(
-            modifiers: settings.modifiers,
-            bringWindowToFront: settings.bringWindowToFront,
-            middleClickResize: settings.middleClickResize,
-            resizeOnly: settings.resizeOnly,
-            overallDisabled: overallDisabled,
-            recentApplicationKey: recentApplication?.key,
-            recentApplicationName: recentApplication?.name,
-            disabledApplications: settings.excludedApplications
-        ))
-
         menu.removeAllItems()
-        menu.addItem(item(from: model.application))
+
         if !accessibilityAvailable {
-            let permissionItem = NSMenuItem(title: "Accessibility Access Required", action: nil, keyEquivalent: "")
-            permissionItem.isEnabled = false
+            let permissionItem = NSMenuItem(
+                title: "Accessibility Access Required",
+                action: #selector(openAccessibilitySettings(_:)),
+                keyEquivalent: ""
+            )
+            permissionItem.target = self
             menu.addItem(permissionItem)
+            menu.addItem(.separator())
         }
-        menu.addItem(.separator())
 
-        let disabledItem = item(
-            from: model.overallDisabled,
-            action: #selector(toggleOverallDisabled(_:))
+        let enabledItem = NSMenuItem(
+            title: "Jostle Enabled",
+            action: #selector(toggleOverallDisabled(_:)),
+            keyEquivalent: ""
         )
-        menu.addItem(disabledItem)
+        enabledItem.target = self
+        enabledItem.state = accessibilityAvailable && !overallDisabled ? .on : .off
+        enabledItem.isEnabled = accessibilityAvailable
+        menu.addItem(enabledItem)
         menu.addItem(.separator())
 
-        for modifier in model.modifiers {
-            let menuItem = item(from: modifier, action: #selector(toggleModifier(_:)))
-            menuItem.representedObject = modifier.id
-            menu.addItem(menuItem)
-        }
-        menu.addItem(.separator())
-
-        for feature in model.features {
-            let menuItem = item(from: feature, action: #selector(toggleFeature(_:)))
-            menuItem.representedObject = feature.id
-            menu.addItem(menuItem)
-        }
-        menu.addItem(.separator())
-
-        let recentItem = NSMenuItem(
-            title: model.recentApplication.title,
+        let excludeItem = NSMenuItem(
+            title: recentApplication.map { "Exclude \($0.name)" } ?? "Exclude Current App",
             action: #selector(excludeRecentApplication(_:)),
             keyEquivalent: ""
         )
-        recentItem.target = self
-        recentItem.isEnabled = model.recentApplication.enabled
-        recentItem.representedObject = model.recentApplication.key
-        menu.addItem(recentItem)
+        excludeItem.target = self
+        excludeItem.isEnabled = canExcludeRecentApplication
+        menu.addItem(excludeItem)
 
-        let exclusionsItem = NSMenuItem(title: "Re-enable for", action: nil, keyEquivalent: "")
-        exclusionsItem.isEnabled = model.disabledApplications.enabled
-        let exclusionsMenu = NSMenu()
-        exclusionsMenu.autoenablesItems = false
-        for application in model.disabledApplications.items {
-            let menuItem = NSMenuItem(
-                title: application.title,
-                action: #selector(includeApplication(_:)),
-                keyEquivalent: ""
-            )
-            menuItem.target = self
-            menuItem.representedObject = application.key
-            exclusionsMenu.addItem(menuItem)
-        }
-        exclusionsItem.submenu = exclusionsMenu
-        menu.addItem(exclusionsItem)
+        let settingsItem = NSMenuItem(
+            title: "Settings…",
+            action: #selector(openSettings(_:)),
+            keyEquivalent: ","
+        )
+        settingsItem.target = self
+        settingsItem.keyEquivalentModifierMask = [.command]
+        menu.addItem(settingsItem)
         menu.addItem(.separator())
 
-        menu.addItem(item(from: model.reset, action: #selector(reset(_:))))
-        menu.addItem(item(from: model.exit, action: #selector(exit(_:))))
+        let quitItem = NSMenuItem(
+            title: "Quit Jostle",
+            action: #selector(quit(_:)),
+            keyEquivalent: "q"
+        )
+        quitItem.target = self
+        quitItem.keyEquivalentModifierMask = [.command]
+        menu.addItem(quitItem)
     }
 
-    private func item(from model: MenuItemModel, action: Selector? = nil) -> NSMenuItem {
-        let item = NSMenuItem(title: model.title, action: action, keyEquivalent: "")
-        item.target = action == nil ? nil : self
-        item.state = model.checked ? .on : .off
-        item.isEnabled = model.enabled
-        return item
+    private var canExcludeRecentApplication: Bool {
+        guard accessibilityAvailable, let recentApplication else { return false }
+        return settingsStore.settings.excludedApplications[recentApplication.key] == nil
     }
 
     @objc private func toggleOverallDisabled(_ sender: NSMenuItem) {
@@ -124,39 +107,8 @@ final class StatusMenuController: NSObject {
         refresh()
     }
 
-    @objc private func toggleModifier(_ sender: NSMenuItem) {
-        guard let identifier = sender.representedObject as? String,
-              let modifier = Self.modifier(for: identifier) else {
-            return
-        }
-        settingsStore.update { settings in
-            settings.setModifier(modifier, enabled: !settings.modifiers.contains(modifier))
-        }
-        refresh()
-    }
-
-    @objc private func toggleFeature(_ sender: NSMenuItem) {
-        guard let identifier = sender.representedObject as? String else { return }
-        settingsStore.update { settings in
-            switch identifier {
-            case "bringWindowToFront":
-                settings.bringWindowToFront.toggle()
-            case "middleClickResize":
-                settings.middleClickResize.toggle()
-            case "resizeOnly":
-                settings.resizeOnly.toggle()
-            default:
-                break
-            }
-        }
-        refresh()
-    }
-
     @objc private func excludeRecentApplication(_ sender: NSMenuItem) {
-        guard let recentApplication,
-              sender.representedObject as? String == recentApplication.key else {
-            return
-        }
+        guard canExcludeRecentApplication, let recentApplication else { return }
         settingsStore.update { settings in
             settings.setApplicationExcluded(
                 key: recentApplication.key,
@@ -164,36 +116,27 @@ final class StatusMenuController: NSObject {
                 excluded: true
             )
         }
-        refresh()
     }
 
-    @objc private func includeApplication(_ sender: NSMenuItem) {
-        guard let key = sender.representedObject as? String else { return }
-        settingsStore.update { settings in
-            settings.setApplicationExcluded(key: key, displayName: nil, excluded: false)
+    @objc private func openSettings(_ sender: NSMenuItem) {
+        NSApplication.shared.activate(ignoringOtherApps: true)
+        NSApplication.shared.sendAction(
+            Selector(("showSettingsWindow:")),
+            to: nil,
+            from: self
+        )
+    }
+
+    @objc private func openAccessibilitySettings(_ sender: NSMenuItem) {
+        guard let URL = URL(
+            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+        ) else {
+            return
         }
-        refresh()
+        NSWorkspace.shared.open(URL)
     }
 
-    @objc private func reset(_ sender: NSMenuItem) {
-        settingsStore.reset()
-        overallDisabled = false
-        eventTapController.setEnabled(true)
-        refresh()
-    }
-
-    @objc private func exit(_ sender: NSMenuItem) {
+    @objc private func quit(_ sender: NSMenuItem) {
         NSApplication.shared.terminate(nil)
-    }
-
-    private static func modifier(for identifier: String) -> Modifier? {
-        switch identifier {
-        case "option": return .option
-        case "command": return .command
-        case "control": return .control
-        case "shift": return .shift
-        case "function": return .function
-        default: return nil
-        }
     }
 }

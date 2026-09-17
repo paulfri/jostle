@@ -1,12 +1,14 @@
+import Combine
 import Foundation
 import JostleCore
 
-final class SettingsStore {
+final class SettingsStore: ObservableObject {
     static let storageKey = "Jostle.settings"
 
     private let userDefaults: UserDefaults
     private let storageKey: String
-    private(set) var settings: JostleSettings
+    @Published private(set) var settings: JostleSettings
+    var onChange: (() -> Void)?
 
     init(
         userDefaults: UserDefaults = .standard,
@@ -39,5 +41,6 @@ final class SettingsStore {
         }
         userDefaults.set(data, forKey: storageKey)
         settings = updated
+        onChange?()
     }
 }

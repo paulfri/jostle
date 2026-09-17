@@ -3,11 +3,11 @@ import ApplicationServices
 import JostleCore
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    let settingsStore = SettingsStore()
     private var eventTapController: EventTapController?
     private var statusMenuController: StatusMenuController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let settingsStore = SettingsStore()
         let throttleInterval = Self.minimumRefreshIntervalNanoseconds()
         let eventTapController = EventTapController(
             settingsStore: settingsStore,

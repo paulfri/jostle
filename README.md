@@ -14,14 +14,7 @@ The default modifier combination is **Command + Control**:
 - **Right-drag** anywhere inside a window to resize it.
 - The resize direction is chosen from the region where the drag starts.
 
-The menu bar menu can:
-
-- Change the required modifier keys.
-- Use middle-click instead of right-click for resizing.
-- Raise a manipulated window to the front.
-- Enable resize-only mode.
-- Exclude individual apps and re-enable them later.
-- Temporarily disable Jostle or reset its settings.
+The compact menu-bar menu lets you enable or disable Jostle, exclude the most recently manipulated app, open Settings, or quit. The native macOS Settings window contains modifier keys, resize-button selection, window behavior, reset, and excluded-app management.
 
 App exclusions use a bundle identifier when one is available and otherwise use the process name, which supports unbundled Wine and CrossOver processes.
 
@@ -61,7 +54,7 @@ xcodebuild \
 swift test --package-path JostleCore
 ```
 
-`JostleCore` contains deterministic geometry, event-routing, gesture, settings, and menu policy. The app target contains the AppKit, Core Graphics event-tap, Accessibility, and `UserDefaults` adapters.
+`JostleCore` contains deterministic geometry, event-routing, gesture, and settings policy. The app target contains the SwiftUI Settings scene plus AppKit, Core Graphics event-tap, Accessibility, and `UserDefaults` adapters.
 
 ## Settings
 
