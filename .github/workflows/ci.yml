@@ -36,7 +36,7 @@ jobs:
         run: |
           xcodebuild \
             -project Jostle.xcodeproj \
-            -scheme Jostle \
+            -scheme 'Jostle Development' \
             -destination 'platform=macOS' \
             -derivedDataPath build-tests \
             CODE_SIGNING_ALLOWED=NO \

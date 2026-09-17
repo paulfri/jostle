@@ -10,6 +10,7 @@ CONFIGURATION="Release"
 TEAM_ID="${DEVELOPMENT_TEAM:-7KGB78B22T}"
 IDENTITY="${DEVELOPER_IDENTITY:-Developer ID Application: Paul Friedman (7KGB78B22T)}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-JostleNotary}"
+NOTARY_KEYCHAIN="${NOTARY_KEYCHAIN:-}"
 SKIP_TESTS="${SKIP_TESTS:-0}"
 SKIP_NOTARIZATION="${SKIP_NOTARIZATION:-0}"
 ALLOW_DIRTY="${ALLOW_DIRTY:-0}"
@@ -45,6 +46,11 @@ fi
 if ! security find-identity -v -p codesigning | grep -Fq "\"$IDENTITY\""; then
     echo "error: signing identity is not available: $IDENTITY" >&2
     exit 1
+fi
+
+NOTARY_ARGUMENTS=(--keychain-profile "$NOTARY_PROFILE")
+if [[ -n "$NOTARY_KEYCHAIN" ]]; then
+    NOTARY_ARGUMENTS+=(--keychain "$NOTARY_KEYCHAIN")
 fi
 
 SUFFIX=""
@@ -122,12 +128,19 @@ SIGNATURE_DETAILS="$(codesign -dv --verbose=4 "$APP_PATH" 2>&1)"
 grep -Fq "Authority=$IDENTITY" <<< "$SIGNATURE_DETAILS"
 grep -Fq "TeamIdentifier=$TEAM_ID" <<< "$SIGNATURE_DETAILS"
 grep -Eq 'flags=.*runtime' <<< "$SIGNATURE_DETAILS"
+ARCHITECTURES="$(lipo -archs "$APP_PATH/Contents/MacOS/Jostle")"
+for architecture in arm64 x86_64; do
+    if [[ " $ARCHITECTURES " != *" $architecture "* ]]; then
+        echo "error: release binary is missing $architecture; found '$ARCHITECTURES'" >&2
+        exit 1
+    fi
+done
 
 if [[ "$SKIP_NOTARIZATION" != "1" ]]; then
     echo "==> Submitting application for notarization"
     ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$PRE_NOTARY_ZIP"
     xcrun notarytool submit "$PRE_NOTARY_ZIP" \
-        --keychain-profile "$NOTARY_PROFILE" \
+        "${NOTARY_ARGUMENTS[@]}" \
         --wait
     xcrun stapler staple "$APP_PATH"
     xcrun stapler validate "$APP_PATH"
@@ -165,7 +178,7 @@ codesign --verify --verbose=2 "$FINAL_DMG"
 if [[ "$SKIP_NOTARIZATION" != "1" ]]; then
     echo "==> Submitting DMG for notarization"
     xcrun notarytool submit "$FINAL_DMG" \
-        --keychain-profile "$NOTARY_PROFILE" \
+        "${NOTARY_ARGUMENTS[@]}" \
         --wait
     xcrun stapler staple "$FINAL_DMG"
     xcrun stapler validate "$FINAL_DMG"

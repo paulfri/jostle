@@ -4,7 +4,7 @@ Move and resize macOS windows by modifier-dragging anywhere inside them.
 
 Jostle is a small native Swift menu-bar utility inspired by X11/Linux window managers and [Easy Move+Resize](https://github.com/dmarcotte/easy-move-resize).
 
-> **Current status:** source-only preview. Binary releases are not published yet.
+> **Current status:** preview. Signed and notarized builds are published through [GitHub Releases](https://github.com/paulfri/jostle/releases).
 
 ## Usage
 
