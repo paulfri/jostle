@@ -11,8 +11,7 @@ enum ResizeIndicatorGeometry {
         for section: ResizeSection,
         in size: Size,
         length: Double = 36,
-        inset: Double = 8,
-        cornerClearance: Double = 8
+        inset: Double = 12
     ) -> [ResizeIndicatorSegment] {
         guard section != .none, size.width > 0, size.height > 0 else { return [] }
 
@@ -20,38 +19,26 @@ enum ResizeIndicatorGeometry {
         let right = max(left, size.width - left)
         let bottom = min(max(0, inset), size.height / 2)
         let top = max(bottom, size.height - bottom)
-        let horizontalSpan = max(0, right - left)
-        let verticalSpan = max(0, top - bottom)
-        let horizontalLength = min(max(0, length), horizontalSpan)
-        let verticalLength = min(max(0, length), verticalSpan)
-        let horizontalClearance = min(max(0, cornerClearance), horizontalSpan)
-        let verticalClearance = min(max(0, cornerClearance), verticalSpan)
-        let cornerHorizontalLength = min(horizontalLength, horizontalSpan - horizontalClearance)
-        let cornerVerticalLength = min(verticalLength, verticalSpan - verticalClearance)
+        let horizontalLength = min(max(0, length), max(0, right - left))
+        let verticalLength = min(max(0, length), max(0, top - bottom))
         var result: [ResizeIndicatorSegment] = []
 
         switch (section.horizontalEdge, section.verticalEdge) {
         case let (horizontal, vertical) where horizontal != .none && vertical != .none:
             let x = horizontal == .left ? left : right
             let y = vertical == .top ? top : bottom
-            let horizontalStartX = horizontal == .left
-                ? x + horizontalClearance
-                : x - horizontalClearance
             let horizontalEndX = horizontal == .left
-                ? horizontalStartX + cornerHorizontalLength
-                : horizontalStartX - cornerHorizontalLength
-            let verticalStartY = vertical == .top
-                ? y - verticalClearance
-                : y + verticalClearance
+                ? x + horizontalLength
+                : x - horizontalLength
             let verticalEndY = vertical == .top
-                ? verticalStartY - cornerVerticalLength
-                : verticalStartY + cornerVerticalLength
+                ? y - verticalLength
+                : y + verticalLength
             result.append(ResizeIndicatorSegment(
-                start: Point(x: horizontalStartX, y: y),
+                start: Point(x: x, y: y),
                 end: Point(x: horizontalEndX, y: y)
             ))
             result.append(ResizeIndicatorSegment(
-                start: Point(x: x, y: verticalStartY),
+                start: Point(x: x, y: y),
                 end: Point(x: x, y: verticalEndY)
             ))
 
@@ -147,13 +134,33 @@ private final class ResizeFeedbackView: NSView {
         guard !segments.isEmpty else { return }
 
         let path = NSBezierPath()
-        path.lineWidth = 4
         path.lineCapStyle = .round
-        for segment in segments {
-            path.move(to: NSPoint(x: segment.start.x, y: segment.start.y))
-            path.line(to: NSPoint(x: segment.end.x, y: segment.end.y))
+        path.lineJoinStyle = .round
+        if segments.count == 2, segments[0].start == segments[1].start {
+            path.move(to: NSPoint(x: segments[0].end.x, y: segments[0].end.y))
+            path.line(to: NSPoint(x: segments[0].start.x, y: segments[0].start.y))
+            path.line(to: NSPoint(x: segments[1].end.x, y: segments[1].end.y))
+        } else {
+            for segment in segments {
+                path.move(to: NSPoint(x: segment.start.x, y: segment.start.y))
+                path.line(to: NSPoint(x: segment.end.x, y: segment.end.y))
+            }
         }
-        NSColor.controlAccentColor.withAlphaComponent(0.95).setStroke()
+        path.lineWidth = 6
+        NSColor.black.withAlphaComponent(0.24).setStroke()
+        path.stroke()
+
+        path.lineWidth = 4
+        NSColor.jostleGold.setStroke()
         path.stroke()
     }
+}
+
+private extension NSColor {
+    static let jostleGold = NSColor(
+        srgbRed: 245.0 / 255.0,
+        green: 183.0 / 255.0,
+        blue: 93.0 / 255.0,
+        alpha: 1
+    )
 }
