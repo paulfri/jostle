@@ -3,6 +3,7 @@
 *.iws
 *.iml
 out/
+dist/
 
 # OS X
 .DS_Store
