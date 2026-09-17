@@ -8,14 +8,18 @@ final class EventPolicyTests: XCTestCase {
         sessionActive: Bool = true,
         gestureActive: Bool = false,
         middleClickResize: Bool = false,
-        resizeOnly: Bool = false
+        resizeOnly: Bool = false,
+        doubleClickActionsEnabled: Bool = true,
+        ownedActionButton: MouseButton? = nil
     ) -> EventPolicyConfiguration {
         EventPolicyConfiguration(
             sessionActive: sessionActive,
             gestureActive: gestureActive,
             middleClickResize: middleClickResize,
             resizeOnly: resizeOnly,
-            requiredModifiers: requiredModifiers
+            requiredModifiers: requiredModifiers,
+            doubleClickActionsEnabled: doubleClickActionsEnabled,
+            ownedActionButton: ownedActionButton
         )
     }
 
@@ -43,6 +47,52 @@ final class EventPolicyTests: XCTestCase {
         XCTAssertEqual(
             EventPolicy.intent(for: leftDown, configuration: configuration(resizeOnly: true)),
             .passThrough
+        )
+    }
+
+    func testDoubleClicksRouteToConfiguredActions() {
+        let leftDoubleClick = InputEvent(
+            type: .mouseDown,
+            button: .left,
+            modifiers: requiredModifiers,
+            clickCount: 2
+        )
+        let rightDoubleClick = InputEvent(
+            type: .mouseDown,
+            button: .right,
+            modifiers: requiredModifiers,
+            clickCount: 2
+        )
+
+        XCTAssertEqual(
+            EventPolicy.intent(for: leftDoubleClick, configuration: configuration()),
+            .toggleMaximize
+        )
+        XCTAssertEqual(
+            EventPolicy.intent(for: rightDoubleClick, configuration: configuration()),
+            .snapByRegion
+        )
+        XCTAssertEqual(
+            EventPolicy.intent(
+                for: leftDoubleClick,
+                configuration: configuration(doubleClickActionsEnabled: false)
+            ),
+            .beginMove
+        )
+    }
+
+    func testOwnedActionMouseUpIsConsumedWithoutModifiers() {
+        let mouseUp = InputEvent(type: .mouseUp, button: .right, modifiers: [])
+
+        XCTAssertEqual(
+            EventPolicy.intent(
+                for: mouseUp,
+                configuration: configuration(
+                    sessionActive: false,
+                    ownedActionButton: .right
+                )
+            ),
+            .endActionClick
         )
     }
 

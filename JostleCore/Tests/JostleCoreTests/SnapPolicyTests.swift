@@ -44,6 +44,28 @@ final class SnapPolicyTests: XCTestCase {
         )
     }
 
+    func testResizeRegionsMapToDoubleClickSnapTargets() {
+        XCTAssertEqual(
+            SnapPolicy.target(
+                for: ResizeSection(horizontalEdge: .left, verticalEdge: .top)
+            ),
+            .topLeftQuarter
+        )
+        XCTAssertEqual(
+            SnapPolicy.target(
+                for: ResizeSection(horizontalEdge: .none, verticalEdge: .top)
+            ),
+            .topHalf
+        )
+        XCTAssertEqual(
+            SnapPolicy.target(
+                for: ResizeSection(horizontalEdge: .none, verticalEdge: .bottom)
+            ),
+            .bottomHalf
+        )
+        XCTAssertEqual(SnapPolicy.target(for: .none), .maximize)
+    }
+
     func testFramesApplyOuterMarginAndInteriorGap() {
         let visibleFrame = Frame(x: 0, y: 20, width: 1000, height: 700)
 
@@ -55,6 +77,15 @@ final class SnapPolicyTests: XCTestCase {
                 screenMargin: 8
             ),
             Frame(x: 8, y: 28, width: 486, height: 684)
+        )
+        XCTAssertEqual(
+            SnapPolicy.frame(
+                for: .topHalf,
+                in: visibleFrame,
+                gap: 12,
+                screenMargin: 8
+            ),
+            Frame(x: 8, y: 28, width: 984, height: 336)
         )
         XCTAssertEqual(
             SnapPolicy.frame(

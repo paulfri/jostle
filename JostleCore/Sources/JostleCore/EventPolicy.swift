@@ -27,11 +27,18 @@ public struct InputEvent: Equatable, Sendable {
     public var type: InputEventType
     public var button: MouseButton
     public var modifiers: Set<Modifier>
+    public var clickCount: Int
 
-    public init(type: InputEventType, button: MouseButton, modifiers: Set<Modifier>) {
+    public init(
+        type: InputEventType,
+        button: MouseButton,
+        modifiers: Set<Modifier>,
+        clickCount: Int = 1
+    ) {
         self.type = type
         self.button = button
         self.modifiers = modifiers
+        self.clickCount = clickCount
     }
 }
 
@@ -41,19 +48,25 @@ public struct EventPolicyConfiguration: Equatable, Sendable {
     public var middleClickResize: Bool
     public var resizeOnly: Bool
     public var requiredModifiers: Set<Modifier>
+    public var doubleClickActionsEnabled: Bool
+    public var ownedActionButton: MouseButton?
 
     public init(
         sessionActive: Bool,
         gestureActive: Bool,
         middleClickResize: Bool,
         resizeOnly: Bool,
-        requiredModifiers: Set<Modifier>
+        requiredModifiers: Set<Modifier>,
+        doubleClickActionsEnabled: Bool = true,
+        ownedActionButton: MouseButton? = nil
     ) {
         self.sessionActive = sessionActive
         self.gestureActive = gestureActive
         self.middleClickResize = middleClickResize
         self.resizeOnly = resizeOnly
         self.requiredModifiers = requiredModifiers
+        self.doubleClickActionsEnabled = doubleClickActionsEnabled
+        self.ownedActionButton = ownedActionButton
     }
 }
 
@@ -64,6 +77,9 @@ public enum EventIntent: Equatable, Sendable {
     case continueMove
     case beginResize
     case continueResize
+    case toggleMaximize
+    case snapByRegion
+    case endActionClick
     case endGesture
 }
 
@@ -73,6 +89,12 @@ public enum EventPolicy {
 
         if input.type == .tapDisabledByTimeout || input.type == .tapDisabledByUserInput {
             return .reenableEventTap
+        }
+
+        if let ownedActionButton = configuration.ownedActionButton,
+           input.type == .mouseUp,
+           input.button == ownedActionButton {
+            return .endActionClick
         }
 
         if configuration.gestureActive,
@@ -91,6 +113,14 @@ public enum EventPolicy {
 
         switch input.type {
         case .mouseDown:
+            if configuration.doubleClickActionsEnabled, input.clickCount == 2 {
+                if input.button == .left, !configuration.resizeOnly {
+                    return .toggleMaximize
+                }
+                if input.button == resizeButton {
+                    return .snapByRegion
+                }
+            }
             if input.button == .left, !configuration.resizeOnly {
                 return .beginMove
             }

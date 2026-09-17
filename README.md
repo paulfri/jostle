@@ -15,6 +15,7 @@ The default modifier combination is **Command + Control**:
 - The resize direction is chosen from the region where the drag starts.
 - While moving, drag to the left or right screen edge for a half, a corner for a quarter, or the top edge to fill the usable screen. Jostle previews the target before the mouse is released.
 - Dragging a window after Jostle snaps it restores its previous size while keeping the pointer at the same relative position.
+- Modifier-double-left-click maximizes or restores a window. Modifier-double-click with the configured resize button tiles toward the clicked edge or corner.
 
 The compact menu-bar menu lets you enable or disable Jostle, toggle exclusion for the current app, open Settings, or quit. The native macOS Settings window contains modifier keys, resize-button selection, window behavior, snapping controls, reset, and excluded-app management. Tile gaps and screen margins are configurable in the Snapping pane.
 

@@ -3,6 +3,7 @@ public struct JostleSettings: Codable, Equatable, Sendable {
     public var bringWindowToFront: Bool
     public var middleClickResize: Bool
     public var resizeOnly: Bool
+    public var doubleClickActionsEnabled: Bool
     public var snapEnabled: Bool
     public var snapGap: Double
     public var snapScreenMargin: Double
@@ -13,6 +14,7 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         bringWindowToFront: Bool = false,
         middleClickResize: Bool = false,
         resizeOnly: Bool = false,
+        doubleClickActionsEnabled: Bool = true,
         snapEnabled: Bool = true,
         snapGap: Double = 8,
         snapScreenMargin: Double = 0,
@@ -22,6 +24,7 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         self.bringWindowToFront = bringWindowToFront
         self.middleClickResize = middleClickResize
         self.resizeOnly = resizeOnly
+        self.doubleClickActionsEnabled = doubleClickActionsEnabled
         self.snapEnabled = snapEnabled
         self.snapGap = snapGap
         self.snapScreenMargin = snapScreenMargin
@@ -56,6 +59,7 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         case bringWindowToFront
         case middleClickResize
         case resizeOnly
+        case doubleClickActionsEnabled
         case snapEnabled
         case snapGap
         case snapScreenMargin
@@ -72,6 +76,10 @@ public struct JostleSettings: Codable, Equatable, Sendable {
             ?? Self.defaults.middleClickResize
         resizeOnly = try container.decodeIfPresent(Bool.self, forKey: .resizeOnly)
             ?? Self.defaults.resizeOnly
+        doubleClickActionsEnabled = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .doubleClickActionsEnabled
+        ) ?? Self.defaults.doubleClickActionsEnabled
         snapEnabled = try container.decodeIfPresent(Bool.self, forKey: .snapEnabled)
             ?? Self.defaults.snapEnabled
         snapGap = try container.decodeIfPresent(Double.self, forKey: .snapGap)
@@ -90,6 +98,7 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         try container.encode(bringWindowToFront, forKey: .bringWindowToFront)
         try container.encode(middleClickResize, forKey: .middleClickResize)
         try container.encode(resizeOnly, forKey: .resizeOnly)
+        try container.encode(doubleClickActionsEnabled, forKey: .doubleClickActionsEnabled)
         try container.encode(snapEnabled, forKey: .snapEnabled)
         try container.encode(snapGap, forKey: .snapGap)
         try container.encode(snapScreenMargin, forKey: .snapScreenMargin)

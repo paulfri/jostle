@@ -21,7 +21,11 @@ private func jostleEventTapCallback(
 }
 
 enum CGEventInputAdapter {
-    static func input(type: CGEventType, flags: CGEventFlags) -> InputEvent {
+    static func input(
+        type: CGEventType,
+        flags: CGEventFlags,
+        clickCount: Int64 = 1
+    ) -> InputEvent {
         let eventType: InputEventType
         let button: MouseButton
         switch type {
@@ -62,7 +66,12 @@ enum CGEventInputAdapter {
             eventType = .unknown
             button = .none
         }
-        return InputEvent(type: eventType, button: button, modifiers: modifiers(from: flags))
+        return InputEvent(
+            type: eventType,
+            button: button,
+            modifiers: modifiers(from: flags),
+            clickCount: Int(clickCount)
+        )
     }
 
     static func modifiers(from flags: CGEventFlags) -> Set<Modifier> {
@@ -94,6 +103,8 @@ final class EventTapController {
     private var pendingWindowRestore: PendingWindowRestore?
     private var gestureRestoreFrame: Frame?
     private var moveDidDrag = false
+    private var resizeDidDrag = false
+    private var ownedActionButton: MouseButton?
     private(set) var sessionActive = true
     private(set) var isEnabled = false
 
@@ -188,13 +199,19 @@ final class EventTapController {
 
     fileprivate func handle(type: CGEventType, event: CGEvent) -> Bool {
         let settings = settingsStore.settings
-        let input = CGEventInputAdapter.input(type: type, flags: event.flags)
+        let input = CGEventInputAdapter.input(
+            type: type,
+            flags: event.flags,
+            clickCount: event.getIntegerValueField(.mouseEventClickState)
+        )
         let configuration = EventPolicyConfiguration(
             sessionActive: sessionActive,
             gestureActive: gestureState.isActive,
             middleClickResize: settings.middleClickResize,
             resizeOnly: settings.resizeOnly,
-            requiredModifiers: settings.modifiers
+            requiredModifiers: settings.modifiers,
+            doubleClickActionsEnabled: settings.doubleClickActionsEnabled,
+            ownedActionButton: ownedActionButton
         )
 
         switch EventPolicy.intent(for: input, configuration: configuration) {
@@ -220,11 +237,26 @@ final class EventTapController {
                 timestamp: now
             ))
         case .continueResize:
+            if !resizeDidDrag, let targetWindow {
+                windowRestoreStore.removeFrame(for: targetWindow.identity)
+            }
+            resizeDidDrag = true
             return reduce(.resizeBy(
                 deltaX: event.getDoubleValueField(.mouseEventDeltaX),
                 deltaY: event.getDoubleValueField(.mouseEventDeltaY),
                 timestamp: now
             ))
+        case .toggleMaximize:
+            let handled = toggleMaximize(at: event.location, settings: settings)
+            ownedActionButton = handled ? input.button : nil
+            return handled
+        case .snapByRegion:
+            let handled = snapByRegion(at: event.location, settings: settings)
+            ownedActionButton = handled ? input.button : nil
+            return handled
+        case .endActionClick:
+            ownedActionButton = nil
+            return true
         case .endGesture:
             if moveDidDrag, case .moving = gestureState {
                 updateSnapPreview(at: event.location, settings: settings)
@@ -235,6 +267,90 @@ final class EventTapController {
 
     private var now: MonotonicTime {
         DispatchTime.now().uptimeNanoseconds
+    }
+
+    private func toggleMaximize(at point: CGPoint, settings: JostleSettings) -> Bool {
+        guard let (target, currentFrame) = actionTarget(at: point, settings: settings),
+              let screen = screenGeometryProvider.geometry(
+                containing: Point(x: point.x, y: point.y)
+              ) else {
+            return false
+        }
+
+        if let record = windowRestoreStore.record(for: target.identity),
+           record.kind == .maximized {
+            if windowSystem.setFrame(record.frame, of: target) {
+                windowRestoreStore.removeFrame(for: target.identity)
+            }
+            return true
+        }
+
+        let restoreFrame = windowRestoreStore.frame(for: target.identity) ?? currentFrame
+        let maximizedFrame = SnapPolicy.frame(
+            for: .maximize,
+            in: screen.visibleFrame,
+            gap: settings.snapGap,
+            screenMargin: settings.snapScreenMargin
+        )
+        if windowSystem.setFrame(maximizedFrame, of: target) {
+            windowRestoreStore.remember(
+                restoreFrame,
+                kind: .maximized,
+                for: target.identity
+            )
+        }
+        return true
+    }
+
+    private func snapByRegion(at point: CGPoint, settings: JostleSettings) -> Bool {
+        guard let (target, currentFrame) = actionTarget(at: point, settings: settings),
+              let screen = screenGeometryProvider.geometry(
+                containing: Point(x: point.x, y: point.y)
+              ) else {
+            return false
+        }
+
+        let section = GeometryPolicy.resizeSection(
+            for: Point(x: point.x, y: point.y),
+            in: currentFrame
+        )
+        let snapTarget = SnapPolicy.target(for: section)
+        let snapFrame = SnapPolicy.frame(
+            for: snapTarget,
+            in: screen.visibleFrame,
+            gap: settings.snapGap,
+            screenMargin: settings.snapScreenMargin
+        )
+        let restoreFrame = windowRestoreStore.frame(for: target.identity) ?? currentFrame
+        if windowSystem.setFrame(snapFrame, of: target) {
+            windowRestoreStore.remember(
+                restoreFrame,
+                kind: .snapped,
+                for: target.identity
+            )
+        }
+        return true
+    }
+
+    private func actionTarget(
+        at point: CGPoint,
+        settings: JostleSettings
+    ) -> (AccessibilityWindowTarget, Frame)? {
+        guard let target = windowSystem.window(at: point),
+              let frame = windowSystem.frame(of: target) else {
+            return nil
+        }
+        if let applicationInfo = target.applicationInfo,
+           settings.excludedApplications[applicationInfo.key] != nil {
+            return nil
+        }
+        if let applicationInfo = target.applicationInfo {
+            onRecentApplication?(applicationInfo)
+        }
+        if settings.bringWindowToFront {
+            windowSystem.bringToFront(target)
+        }
+        return (target, frame)
     }
 
     private func updateSnapPreview(at point: CGPoint, settings: JostleSettings) {
@@ -281,7 +397,11 @@ final class EventTapController {
             if let snapTarget,
                windowSystem.setFrame(snapTarget, of: target),
                let restoreFrame {
-                windowRestoreStore.remember(restoreFrame, for: target.identity)
+                windowRestoreStore.remember(
+                    restoreFrame,
+                    kind: .snapped,
+                    for: target.identity
+                )
             } else {
                 windowRestoreStore.removeFrame(for: target.identity)
             }
@@ -333,7 +453,6 @@ final class EventTapController {
 
         targetWindow = target
         if resize {
-            windowRestoreStore.removeFrame(for: target.identity)
             resetMoveTracking()
         } else {
             moveDidDrag = false
@@ -400,6 +519,7 @@ final class EventTapController {
         )
         gestureState = transition.state
         targetWindow = nil
+        ownedActionButton = nil
         resetMoveTracking()
     }
 
@@ -407,5 +527,6 @@ final class EventTapController {
         pendingWindowRestore = nil
         gestureRestoreFrame = nil
         moveDidDrag = false
+        resizeDidDrag = false
     }
 }

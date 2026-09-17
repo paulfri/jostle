@@ -307,6 +307,9 @@ private final class SwiftGestureContractRunner {
             state = transition.state
             commands.append(contentsOf: normalizedCommands(transition.commands))
 
+        case .toggleMaximize, .snapByRegion, .endActionClick:
+            break
+
         case .endGesture:
             let transition = GestureEngine.reduce(
                 state: state,

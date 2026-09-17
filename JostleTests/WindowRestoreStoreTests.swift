@@ -9,11 +9,17 @@ final class WindowRestoreStoreTests: XCTestCase {
         let first = Frame(x: 0, y: 0, width: 800, height: 600)
         let replacement = Frame(x: 20, y: 30, width: 900, height: 700)
 
-        store.remember(first, for: window)
-        XCTAssertEqual(store.frame(for: window), first)
+        store.remember(first, kind: .snapped, for: window)
+        XCTAssertEqual(
+            store.record(for: window),
+            WindowRestoreRecord(frame: first, kind: .snapped)
+        )
 
-        store.remember(replacement, for: window)
-        XCTAssertEqual(store.frame(for: window), replacement)
+        store.remember(replacement, kind: .maximized, for: window)
+        XCTAssertEqual(
+            store.record(for: window),
+            WindowRestoreRecord(frame: replacement, kind: .maximized)
+        )
 
         store.removeFrame(for: window)
         XCTAssertNil(store.frame(for: window))
@@ -26,9 +32,9 @@ final class WindowRestoreStoreTests: XCTestCase {
         let third = AccessibilityWindowIdentity(processIdentifier: 3, elementHash: 3)
         let frame = Frame(x: 0, y: 0, width: 800, height: 600)
 
-        store.remember(frame, for: first)
-        store.remember(frame, for: second)
-        store.remember(frame, for: third)
+        store.remember(frame, kind: .snapped, for: first)
+        store.remember(frame, kind: .snapped, for: second)
+        store.remember(frame, kind: .snapped, for: third)
 
         XCTAssertNil(store.frame(for: first))
         XCTAssertEqual(store.frame(for: second), frame)

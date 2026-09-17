@@ -1,6 +1,8 @@
 public enum SnapTarget: String, Codable, Equatable, Sendable {
     case leftHalf
     case rightHalf
+    case topHalf
+    case bottomHalf
     case topLeftQuarter
     case topRightQuarter
     case bottomLeftQuarter
@@ -52,6 +54,29 @@ public enum SnapPolicy {
         }
     }
 
+    public static func target(for section: ResizeSection) -> SnapTarget {
+        switch (section.horizontalEdge, section.verticalEdge) {
+        case (.left, .top):
+            return .topLeftQuarter
+        case (.right, .top):
+            return .topRightQuarter
+        case (.left, .bottom):
+            return .bottomLeftQuarter
+        case (.right, .bottom):
+            return .bottomRightQuarter
+        case (.left, .none):
+            return .leftHalf
+        case (.right, .none):
+            return .rightHalf
+        case (.none, .top):
+            return .topHalf
+        case (.none, .bottom):
+            return .bottomHalf
+        case (.none, .none):
+            return .maximize
+        }
+    }
+
     public static func frame(
         for target: SnapTarget,
         in visibleFrame: Frame,
@@ -87,6 +112,20 @@ public enum SnapPolicy {
                 y: usableFrame.origin.y,
                 width: halfWidth,
                 height: usableFrame.size.height
+            )
+        case .topHalf:
+            return Frame(
+                x: usableFrame.origin.x,
+                y: usableFrame.origin.y,
+                width: usableFrame.size.width,
+                height: halfHeight
+            )
+        case .bottomHalf:
+            return Frame(
+                x: usableFrame.origin.x,
+                y: bottomY,
+                width: usableFrame.size.width,
+                height: halfHeight
             )
         case .topLeftQuarter:
             return Frame(

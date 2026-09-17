@@ -175,6 +175,19 @@ struct SnappingSettingsPane: View {
                     .frame(maxWidth: 430, alignment: .leading)
             }
 
+            PreferenceRow(label: "") {
+                Toggle("Enable modifier-double-click actions", isOn: doubleClickActionsBinding)
+                    .toggleStyle(.checkbox)
+            }
+
+            PreferenceRow(label: "") {
+                Text("Double-left-click maximizes or restores. Double-clicking with the resize button tiles toward the clicked region.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: 430, alignment: .leading)
+            }
+
             Divider()
 
             Text("Spacing")
@@ -211,6 +224,15 @@ struct SnappingSettingsPane: View {
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
         .frame(width: 660, height: 470)
+    }
+
+    private var doubleClickActionsBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings.doubleClickActionsEnabled },
+            set: { value in
+                settingsStore.update { $0.doubleClickActionsEnabled = value }
+            }
+        )
     }
 
     private var snapEnabledBinding: Binding<Bool> {

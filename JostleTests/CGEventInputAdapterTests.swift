@@ -26,6 +26,17 @@ final class CGEventInputAdapterTests: XCTestCase {
         }
     }
 
+    func testPreservesMouseClickCount() {
+        XCTAssertEqual(
+            CGEventInputAdapter.input(
+                type: .leftMouseDown,
+                flags: [],
+                clickCount: 2
+            ).clickCount,
+            2
+        )
+    }
+
     func testMapsOnlySupportedModifierFlags() {
         let flags: CGEventFlags = [
             .maskControl,
