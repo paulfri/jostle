@@ -29,6 +29,7 @@
 		A10000000000000000000012 /* ApplicationIconProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000017 /* ApplicationIconProviderTests.swift */; };
 		A10000000000000000000015 /* ScreenGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001A /* ScreenGeometryTests.swift */; };
 		A10000000000000000000017 /* WindowRestoreStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001C /* WindowRestoreStoreTests.swift */; };
+		A10000000000000000000018 /* AccessibilityWindowSystemTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001D /* AccessibilityWindowSystemTests.swift */; };
 		A1000000000000000000000C /* JostleCore in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000003 /* JostleCore */; };
 /* End PBXBuildFile section */
 
@@ -64,6 +65,7 @@
 		A20000000000000000000017 /* ApplicationIconProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationIconProviderTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000001A /* ScreenGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenGeometryTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000001C /* WindowRestoreStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowRestoreStoreTests.swift; sourceTree = "<group>"; };
+		A2000000000000000000001D /* AccessibilityWindowSystemTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityWindowSystemTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000000C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000000000000000000000D /* Jostle.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Jostle.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2000000000000000000000E /* JostleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JostleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -136,6 +138,7 @@
 				A20000000000000000000017 /* ApplicationIconProviderTests.swift */,
 				A2000000000000000000001A /* ScreenGeometryTests.swift */,
 				A2000000000000000000001C /* WindowRestoreStoreTests.swift */,
+				A2000000000000000000001D /* AccessibilityWindowSystemTests.swift */,
 				A2000000000000000000000C /* Info.plist */,
 			);
 			path = JostleTests;
@@ -285,6 +288,7 @@
 				A10000000000000000000012 /* ApplicationIconProviderTests.swift in Sources */,
 				A10000000000000000000015 /* ScreenGeometryTests.swift in Sources */,
 				A10000000000000000000017 /* WindowRestoreStoreTests.swift in Sources */,
+				A10000000000000000000018 /* AccessibilityWindowSystemTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

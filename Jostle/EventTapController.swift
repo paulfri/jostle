@@ -279,10 +279,7 @@ final class EventTapController {
 
         if wasMoving, didDrag, let target {
             if let snapTarget,
-               windowSystem.apply(
-                   [.setSize(snapTarget.size), .setPosition(snapTarget.origin)],
-                   to: target
-               ),
+               windowSystem.setFrame(snapTarget, of: target),
                let restoreFrame {
                 windowRestoreStore.remember(restoreFrame, for: target.identity)
             } else {
@@ -301,10 +298,7 @@ final class EventTapController {
             currentFrame: pendingWindowRestore.currentFrame,
             grabbedAt: pendingWindowRestore.grabPoint
         )
-        guard windowSystem.apply(
-            [.setSize(restoredFrame.size), .setPosition(restoredFrame.origin)],
-            to: targetWindow
-        ) else {
+        guard windowSystem.setFrame(restoredFrame, of: targetWindow) else {
             cancelGesture()
             return false
         }

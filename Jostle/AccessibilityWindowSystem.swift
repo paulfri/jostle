@@ -106,6 +106,22 @@ final class AccessibilityWindowSystem {
     }
 
     @discardableResult
+    func setFrame(_ frame: Frame, of target: AccessibilityWindowTarget) -> Bool {
+        apply(Self.frameCommands(for: frame), to: target)
+    }
+
+    static func frameCommands(for frame: Frame) -> [GestureCommand] {
+        // Moving first avoids constraining the requested size against the window's old
+        // screen position. Moving again after resizing handles apps that adjust their
+        // origin while enforcing size constraints.
+        [
+            .setPosition(frame.origin),
+            .setSize(frame.size),
+            .setPosition(frame.origin)
+        ]
+    }
+
+    @discardableResult
     func apply(_ commands: [GestureCommand], to target: AccessibilityWindowTarget) -> Bool {
         for command in commands {
             let error: AXError
