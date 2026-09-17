@@ -74,7 +74,7 @@ struct GeneralSettingsPane: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
-        .frame(width: 660, height: 390)
+        .frame(width: 660, height: 410)
         .alert("Restore Jostle defaults?", isPresented: $confirmsReset) {
             Button("Restore", role: .destructive) {
                 settingsStore.reset()
@@ -200,7 +200,7 @@ struct ExcludedApplicationsSettingsPane: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
-        .frame(width: 660, height: 390)
+        .frame(width: 660, height: 410)
     }
 }
 
