@@ -214,6 +214,7 @@ final class StatusMenuControllerTests: XCTestCase {
             eventTapController: eventTapController,
             loginItemController: loginItemController,
             currentApplicationProvider: currentApplicationProvider,
+            applicationName: "Jostle",
             onRuntimeRefresh: onRuntimeRefresh,
             onOpenSettings: onOpenSettings
         )

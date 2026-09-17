@@ -15,5 +15,7 @@
 - Enforce minimum resize dimensions and show branded active-edge feedback.
 - Recover from live Accessibility changes and disabled or invalid event taps.
 - Report runtime health through actionable menu states and a dimmed status icon.
+- Isolate local Debug builds as blue-branded Jostle Development with separate settings and Accessibility identity.
+- Add CalVer, Developer ID signing, notarization, ZIP/DMG packaging, Gatekeeper verification, and checksums.
 - Raise the minimum supported version to macOS 12.
 - Replace binary-release automation with source build and test CI.

@@ -46,12 +46,23 @@ xcodebuild \
 
 The unsigned app is written to `build/Build/Products/Release/Jostle.app`. For regular local use, sign it with your Apple Development identity before copying it to `/Applications`.
 
+## Development profile
+
+Use the shared **Jostle Development** scheme for local work. Debug builds are deliberately isolated from the release app:
+
+- Product name: `Jostle Development`
+- Bundle identifier: `fm.pau.jostle.development`
+- Separate settings, Start at Login registration, and Accessibility permission
+- Complementary blue branding and app icon instead of release gold
+
+This allows development and release builds to coexist without ambiguous entries in System Settings. Avoid running both simultaneously because both will respond to the configured gestures.
+
 ## Test
 
 ```sh
 xcodebuild \
   -project Jostle.xcodeproj \
-  -scheme Jostle \
+  -scheme 'Jostle Development' \
   -destination 'platform=macOS' \
   -derivedDataPath build-tests \
   CODE_SIGNING_ALLOWED=NO \
@@ -64,7 +75,7 @@ swift test --package-path JostleCore
 
 ## Settings
 
-Settings are stored as one Codable document under `Jostle.settings` in Jostle's standard `UserDefaults` domain. Jostle is a new app and does not import settings from other applications.
+Settings are stored as one Codable document under `Jostle.settings` in the active bundle’s standard `UserDefaults` domain. Release and Development profiles therefore keep independent settings. Jostle does not import settings from other applications.
 
 ## Project lineage
 

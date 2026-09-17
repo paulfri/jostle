@@ -15,6 +15,7 @@ final class SettingsWindowController: NSWindowController {
                 settingsStore: settingsStore,
                 loginItemController: loginItemController
             )
+            .tint(Color(nsColor: AppBrand.accentColor))
         )
         let generalItem = NSTabViewItem(viewController: generalController)
         generalItem.label = "General"
@@ -26,6 +27,7 @@ final class SettingsWindowController: NSWindowController {
 
         let snappingController = NSHostingController(
             rootView: SnappingSettingsPane(settingsStore: settingsStore)
+                .tint(Color(nsColor: AppBrand.accentColor))
         )
         let snappingItem = NSTabViewItem(viewController: snappingController)
         snappingItem.label = "Snapping"
@@ -37,6 +39,7 @@ final class SettingsWindowController: NSWindowController {
 
         let exclusionsController = NSHostingController(
             rootView: ExcludedApplicationsSettingsPane(settingsStore: settingsStore)
+                .tint(Color(nsColor: AppBrand.accentColor))
         )
         let exclusionsItem = NSTabViewItem(viewController: exclusionsController)
         exclusionsItem.label = "Exclusions"
@@ -52,7 +55,7 @@ final class SettingsWindowController: NSWindowController {
             backing: .buffered,
             defer: false
         )
-        window.title = "Jostle Settings"
+        window.title = "\(AppBrand.applicationName) Settings"
         window.toolbarStyle = .preference
         window.contentViewController = tabController
         window.isReleasedWhenClosed = false

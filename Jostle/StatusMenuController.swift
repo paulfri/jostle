@@ -5,6 +5,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     private let eventTapController: EventTapController
     private let loginItemController: LoginItemController
     private let currentApplicationProvider: () -> RunningApplicationInfo?
+    private let applicationName: String
     private let onRuntimeRefresh: () -> Void
     private let onOpenSettings: () -> Void
     private let statusItem: NSStatusItem
@@ -25,6 +26,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
             }
             return RunningApplicationInfo(application: application)
         },
+        applicationName: String = AppBrand.applicationName,
         onRuntimeRefresh: @escaping () -> Void = {},
         onOpenSettings: @escaping () -> Void
     ) {
@@ -32,6 +34,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         self.eventTapController = eventTapController
         self.loginItemController = loginItemController
         self.currentApplicationProvider = currentApplicationProvider
+        self.applicationName = applicationName
         self.onRuntimeRefresh = onRuntimeRefresh
         self.onOpenSettings = onOpenSettings
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -102,7 +105,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         }
 
         let enabledItem = NSMenuItem(
-            title: "Jostle Enabled",
+            title: "\(applicationName) Enabled",
             action: #selector(toggleOverallDisabled(_:)),
             keyEquivalent: ""
         )
@@ -143,7 +146,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         menu.addItem(.separator())
 
         let quitItem = NSMenuItem(
-            title: "Quit Jostle",
+            title: "Quit \(applicationName)",
             action: #selector(quit(_:)),
             keyEquivalent: "q"
         )

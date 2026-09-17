@@ -17,7 +17,7 @@ Issues and pull requests are welcome.
    ```sh
    xcodebuild \
      -project Jostle.xcodeproj \
-     -scheme Jostle \
+     -scheme 'Jostle Development' \
      -destination 'platform=macOS' \
      -derivedDataPath build-tests \
      CODE_SIGNING_ALLOWED=NO \
@@ -27,4 +27,4 @@ Issues and pull requests are welcome.
 4. Include focused Swift tests for policy, settings, and adapter behavior where practical.
 5. Open a pull request explaining the behavior change and verification performed.
 
-The project currently publishes source only; release binaries and signing infrastructure are intentionally out of scope for the initial fork release.
+Local builds should use the isolated Jostle Development profile. Public artifacts follow the Developer ID and notarization process documented in [`docs/releasing.md`](docs/releasing.md).

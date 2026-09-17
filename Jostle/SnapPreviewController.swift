@@ -50,10 +50,10 @@ final class SnapPreviewController {
     }
 
     private func updateAppearance(of panel: NSPanel) {
-        panel.contentView?.layer?.backgroundColor = NSColor.controlAccentColor
+        panel.contentView?.layer?.backgroundColor = AppBrand.accentColor
             .withAlphaComponent(0.18)
             .cgColor
-        panel.contentView?.layer?.borderColor = NSColor.controlAccentColor
+        panel.contentView?.layer?.borderColor = AppBrand.accentColor
             .withAlphaComponent(0.75)
             .cgColor
     }

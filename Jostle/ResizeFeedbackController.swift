@@ -151,16 +151,7 @@ private final class ResizeFeedbackView: NSView {
         path.stroke()
 
         path.lineWidth = 4
-        NSColor.jostleGold.setStroke()
+        AppBrand.accentColor.setStroke()
         path.stroke()
     }
-}
-
-private extension NSColor {
-    static let jostleGold = NSColor(
-        srgbRed: 245.0 / 255.0,
-        green: 183.0 / 255.0,
-        blue: 93.0 / 255.0,
-        alpha: 1
-    )
 }
