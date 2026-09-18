@@ -7,6 +7,7 @@ final class SettingsWindowController: NSWindowController {
     init(
         settingsStore: SettingsStore,
         loginItemController: LoginItemController,
+        globalShortcutController: GlobalShortcutController,
         updateController: SparkleUpdateController? = nil
     ) {
         self.loginItemController = loginItemController
@@ -22,12 +23,31 @@ final class SettingsWindowController: NSWindowController {
             .tint(Color(nsColor: AppBrand.accentColor))
         )
         let generalItem = NSTabViewItem(viewController: generalController)
-        generalItem.label = "General"
-        generalItem.image = NSImage(
-            systemSymbolName: "gearshape",
-            accessibilityDescription: "General"
-        )
+        generalItem.label = "Gestures"
+        let gesturesImage = (NSImage(named: "MenuIcon")?.copy() as? NSImage)
+            ?? NSImage(
+                systemSymbolName: "viewfinder",
+                accessibilityDescription: "Jostle Gestures"
+            )
+        gesturesImage?.isTemplate = true
+        gesturesImage?.accessibilityDescription = "Jostle Gestures"
+        generalItem.image = gesturesImage
         tabController.addTabViewItem(generalItem)
+
+        let keepAwakeController = NSHostingController(
+            rootView: KeepAwakeSettingsPane(
+                settingsStore: settingsStore,
+                globalShortcutController: globalShortcutController
+            )
+            .tint(Color(nsColor: AppBrand.accentColor))
+        )
+        let keepAwakeItem = NSTabViewItem(viewController: keepAwakeController)
+        keepAwakeItem.label = "Keep Awake"
+        keepAwakeItem.image = NSImage(
+            systemSymbolName: "cup.and.heat.waves",
+            accessibilityDescription: "Keep Awake"
+        )
+        tabController.addTabViewItem(keepAwakeItem)
 
         let snappingController = NSHostingController(
             rootView: SnappingSettingsPane(settingsStore: settingsStore)

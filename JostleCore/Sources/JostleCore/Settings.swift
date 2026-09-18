@@ -9,6 +9,16 @@ public struct JostleSettings: Codable, Equatable, Sendable {
     public var snapGap: Double
     public var snapScreenMargin: Double
     public var excludedApplications: [String: String]
+    public var keepAwakeDefaultDuration: KeepAwakeDurationPreset
+    public var keepAwakeActivateAtLaunch: Bool
+    public var keepAwakeActivateOnLeftClick: Bool
+    public var keepAwakeAllowDisplaySleep: Bool
+    public var keepAwakeAllowSleepWhenLocked: Bool
+    public var keepAwakeDeactivateOnBattery: Bool
+    public var keepAwakeDimWhenInactive: Bool
+    public var keepAwakeIndicatorStyle: KeepAwakeIndicatorStyle
+    public var keepAwakeUseImprovedTimer: Bool
+    public var keepAwakeShortcut: GlobalShortcut?
 
     public init(
         modifiers: Set<Modifier> = [.control],
@@ -20,7 +30,17 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         snapEnabled: Bool = true,
         snapGap: Double = 8,
         snapScreenMargin: Double = 0,
-        excludedApplications: [String: String] = [:]
+        excludedApplications: [String: String] = [:],
+        keepAwakeDefaultDuration: KeepAwakeDurationPreset = .indefinitely,
+        keepAwakeActivateAtLaunch: Bool = false,
+        keepAwakeActivateOnLeftClick: Bool = false,
+        keepAwakeAllowDisplaySleep: Bool = false,
+        keepAwakeAllowSleepWhenLocked: Bool = false,
+        keepAwakeDeactivateOnBattery: Bool = false,
+        keepAwakeDimWhenInactive: Bool = false,
+        keepAwakeIndicatorStyle: KeepAwakeIndicatorStyle = .normal,
+        keepAwakeUseImprovedTimer: Bool = true,
+        keepAwakeShortcut: GlobalShortcut? = nil
     ) {
         self.modifiers = modifiers
         self.bringWindowToFront = bringWindowToFront
@@ -32,6 +52,16 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         self.snapGap = snapGap
         self.snapScreenMargin = snapScreenMargin
         self.excludedApplications = excludedApplications
+        self.keepAwakeDefaultDuration = keepAwakeDefaultDuration
+        self.keepAwakeActivateAtLaunch = keepAwakeActivateAtLaunch
+        self.keepAwakeActivateOnLeftClick = keepAwakeActivateOnLeftClick
+        self.keepAwakeAllowDisplaySleep = keepAwakeAllowDisplaySleep
+        self.keepAwakeAllowSleepWhenLocked = keepAwakeAllowSleepWhenLocked
+        self.keepAwakeDeactivateOnBattery = keepAwakeDeactivateOnBattery
+        self.keepAwakeDimWhenInactive = keepAwakeDimWhenInactive
+        self.keepAwakeIndicatorStyle = keepAwakeIndicatorStyle
+        self.keepAwakeUseImprovedTimer = keepAwakeUseImprovedTimer
+        self.keepAwakeShortcut = keepAwakeShortcut
     }
 
     public static let defaults = JostleSettings()
@@ -68,6 +98,16 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         case snapGap
         case snapScreenMargin
         case excludedApplications
+        case keepAwakeDefaultDuration
+        case keepAwakeActivateAtLaunch
+        case keepAwakeActivateOnLeftClick
+        case keepAwakeAllowDisplaySleep
+        case keepAwakeAllowSleepWhenLocked
+        case keepAwakeDeactivateOnBattery
+        case keepAwakeDimWhenInactive
+        case keepAwakeIndicatorStyle
+        case keepAwakeUseImprovedTimer
+        case keepAwakeShortcut
     }
 
     public init(from decoder: Decoder) throws {
@@ -96,6 +136,46 @@ public struct JostleSettings: Codable, Equatable, Sendable {
             [String: String].self,
             forKey: .excludedApplications
         ) ?? Self.defaults.excludedApplications
+        keepAwakeDefaultDuration = try container.decodeIfPresent(
+            KeepAwakeDurationPreset.self,
+            forKey: .keepAwakeDefaultDuration
+        ) ?? Self.defaults.keepAwakeDefaultDuration
+        keepAwakeActivateAtLaunch = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .keepAwakeActivateAtLaunch
+        ) ?? Self.defaults.keepAwakeActivateAtLaunch
+        keepAwakeActivateOnLeftClick = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .keepAwakeActivateOnLeftClick
+        ) ?? Self.defaults.keepAwakeActivateOnLeftClick
+        keepAwakeAllowDisplaySleep = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .keepAwakeAllowDisplaySleep
+        ) ?? Self.defaults.keepAwakeAllowDisplaySleep
+        keepAwakeAllowSleepWhenLocked = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .keepAwakeAllowSleepWhenLocked
+        ) ?? Self.defaults.keepAwakeAllowSleepWhenLocked
+        keepAwakeDeactivateOnBattery = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .keepAwakeDeactivateOnBattery
+        ) ?? Self.defaults.keepAwakeDeactivateOnBattery
+        keepAwakeDimWhenInactive = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .keepAwakeDimWhenInactive
+        ) ?? Self.defaults.keepAwakeDimWhenInactive
+        keepAwakeIndicatorStyle = try container.decodeIfPresent(
+            KeepAwakeIndicatorStyle.self,
+            forKey: .keepAwakeIndicatorStyle
+        ) ?? Self.defaults.keepAwakeIndicatorStyle
+        keepAwakeUseImprovedTimer = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .keepAwakeUseImprovedTimer
+        ) ?? Self.defaults.keepAwakeUseImprovedTimer
+        keepAwakeShortcut = try container.decodeIfPresent(
+            GlobalShortcut.self,
+            forKey: .keepAwakeShortcut
+        )
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -110,6 +190,16 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         try container.encode(snapGap, forKey: .snapGap)
         try container.encode(snapScreenMargin, forKey: .snapScreenMargin)
         try container.encode(excludedApplications, forKey: .excludedApplications)
+        try container.encode(keepAwakeDefaultDuration, forKey: .keepAwakeDefaultDuration)
+        try container.encode(keepAwakeActivateAtLaunch, forKey: .keepAwakeActivateAtLaunch)
+        try container.encode(keepAwakeActivateOnLeftClick, forKey: .keepAwakeActivateOnLeftClick)
+        try container.encode(keepAwakeAllowDisplaySleep, forKey: .keepAwakeAllowDisplaySleep)
+        try container.encode(keepAwakeAllowSleepWhenLocked, forKey: .keepAwakeAllowSleepWhenLocked)
+        try container.encode(keepAwakeDeactivateOnBattery, forKey: .keepAwakeDeactivateOnBattery)
+        try container.encode(keepAwakeDimWhenInactive, forKey: .keepAwakeDimWhenInactive)
+        try container.encode(keepAwakeIndicatorStyle, forKey: .keepAwakeIndicatorStyle)
+        try container.encode(keepAwakeUseImprovedTimer, forKey: .keepAwakeUseImprovedTimer)
+        try container.encodeIfPresent(keepAwakeShortcut, forKey: .keepAwakeShortcut)
     }
 }
 

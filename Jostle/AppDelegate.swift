@@ -5,6 +5,8 @@ import JostleCore
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let settingsStore = SettingsStore()
     let loginItemController = LoginItemController()
+    lazy var keepAwakeController = KeepAwakeController(settingsStore: settingsStore)
+    lazy var globalShortcutController = GlobalShortcutController(settingsStore: settingsStore)
     private let updateController: SparkleUpdateController? = {
 #if JOSTLE_DEVELOPMENT
         nil
@@ -16,6 +18,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusMenuController: StatusMenuController?
     private var settingsWindowController: SettingsWindowController?
     private var runtimeHealthTimer: Timer?
+    private let screenLockMonitor = ScreenLockMonitor()
+    private let powerSourceMonitor = PowerSourceMonitor()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let throttleInterval = Self.minimumRefreshIntervalNanoseconds()
@@ -26,14 +30,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 resizeThrottleInterval: throttleInterval
             )
         )
+        let keepAwakeController = self.keepAwakeController
+        let globalShortcutController = self.globalShortcutController
+        globalShortcutController.onTrigger = { [weak keepAwakeController] in
+            keepAwakeController?.toggle()
+        }
         let settingsWindowController = SettingsWindowController(
             settingsStore: settingsStore,
             loginItemController: loginItemController,
+            globalShortcutController: globalShortcutController,
             updateController: updateController
         )
         let statusMenuController = StatusMenuController(
             settingsStore: settingsStore,
             eventTapController: eventTapController,
+            keepAwakeController: keepAwakeController,
             loginItemController: loginItemController,
             updateController: updateController,
             onRuntimeRefresh: { [weak self] in
@@ -83,12 +94,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             name: NSWorkspace.sessionDidResignActiveNotification,
             object: nil
         )
+
+        screenLockMonitor.onLock = { [weak keepAwakeController] in
+            keepAwakeController?.screenDidLock()
+        }
+        screenLockMonitor.onUnlock = { [weak keepAwakeController] in
+            keepAwakeController?.screenDidUnlock()
+        }
+        screenLockMonitor.start()
+        powerSourceMonitor.onChange = { [weak keepAwakeController] previous, current in
+            keepAwakeController?.powerSourceDidChange(from: previous, to: current)
+        }
+        powerSourceMonitor.start()
+
+        if settingsStore.settings.keepAwakeActivateAtLaunch {
+            keepAwakeController.startDefault()
+        }
+    }
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls {
+            do {
+                let command = try KeepAwakeURLCommandParser.parse(url)
+                keepAwakeController.perform(command)
+            } catch {
+                keepAwakeController.reportAutomationError(error)
+            }
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         NSWorkspace.shared.notificationCenter.removeObserver(self)
+        screenLockMonitor.stop()
+        powerSourceMonitor.stop()
         runtimeHealthTimer?.invalidate()
         eventTapController?.stop()
+        keepAwakeController.shutdown()
     }
 
     @objc private func sessionDidBecomeActive(_ notification: Notification) {

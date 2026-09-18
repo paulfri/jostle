@@ -268,6 +268,198 @@ struct SnappingSettingsPane: View {
     }
 }
 
+struct KeepAwakeSettingsPane: View {
+    @ObservedObject var settingsStore: SettingsStore
+    @ObservedObject var globalShortcutController: GlobalShortcutController
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Session")
+                    .font(.headline)
+
+                PreferenceRow(label: "Default duration:") {
+                    Picker("", selection: defaultDurationBinding) {
+                        ForEach(KeepAwakeDurationPreset.allCases, id: \.self) { preset in
+                            Text(preset.title).tag(preset)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(width: 180, alignment: .leading)
+                }
+
+                PreferenceRow(label: "") {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Toggle("Activate Keep Awake when Jostle launches", isOn: activateAtLaunchBinding)
+                            .toggleStyle(.checkbox)
+                        Toggle("Activate Keep Awake on left-click", isOn: activateOnLeftClickBinding)
+                            .toggleStyle(.checkbox)
+                        Text(clickBehaviorDescription)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Divider()
+
+                Text("Keyboard Shortcut")
+                    .font(.headline)
+
+                PreferenceRow(label: "Toggle:") {
+                    VStack(alignment: .leading, spacing: 5) {
+                        ShortcutRecorder(shortcut: shortcutBinding)
+                            .frame(width: 180, height: 26)
+                        Text("Recommended: ⌃⌘L. Press Delete while recording to clear it.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        if let errorMessage = globalShortcutController.errorMessage {
+                            Text(errorMessage)
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                        }
+                    }
+                }
+
+                Divider()
+
+                Text("Sleep Behavior")
+                    .font(.headline)
+
+                PreferenceRow(label: "") {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Toggle(
+                            "Allow display to sleep while keeping computer awake",
+                            isOn: allowDisplaySleepBinding
+                        )
+                        .toggleStyle(.checkbox)
+                        Toggle("Allow sleep while screen is locked", isOn: allowSleepWhenLockedBinding)
+                            .toggleStyle(.checkbox)
+                        Toggle("Deactivate when switching to battery", isOn: deactivateOnBatteryBinding)
+                            .toggleStyle(.checkbox)
+                        Text("Battery deactivation does not reactivate when external power returns.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Divider()
+
+                Text("Menu Bar")
+                    .font(.headline)
+
+                PreferenceRow(label: "Active indicator:") {
+                    Picker("", selection: indicatorStyleBinding) {
+                        ForEach(KeepAwakeIndicatorStyle.allCases, id: \.self) { style in
+                            Text(style.title).tag(style)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(width: 180, alignment: .leading)
+                }
+
+                PreferenceRow(label: "") {
+                    Toggle("Dim icon while Keep Awake is inactive", isOn: dimWhenInactiveBinding)
+                        .toggleStyle(.checkbox)
+                }
+
+                Divider()
+
+                Text("Advanced")
+                    .font(.headline)
+
+                PreferenceRow(label: "") {
+                    VStack(alignment: .leading, spacing: 5) {
+                        Toggle("Use improved monotonic timer", isOn: improvedTimerBinding)
+                            .toggleStyle(.checkbox)
+                        Text("Monotonic timing is resilient to changes to the system clock.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
+        }
+        .frame(width: 660, height: 470)
+    }
+
+    private var clickBehaviorDescription: String {
+        settingsStore.settings.keepAwakeActivateOnLeftClick
+            ? "Left-click toggles Keep Awake; right-click opens the menu."
+            : "Right-click toggles Keep Awake; left-click opens the menu."
+    }
+
+    private var defaultDurationBinding: Binding<KeepAwakeDurationPreset> {
+        Binding(
+            get: { settingsStore.settings.keepAwakeDefaultDuration },
+            set: { value in settingsStore.update { $0.keepAwakeDefaultDuration = value } }
+        )
+    }
+
+    private var activateAtLaunchBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings.keepAwakeActivateAtLaunch },
+            set: { value in settingsStore.update { $0.keepAwakeActivateAtLaunch = value } }
+        )
+    }
+
+    private var activateOnLeftClickBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings.keepAwakeActivateOnLeftClick },
+            set: { value in settingsStore.update { $0.keepAwakeActivateOnLeftClick = value } }
+        )
+    }
+
+    private var shortcutBinding: Binding<GlobalShortcut?> {
+        Binding(
+            get: { settingsStore.settings.keepAwakeShortcut },
+            set: { value in settingsStore.update { $0.keepAwakeShortcut = value } }
+        )
+    }
+
+    private var allowDisplaySleepBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings.keepAwakeAllowDisplaySleep },
+            set: { value in settingsStore.update { $0.keepAwakeAllowDisplaySleep = value } }
+        )
+    }
+
+    private var allowSleepWhenLockedBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings.keepAwakeAllowSleepWhenLocked },
+            set: { value in settingsStore.update { $0.keepAwakeAllowSleepWhenLocked = value } }
+        )
+    }
+
+    private var deactivateOnBatteryBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings.keepAwakeDeactivateOnBattery },
+            set: { value in settingsStore.update { $0.keepAwakeDeactivateOnBattery = value } }
+        )
+    }
+
+    private var dimWhenInactiveBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings.keepAwakeDimWhenInactive },
+            set: { value in settingsStore.update { $0.keepAwakeDimWhenInactive = value } }
+        )
+    }
+
+    private var indicatorStyleBinding: Binding<KeepAwakeIndicatorStyle> {
+        Binding(
+            get: { settingsStore.settings.keepAwakeIndicatorStyle },
+            set: { value in settingsStore.update { $0.keepAwakeIndicatorStyle = value } }
+        )
+    }
+
+    private var improvedTimerBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings.keepAwakeUseImprovedTimer },
+            set: { value in settingsStore.update { $0.keepAwakeUseImprovedTimer = value } }
+        )
+    }
+}
+
 struct UpdateSettingsPane: View {
     @ObservedObject private var updateController: SparkleUpdateController
     @State private var automaticallyChecksForUpdates: Bool

@@ -39,6 +39,21 @@
 		A1000000000000000000001F /* UpdateController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* UpdateController.swift */; };
 		A10000000000000000000020 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000005 /* Sparkle */; };
 		A1000000000000000000000C /* JostleCore in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000003 /* JostleCore */; };
+		B10000000000000000000001 /* PowerAssertionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000001 /* PowerAssertionController.swift */; };
+		B10000000000000000000002 /* KeepAwakeTimer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000002 /* KeepAwakeTimer.swift */; };
+		B10000000000000000000003 /* CompletionNotificationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000003 /* CompletionNotificationController.swift */; };
+		B10000000000000000000004 /* PowerSourceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000004 /* PowerSourceMonitor.swift */; };
+		B10000000000000000000005 /* ScreenLockMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000005 /* ScreenLockMonitor.swift */; };
+		B10000000000000000000006 /* KeepAwakeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000006 /* KeepAwakeController.swift */; };
+		B10000000000000000000007 /* KeepAwakeControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000007 /* KeepAwakeControllerTests.swift */; };
+		B10000000000000000000008 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B20000000000000000000008 /* IOKit.framework */; };
+		B10000000000000000000009 /* UserNotifications.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B20000000000000000000009 /* UserNotifications.framework */; };
+		B10000000000000000000010 /* GlobalShortcutController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000010 /* GlobalShortcutController.swift */; };
+		B10000000000000000000011 /* ShortcutRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000011 /* ShortcutRecorder.swift */; };
+		B10000000000000000000012 /* StatusIconRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000012 /* StatusIconRenderer.swift */; };
+		B10000000000000000000013 /* ShortcutFormatterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000013 /* ShortcutFormatterTests.swift */; };
+		B10000000000000000000014 /* KeepAwakeIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000014 /* KeepAwakeIntents.swift */; };
+		B10000000000000000000015 /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B20000000000000000000015 /* AppIntents.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -81,6 +96,21 @@
 		A20000000000000000000022 /* AppBrand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBrand.swift; sourceTree = "<group>"; };
 		A20000000000000000000023 /* AppBrandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBrandTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000024 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
+		B20000000000000000000001 /* PowerAssertionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerAssertionController.swift; sourceTree = "<group>"; };
+		B20000000000000000000002 /* KeepAwakeTimer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepAwakeTimer.swift; sourceTree = "<group>"; };
+		B20000000000000000000003 /* CompletionNotificationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionNotificationController.swift; sourceTree = "<group>"; };
+		B20000000000000000000004 /* PowerSourceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PowerSourceMonitor.swift; sourceTree = "<group>"; };
+		B20000000000000000000005 /* ScreenLockMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenLockMonitor.swift; sourceTree = "<group>"; };
+		B20000000000000000000006 /* KeepAwakeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepAwakeController.swift; sourceTree = "<group>"; };
+		B20000000000000000000007 /* KeepAwakeControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepAwakeControllerTests.swift; sourceTree = "<group>"; };
+		B20000000000000000000008 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
+		B20000000000000000000009 /* UserNotifications.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UserNotifications.framework; path = System/Library/Frameworks/UserNotifications.framework; sourceTree = SDKROOT; };
+		B20000000000000000000010 /* GlobalShortcutController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalShortcutController.swift; sourceTree = "<group>"; };
+		B20000000000000000000011 /* ShortcutRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutRecorder.swift; sourceTree = "<group>"; };
+		B20000000000000000000012 /* StatusIconRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusIconRenderer.swift; sourceTree = "<group>"; };
+		B20000000000000000000013 /* ShortcutFormatterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutFormatterTests.swift; sourceTree = "<group>"; };
+		B20000000000000000000014 /* KeepAwakeIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepAwakeIntents.swift; sourceTree = "<group>"; };
+		B20000000000000000000015 /* AppIntents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppIntents.framework; path = System/Library/Frameworks/AppIntents.framework; sourceTree = SDKROOT; };
 		A2000000000000000000000C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000000000000000000000D /* Jostle.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Jostle.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2000000000000000000000E /* JostleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JostleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -96,6 +126,9 @@
 			files = (
 				A10000000000000000000009 /* JostleCore in Frameworks */,
 				A10000000000000000000020 /* Sparkle in Frameworks */,
+				B10000000000000000000008 /* IOKit.framework in Frameworks */,
+				B10000000000000000000009 /* UserNotifications.framework in Frameworks */,
+				B10000000000000000000015 /* AppIntents.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -142,6 +175,16 @@
 				A20000000000000000000020 /* RuntimeHealth.swift */,
 				A20000000000000000000022 /* AppBrand.swift */,
 				A20000000000000000000024 /* UpdateController.swift */,
+				B20000000000000000000001 /* PowerAssertionController.swift */,
+				B20000000000000000000002 /* KeepAwakeTimer.swift */,
+				B20000000000000000000003 /* CompletionNotificationController.swift */,
+				B20000000000000000000004 /* PowerSourceMonitor.swift */,
+				B20000000000000000000005 /* ScreenLockMonitor.swift */,
+				B20000000000000000000006 /* KeepAwakeController.swift */,
+				B20000000000000000000010 /* GlobalShortcutController.swift */,
+				B20000000000000000000011 /* ShortcutRecorder.swift */,
+				B20000000000000000000012 /* StatusIconRenderer.swift */,
+				B20000000000000000000014 /* KeepAwakeIntents.swift */,
 				A20000000000000000000008 /* Images.xcassets */,
 				A20000000000000000000007 /* Jostle-Info.plist */,
 				A20000000000000000000009 /* InfoPlist.strings */,
@@ -162,6 +205,8 @@
 				A2000000000000000000001F /* ResizeIndicatorGeometryTests.swift */,
 				A20000000000000000000021 /* RuntimeHealthTests.swift */,
 				A20000000000000000000023 /* AppBrandTests.swift */,
+				B20000000000000000000007 /* KeepAwakeControllerTests.swift */,
+				B20000000000000000000013 /* ShortcutFormatterTests.swift */,
 				A2000000000000000000000C /* Info.plist */,
 			);
 			path = JostleTests;
@@ -171,6 +216,9 @@
 			isa = PBXGroup;
 			children = (
 				A2000000000000000000000F /* Cocoa.framework */,
+				B20000000000000000000008 /* IOKit.framework */,
+				B20000000000000000000009 /* UserNotifications.framework */,
+				B20000000000000000000015 /* AppIntents.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -304,6 +352,16 @@
 				A1000000000000000000001B /* RuntimeHealth.swift in Sources */,
 				A1000000000000000000001D /* AppBrand.swift in Sources */,
 				A1000000000000000000001F /* UpdateController.swift in Sources */,
+				B10000000000000000000001 /* PowerAssertionController.swift in Sources */,
+				B10000000000000000000002 /* KeepAwakeTimer.swift in Sources */,
+				B10000000000000000000003 /* CompletionNotificationController.swift in Sources */,
+				B10000000000000000000004 /* PowerSourceMonitor.swift in Sources */,
+				B10000000000000000000005 /* ScreenLockMonitor.swift in Sources */,
+				B10000000000000000000006 /* KeepAwakeController.swift in Sources */,
+				B10000000000000000000010 /* GlobalShortcutController.swift in Sources */,
+				B10000000000000000000011 /* ShortcutRecorder.swift in Sources */,
+				B10000000000000000000012 /* StatusIconRenderer.swift in Sources */,
+				B10000000000000000000014 /* KeepAwakeIntents.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -321,6 +379,8 @@
 				A1000000000000000000001A /* ResizeIndicatorGeometryTests.swift in Sources */,
 				A1000000000000000000001C /* RuntimeHealthTests.swift in Sources */,
 				A1000000000000000000001E /* AppBrandTests.swift in Sources */,
+				B10000000000000000000007 /* KeepAwakeControllerTests.swift in Sources */,
+				B10000000000000000000013 /* ShortcutFormatterTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -398,7 +458,7 @@
 				ENABLE_TESTABILITY = YES;
 				INFOPLIST_FILE = Jostle/Jostle-Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 2026.9.2;
 				PRODUCT_BUNDLE_IDENTIFIER = fm.pau.jostle.development;
 				PRODUCT_MODULE_NAME = Jostle;
@@ -420,7 +480,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = Jostle/Jostle-Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 2026.9.2;
 				PRODUCT_BUNDLE_IDENTIFIER = fm.pau.jostle;
 				PRODUCT_MODULE_NAME = Jostle;
@@ -470,7 +530,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				SDKROOT = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -483,7 +543,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				SDKROOT = macosx;
 			};
 			name = Release;

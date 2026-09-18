@@ -14,6 +14,16 @@ final class SettingsTests: XCTestCase {
         XCTAssertEqual(JostleSettings.defaults.snapGap, 8)
         XCTAssertEqual(JostleSettings.defaults.snapScreenMargin, 0)
         XCTAssertEqual(JostleSettings.defaults.excludedApplications, [:])
+        XCTAssertEqual(JostleSettings.defaults.keepAwakeDefaultDuration, .indefinitely)
+        XCTAssertFalse(JostleSettings.defaults.keepAwakeActivateAtLaunch)
+        XCTAssertFalse(JostleSettings.defaults.keepAwakeActivateOnLeftClick)
+        XCTAssertFalse(JostleSettings.defaults.keepAwakeAllowDisplaySleep)
+        XCTAssertFalse(JostleSettings.defaults.keepAwakeAllowSleepWhenLocked)
+        XCTAssertFalse(JostleSettings.defaults.keepAwakeDeactivateOnBattery)
+        XCTAssertFalse(JostleSettings.defaults.keepAwakeDimWhenInactive)
+        XCTAssertEqual(JostleSettings.defaults.keepAwakeIndicatorStyle, .normal)
+        XCTAssertTrue(JostleSettings.defaults.keepAwakeUseImprovedTimer)
+        XCTAssertNil(JostleSettings.defaults.keepAwakeShortcut)
     }
 
     func testSettingsRoundTripThroughCodable() throws {
@@ -27,7 +37,17 @@ final class SettingsTests: XCTestCase {
             snapEnabled: false,
             snapGap: 14,
             snapScreenMargin: 6,
-            excludedApplications: ["com.example.Game": "Game"]
+            excludedApplications: ["com.example.Game": "Game"],
+            keepAwakeDefaultDuration: .fourHours,
+            keepAwakeActivateAtLaunch: true,
+            keepAwakeActivateOnLeftClick: true,
+            keepAwakeAllowDisplaySleep: true,
+            keepAwakeAllowSleepWhenLocked: true,
+            keepAwakeDeactivateOnBattery: true,
+            keepAwakeDimWhenInactive: true,
+            keepAwakeIndicatorStyle: .coloredGreen,
+            keepAwakeUseImprovedTimer: false,
+            keepAwakeShortcut: GlobalShortcut(keyCode: 37, modifiers: [.control, .command])
         )
 
         let data = try JSONEncoder().encode(settings)
@@ -55,6 +75,16 @@ final class SettingsTests: XCTestCase {
         XCTAssertEqual(settings.snapGap, 8)
         XCTAssertEqual(settings.snapScreenMargin, 0)
         XCTAssertEqual(settings.excludedApplications, ["com.example.Game": "Game"])
+        XCTAssertEqual(settings.keepAwakeDefaultDuration, .indefinitely)
+        XCTAssertFalse(settings.keepAwakeActivateAtLaunch)
+        XCTAssertFalse(settings.keepAwakeActivateOnLeftClick)
+        XCTAssertFalse(settings.keepAwakeAllowDisplaySleep)
+        XCTAssertFalse(settings.keepAwakeAllowSleepWhenLocked)
+        XCTAssertFalse(settings.keepAwakeDeactivateOnBattery)
+        XCTAssertFalse(settings.keepAwakeDimWhenInactive)
+        XCTAssertEqual(settings.keepAwakeIndicatorStyle, .normal)
+        XCTAssertTrue(settings.keepAwakeUseImprovedTimer)
+        XCTAssertNil(settings.keepAwakeShortcut)
     }
 
     func testMutationsAreTypedAndIdempotent() {

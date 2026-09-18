@@ -37,7 +37,10 @@ final class StatusMenuControllerTests: XCTestCase {
         let controller = makeController()
 
         XCTAssertEqual(commandItems(in: controller).map(\.title), [
-            "Jostle Enabled",
+            "Window Gestures Enabled",
+            "Keep Mac Awake",
+            "Keep Awake For",
+            "Allow Display to Sleep",
             "Start at Login",
             "Exclude Current App",
             "Settings…",
@@ -75,14 +78,14 @@ final class StatusMenuControllerTests: XCTestCase {
             refreshCount += 1
         })
         let item = try XCTUnwrap(
-            commandItems(in: controller).first { $0.title == "Jostle Enabled" }
+            commandItems(in: controller).first { $0.title == "Window Gestures Enabled" }
         )
         XCTAssertEqual(item.state, .on)
 
         XCTAssertTrue(NSApplication.shared.sendAction(item.action!, to: item.target, from: item))
 
         XCTAssertEqual(
-            commandItems(in: controller).first { $0.title == "Jostle Enabled" }?.state,
+            commandItems(in: controller).first { $0.title == "Window Gestures Enabled" }?.state,
             .off
         )
         XCTAssertEqual(refreshCount, 1)
@@ -174,7 +177,10 @@ final class StatusMenuControllerTests: XCTestCase {
 
         XCTAssertEqual(commandItems(in: controller).map(\.title), [
             "Accessibility Access Required…",
-            "Jostle Enabled",
+            "Window Gestures Enabled",
+            "Keep Mac Awake",
+            "Keep Awake For",
+            "Allow Display to Sleep",
             "Start at Login",
             "Exclude Current App",
             "Settings…",
@@ -182,6 +188,96 @@ final class StatusMenuControllerTests: XCTestCase {
         ])
         XCTAssertFalse(commandItems(in: controller)[1].isEnabled)
         XCTAssertEqual(commandItems(in: controller)[1].state, .off)
+    }
+
+    func testStatusIconUsesCalmFrameTemplateWithStatefulCenter() {
+        let baseImage = NSImage(size: NSSize(width: 16, height: 16))
+        let idle = StatusIconRenderer.presentation(
+            baseImage: baseImage,
+            applicationName: "Jostle",
+            windowGesturesAvailable: true,
+            centerState: .none,
+            dimWhenInactive: false,
+            indicatorStyle: .normal
+        )
+        let awake = StatusIconRenderer.presentation(
+            baseImage: baseImage,
+            applicationName: "Jostle",
+            windowGesturesAvailable: false,
+            centerState: .awake,
+            dimWhenInactive: true,
+            indicatorStyle: .normal
+        )
+        let colored = StatusIconRenderer.presentation(
+            baseImage: baseImage,
+            applicationName: "Jostle",
+            windowGesturesAvailable: true,
+            centerState: .awake,
+            dimWhenInactive: false,
+            indicatorStyle: .coloredGreen
+        )
+
+        XCTAssertTrue(idle.image.isTemplate)
+        XCTAssertNil(idle.overlaySymbolName)
+        XCTAssertNil(idle.iconTintColor)
+
+        XCTAssertTrue(awake.image.isTemplate)
+        XCTAssertEqual(awake.overlaySymbolName, "cup.and.heat.waves.fill")
+        XCTAssertNotNil(awake.overlayTintColor)
+        XCTAssertFalse(awake.shouldDim, "Keep Awake must remain visible without Accessibility")
+
+        XCTAssertTrue(colored.image.isTemplate)
+        XCTAssertNil(colored.overlaySymbolName)
+        XCTAssertTrue(colored.iconTintColor?.isEqual(NSColor.systemGreen) == true)
+    }
+
+    func testStatusIconRepresentsPausedAndAttentionStates() {
+        let baseImage = NSImage(size: NSSize(width: 16, height: 16))
+        let paused = StatusIconRenderer.presentation(
+            baseImage: baseImage,
+            applicationName: "Jostle",
+            windowGesturesAvailable: false,
+            centerState: .paused,
+            dimWhenInactive: true,
+            indicatorStyle: .normal
+        )
+        let attention = StatusIconRenderer.presentation(
+            baseImage: baseImage,
+            applicationName: "Jostle",
+            windowGesturesAvailable: true,
+            centerState: .attention,
+            dimWhenInactive: false,
+            indicatorStyle: .normal
+        )
+
+        XCTAssertNil(paused.overlaySymbolName)
+        XCTAssertFalse(paused.shouldDim)
+        XCTAssertEqual(
+            paused.image.accessibilityDescription,
+            "Jostle, Keep Awake paused while locked"
+        )
+        XCTAssertEqual(attention.overlaySymbolName, "exclamationmark")
+        XCTAssertEqual(
+            attention.image.accessibilityDescription,
+            "Jostle, Keep Awake needs attention"
+        )
+    }
+
+    func testAccessibilityFailureDoesNotDisableKeepAwake() throws {
+        let controller = makeController()
+        controller.setRuntimeAvailability(.accessibilityRequired)
+        let item = try XCTUnwrap(
+            commandItems(in: controller).first { $0.title == "Keep Mac Awake" }
+        )
+
+        XCTAssertTrue(item.isEnabled)
+        XCTAssertTrue(NSApplication.shared.sendAction(item.action!, to: item.target, from: item))
+
+        let activeItem = try XCTUnwrap(
+            commandItems(in: controller).first { $0.title.hasPrefix("Keep Mac Awake —") }
+        )
+        XCTAssertEqual(activeItem.state, .on)
+        XCTAssertTrue(activeItem.isEnabled)
     }
 
     func testEventMonitorFailureOffersRetry() throws {
@@ -193,7 +289,10 @@ final class StatusMenuControllerTests: XCTestCase {
 
         XCTAssertEqual(commandItems(in: controller).map(\.title), [
             "Event Monitor Unavailable — Retry",
-            "Jostle Enabled",
+            "Window Gestures Enabled",
+            "Keep Mac Awake",
+            "Keep Awake For",
+            "Allow Display to Sleep",
             "Start at Login",
             "Exclude Current App",
             "Settings…",
@@ -208,6 +307,63 @@ final class StatusMenuControllerTests: XCTestCase {
             )
         )
         XCTAssertEqual(retryCount, 1)
+    }
+
+    func testKeepAwakeMenuStartsDefaultAndPresetSessions() throws {
+        let controller = makeController()
+        let toggle = try XCTUnwrap(
+            commandItems(in: controller).first { $0.title == "Keep Mac Awake" }
+        )
+
+        XCTAssertTrue(NSApplication.shared.sendAction(toggle.action!, to: toggle.target, from: toggle))
+        var activeItem = try XCTUnwrap(
+            commandItems(in: controller).first { $0.title.hasPrefix("Keep Mac Awake —") }
+        )
+        XCTAssertEqual(activeItem.state, .on)
+        XCTAssertTrue(activeItem.title.contains("Indefinitely"))
+
+        let durationRoot = try XCTUnwrap(
+            commandItems(in: controller).first { $0.title == "Keep Awake For" }
+        )
+        let oneHour = try XCTUnwrap(durationRoot.submenu?.item(withTitle: "1 Hour"))
+        XCTAssertTrue(NSApplication.shared.sendAction(oneHour.action!, to: oneHour.target, from: oneHour))
+        activeItem = try XCTUnwrap(
+            commandItems(in: controller).first { $0.title.hasPrefix("Keep Mac Awake —") }
+        )
+        XCTAssertTrue(activeItem.title.contains("1h"))
+    }
+
+    func testConfiguredStatusClickTogglesKeepAwake() {
+        let store = SettingsStore(userDefaults: userDefaults)
+        let controller = makeController(settingsStore: store)
+
+        controller.handleStatusItemClick(type: .rightMouseUp)
+        XCTAssertNotNil(
+            commandItems(in: controller).first { $0.title.contains("Indefinitely") }
+        )
+
+        controller.handleStatusItemClick(type: .rightMouseUp)
+        store.update { $0.keepAwakeActivateOnLeftClick = true }
+        controller.handleStatusItemClick(type: .leftMouseUp)
+        XCTAssertNotNil(
+            commandItems(in: controller).first { $0.title.contains("Indefinitely") }
+        )
+    }
+
+    func testAllowDisplaySleepMenuItemUpdatesSettings() throws {
+        let store = SettingsStore(userDefaults: userDefaults)
+        let controller = makeController(settingsStore: store)
+        let item = try XCTUnwrap(
+            commandItems(in: controller).first { $0.title == "Allow Display to Sleep" }
+        )
+
+        XCTAssertTrue(NSApplication.shared.sendAction(item.action!, to: item.target, from: item))
+
+        XCTAssertTrue(store.settings.keepAwakeAllowDisplaySleep)
+        XCTAssertEqual(
+            commandItems(in: controller).first { $0.title == "Allow Display to Sleep" }?.state,
+            .on
+        )
     }
 
     private func makeController(
@@ -229,9 +385,16 @@ final class StatusMenuControllerTests: XCTestCase {
         let loginItemController = LoginItemController(
             service: loginItemService ?? TestLoginItemService()
         )
+        let keepAwakeController = KeepAwakeController(
+            settingsStore: store,
+            powerAssertion: TestPowerAssertion(),
+            timer: TestKeepAwakeTimer(),
+            notifier: TestCompletionNotifier()
+        )
         return StatusMenuController(
             settingsStore: store,
             eventTapController: eventTapController,
+            keepAwakeController: keepAwakeController,
             loginItemController: loginItemController,
             updateController: updateController,
             currentApplicationProvider: currentApplicationProvider,

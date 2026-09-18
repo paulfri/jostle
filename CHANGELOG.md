@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Add integrated Keep Awake sessions with preset durations, display-sleep control, lock pausing, battery deactivation, completion notifications, and configurable menu-bar indicators.
+- Introduce Jostle's Calm frame identity across the app icon, menu bar, Settings, and Keep Awake state language.
+- Add configurable menu-bar click behavior and a recordable global Keep Awake shortcut.
+- Add `jostle:` automation URLs plus Set and Get Keep Awake actions for Shortcuts.
+- Raise the minimum supported version to macOS 13 and use `SMAppService` exclusively for launch at login.
+
 ## 2026.9.2 — 2026-09-18
 
 - Add the application runpath required to load Sparkle at launch.
