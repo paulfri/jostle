@@ -241,9 +241,7 @@ final class StatusMenuControllerTests: XCTestCase {
     }
 
     func testStatusIconUsesCalmFrameTemplateWithStatefulCenter() {
-        let baseImage = NSImage(size: NSSize(width: 16, height: 16))
         let idle = StatusIconRenderer.presentation(
-            baseImage: baseImage,
             applicationName: "Jostle",
             windowGesturesAvailable: true,
             centerState: .none,
@@ -251,7 +249,6 @@ final class StatusMenuControllerTests: XCTestCase {
             indicatorStyle: .normal
         )
         let awake = StatusIconRenderer.presentation(
-            baseImage: baseImage,
             applicationName: "Jostle",
             windowGesturesAvailable: false,
             centerState: .awake,
@@ -259,7 +256,6 @@ final class StatusMenuControllerTests: XCTestCase {
             indicatorStyle: .normal
         )
         let colored = StatusIconRenderer.presentation(
-            baseImage: baseImage,
             applicationName: "Jostle",
             windowGesturesAvailable: true,
             centerState: .awake,
@@ -268,12 +264,28 @@ final class StatusMenuControllerTests: XCTestCase {
         )
 
         XCTAssertTrue(idle.image.isTemplate)
+        XCTAssertEqual(idle.image.size, NSSize(width: 16, height: 16))
+        XCTAssertEqual(idle.image.size.width, idle.image.size.height)
+        XCTAssertEqual(
+            StatusIconRenderer.frameCenterlineBounds.insetBy(
+                dx: -StatusIconRenderer.frameLineWidth / 2,
+                dy: -StatusIconRenderer.frameLineWidth / 2
+            ),
+            NSRect(origin: .zero, size: StatusIconRenderer.canvasSize)
+        )
+        XCTAssertEqual(StatusIconRenderer.centerSymbolSize, NSSize(width: 12, height: 12))
+        XCTAssertEqual(
+            StatusIconRenderer.centerSymbolFrame(
+                in: NSRect(x: 10, y: 3, width: 16, height: 16)
+            ),
+            NSRect(x: 12, y: 5, width: 12, height: 12)
+        )
         XCTAssertNil(idle.overlaySymbolName)
         XCTAssertNil(idle.iconTintColor)
 
         XCTAssertTrue(awake.image.isTemplate)
-        XCTAssertEqual(awake.overlaySymbolName, "cup.and.heat.waves.fill")
-        XCTAssertNotNil(awake.overlayTintColor)
+        XCTAssertEqual(awake.overlaySymbolName, "cup.and.heat.waves")
+        XCTAssertTrue(awake.overlayTintColor?.isEqual(NSColor.labelColor) == true)
         XCTAssertFalse(awake.shouldDim, "Keep Awake must remain visible without Accessibility")
 
         XCTAssertTrue(colored.image.isTemplate)
@@ -282,9 +294,7 @@ final class StatusMenuControllerTests: XCTestCase {
     }
 
     func testStatusIconRepresentsPausedAndAttentionStates() {
-        let baseImage = NSImage(size: NSSize(width: 16, height: 16))
         let paused = StatusIconRenderer.presentation(
-            baseImage: baseImage,
             applicationName: "Jostle",
             windowGesturesAvailable: false,
             centerState: .paused,
@@ -292,7 +302,6 @@ final class StatusMenuControllerTests: XCTestCase {
             indicatorStyle: .normal
         )
         let attention = StatusIconRenderer.presentation(
-            baseImage: baseImage,
             applicationName: "Jostle",
             windowGesturesAvailable: true,
             centerState: .attention,

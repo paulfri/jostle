@@ -17,7 +17,6 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     private let onRuntimeRefresh: () -> Void
     private let onOpenSettings: () -> Void
     private let statusItem: NSStatusItem
-    private let baseImage: NSImage
     private let centerStateImageView = StatusCenterImageView()
     private let menu = NSMenu()
     private weak var keepAwakeToggleItem: NSMenuItem?
@@ -57,12 +56,6 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         self.onRuntimeRefresh = onRuntimeRefresh
         self.onOpenSettings = onOpenSettings
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        baseImage = NSImage(named: "MenuIcon")
-            ?? NSImage(
-                systemSymbolName: "viewfinder",
-                accessibilityDescription: applicationName
-            )
-            ?? NSImage(size: NSSize(width: 16, height: 16))
         super.init()
 
         menu.autoenablesItems = false
@@ -73,18 +66,9 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
 
             centerStateImageView.imageScaling = .scaleProportionallyDown
-            centerStateImageView.translatesAutoresizingMaskIntoConstraints = false
+            centerStateImageView.autoresizingMask = []
             centerStateImageView.setAccessibilityElement(false)
             button.addSubview(centerStateImageView)
-            NSLayoutConstraint.activate([
-                centerStateImageView.centerXAnchor.constraint(
-                    equalTo: button.leadingAnchor,
-                    constant: NSStatusBar.system.thickness / 2
-                ),
-                centerStateImageView.centerYAnchor.constraint(equalTo: button.centerYAnchor),
-                centerStateImageView.widthAnchor.constraint(equalToConstant: 8),
-                centerStateImageView.heightAnchor.constraint(equalToConstant: 8),
-            ])
         }
         settingsStore.onChange = { [weak self] in self?.refresh() }
         keepAwakeController.onChange = { [weak self] in self?.refresh() }
@@ -390,7 +374,6 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         let windowAvailable = runtimeAvailability == .ready
             && eventTapController.requestedEnabled
         let presentation = StatusIconRenderer.presentation(
-            baseImage: baseImage,
             applicationName: applicationName,
             windowGesturesAvailable: windowAvailable,
             centerState: statusCenterState,
@@ -412,7 +395,10 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
                systemSymbolName: symbolName,
                accessibilityDescription: nil
            )?.withSymbolConfiguration(
-               NSImage.SymbolConfiguration(pointSize: 7.5, weight: .semibold)
+               NSImage.SymbolConfiguration(
+                   pointSize: StatusIconRenderer.centerSymbolPointSize,
+                   weight: .semibold
+               )
            ) {
             symbol.isTemplate = true
             centerStateImageView.image = symbol
@@ -421,6 +407,14 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         } else {
             centerStateImageView.image = nil
             centerStateImageView.isHidden = true
+        }
+
+        if let button = statusItem.button,
+           let cell = button.cell {
+            button.layoutSubtreeIfNeeded()
+            centerStateImageView.frame = StatusIconRenderer.centerSymbolFrame(
+                in: cell.imageRect(forBounds: button.bounds)
+            )
         }
     }
 
