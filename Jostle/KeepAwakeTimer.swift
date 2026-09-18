@@ -14,7 +14,7 @@ protocol KeepAwakeTimerServicing: AnyObject {
     var isPaused: Bool { get }
     var onCompletion: (() -> Void)? { get set }
 
-    func start(duration: TimeInterval, improved: Bool)
+    func start(duration: TimeInterval)
     func pause()
     func resume()
     func cancel()
@@ -24,22 +24,17 @@ final class KeepAwakeTimer: KeepAwakeTimerServicing, @unchecked Sendable {
     var onCompletion: (() -> Void)?
 
     private let queue: DispatchQueue
-    private let wallClockNow: () -> TimeInterval
     private let monotonicNow: () -> TimeInterval
     private var continuousTask: Task<Void, Never>?
-    private var legacyTimer: Timer?
     private var storedRemaining: TimeInterval?
     private var deadline: TimeInterval?
     private var scheduleGeneration: UInt = 0
-    private var usesImprovedTimer = true
 
     init(
         queue: DispatchQueue = .main,
-        wallClockNow: @escaping () -> TimeInterval = { Date().timeIntervalSinceReferenceDate },
         monotonicNow: @escaping () -> TimeInterval = { continuousTime() }
     ) {
         self.queue = queue
-        self.wallClockNow = wallClockNow
         self.monotonicNow = monotonicNow
     }
 
@@ -57,12 +52,11 @@ final class KeepAwakeTimer: KeepAwakeTimerServicing, @unchecked Sendable {
         storedRemaining != nil && deadline == nil
     }
 
-    func start(duration: TimeInterval, improved: Bool) {
+    func start(duration: TimeInterval) {
         cancel()
         guard duration.isFinite, duration > 0 else {
             return
         }
-        usesImprovedTimer = improved
         storedRemaining = duration
         schedule(after: duration)
     }
@@ -90,7 +84,7 @@ final class KeepAwakeTimer: KeepAwakeTimerServicing, @unchecked Sendable {
     }
 
     private var now: TimeInterval {
-        usesImprovedTimer ? monotonicNow() : wallClockNow()
+        monotonicNow()
     }
 
     private func schedule(after interval: TimeInterval) {
@@ -99,26 +93,18 @@ final class KeepAwakeTimer: KeepAwakeTimerServicing, @unchecked Sendable {
         deadline = now + interval
         let generation = scheduleGeneration
 
-        if usesImprovedTimer {
-            let clock = ContinuousClock()
-            let deadline = clock.now.advanced(by: .seconds(interval))
-            continuousTask = Task { [weak self] in
-                do {
-                    try await clock.sleep(until: deadline)
-                } catch {
-                    return
-                }
-                guard !Task.isCancelled else { return }
-                self?.queue.async { [weak self] in
-                    self?.complete(ifGenerationMatches: generation)
-                }
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(interval))
+        continuousTask = Task { [weak self] in
+            do {
+                try await clock.sleep(until: deadline)
+            } catch {
+                return
             }
-        } else {
-            let timer = Timer(timeInterval: interval, repeats: false) { [weak self] _ in
+            guard !Task.isCancelled else { return }
+            self?.queue.async { [weak self] in
                 self?.complete(ifGenerationMatches: generation)
             }
-            legacyTimer = timer
-            RunLoop.main.add(timer, forMode: .common)
         }
     }
 
@@ -126,8 +112,6 @@ final class KeepAwakeTimer: KeepAwakeTimerServicing, @unchecked Sendable {
         scheduleGeneration &+= 1
         continuousTask?.cancel()
         continuousTask = nil
-        legacyTimer?.invalidate()
-        legacyTimer = nil
     }
 
     private func complete(ifGenerationMatches expectedGeneration: UInt? = nil) {

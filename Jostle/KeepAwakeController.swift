@@ -110,10 +110,7 @@ final class KeepAwakeController: ObservableObject {
         timer.cancel()
         if let seconds = duration.seconds {
             notifier.prepare()
-            timer.start(
-                duration: seconds,
-                improved: settingsStore.settings.keepAwakeUseImprovedTimer
-            )
+            timer.start(duration: seconds)
         }
         state = .active(duration)
 

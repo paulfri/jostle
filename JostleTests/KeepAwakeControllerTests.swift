@@ -38,13 +38,12 @@ final class KeepAwakeControllerTests: XCTestCase {
         XCTAssertEqual(harness.assertion.releaseCount, 1)
     }
 
-    func testFiniteSessionUsesSelectedTimerAndNotifiesAtCompletion() {
+    func testFiniteSessionUsesMonotonicTimerAndNotifiesAtCompletion() {
         let harness = makeHarness()
-        harness.store.update { $0.keepAwakeUseImprovedTimer = false }
 
         harness.controller.start(.seconds(90))
 
-        XCTAssertEqual(harness.timer.startCalls, [.init(duration: 90, improved: false)])
+        XCTAssertEqual(harness.timer.startCalls, [.init(duration: 90)])
         XCTAssertEqual(harness.notifier.prepareCount, 1)
 
         harness.timer.complete()
@@ -91,23 +90,14 @@ final class KeepAwakeControllerTests: XCTestCase {
         XCTAssertTrue(harness.controller.isEnabled)
     }
 
-    func testImprovedTimerUsesContinuousTimeInsteadOfWallClock() throws {
-        var wallClock: TimeInterval = 100
+    func testTimerUsesContinuousTime() throws {
         var continuousClock: TimeInterval = 200
-        let timer = KeepAwakeTimer(
-            wallClockNow: { wallClock },
-            monotonicNow: { continuousClock }
-        )
+        let timer = KeepAwakeTimer(monotonicNow: { continuousClock })
 
-        timer.start(duration: 120, improved: true)
-        wallClock += 3_600
+        timer.start(duration: 120)
         continuousClock += 30
-        XCTAssertEqual(try XCTUnwrap(timer.remainingTime), 90, accuracy: 0.001)
 
-        timer.start(duration: 120, improved: false)
-        wallClock += 45
-        continuousClock += 3_600
-        XCTAssertEqual(try XCTUnwrap(timer.remainingTime), 75, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(timer.remainingTime), 90, accuracy: 0.001)
         timer.cancel()
     }
 
@@ -199,7 +189,6 @@ final class TestPowerAssertion: PowerAssertionServicing {
 final class TestKeepAwakeTimer: KeepAwakeTimerServicing {
     struct StartCall: Equatable {
         let duration: TimeInterval
-        let improved: Bool
     }
 
     var remainingTime: TimeInterval?
@@ -209,8 +198,8 @@ final class TestKeepAwakeTimer: KeepAwakeTimerServicing {
     var pauseCount = 0
     var resumeCount = 0
 
-    func start(duration: TimeInterval, improved: Bool) {
-        startCalls.append(.init(duration: duration, improved: improved))
+    func start(duration: TimeInterval) {
+        startCalls.append(.init(duration: duration))
         remainingTime = duration
         isPaused = false
     }

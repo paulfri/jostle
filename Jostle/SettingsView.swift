@@ -269,6 +269,324 @@ struct SnappingSettingsPane: View {
     }
 }
 
+struct InputSettingsPane: View {
+    @ObservedObject var settingsStore: SettingsStore
+    @ObservedObject var pointingDeviceManager: PointingDeviceManager
+    let safeMode: Bool
+
+    private var displayedDevices: [PointingDeviceInfo] {
+        var byID = Dictionary(
+            uniqueKeysWithValues: pointingDeviceManager.devices.map { ($0.id, $0) }
+        )
+        for (key, rule) in settingsStore.settings.inputCustomization.deviceRules
+        where byID[key] == nil {
+            byID[key] = PointingDeviceInfo(
+                id: key,
+                displayName: "\(rule.displayName) — Disconnected",
+                category: rule.category,
+                registryID: nil
+            )
+        }
+        return byID.values.sorted {
+            $0.displayName.localizedCaseInsensitiveCompare($1.displayName) == .orderedAscending
+        }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Input Customization")
+                    .font(.headline)
+
+                Toggle("Enable input customizations", isOn: enabledBinding)
+                    .toggleStyle(.checkbox)
+                    .disabled(safeMode)
+
+                if safeMode {
+                    Label(
+                        "Jostle started in Safe Mode. Restart normally to enable input customizations.",
+                        systemImage: "exclamationmark.shield"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                }
+
+                Text("Window gestures and Keep Awake remain independently available.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Divider()
+
+                Text("Scrolling")
+                    .font(.headline)
+
+                PreferenceRow(label: "Direction:") {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Toggle("Reverse mouse scrolling", isOn: reverseMouseBinding)
+                            .toggleStyle(.checkbox)
+                        Toggle("Reverse trackpad scrolling", isOn: reverseTrackpadBinding)
+                            .toggleStyle(.checkbox)
+                        Toggle("Universal Back and Forward", isOn: universalBackForwardBinding)
+                            .toggleStyle(.checkbox)
+                        Text("Back and Forward apply only when Button 4 or 5 uses System Default.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Divider()
+
+                Text("Mouse Buttons")
+                    .font(.headline)
+
+                PreferenceRow(label: "Button 4:") {
+                    actionPicker(selection: buttonFourBinding)
+                }
+                PreferenceRow(label: "Button 5:") {
+                    actionPicker(selection: buttonFiveBinding)
+                }
+                Text("Move and Resize act while the selected button is dragged. Escape cancels the active window gesture.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Divider()
+
+                Text("Focus Follows Pointer")
+                    .font(.headline)
+
+                PreferenceRow(label: "Devices:") {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Toggle("Allow for mice", isOn: focusMouseBinding)
+                            .toggleStyle(.checkbox)
+                        Toggle("Allow for trackpads", isOn: focusTrackpadBinding)
+                            .toggleStyle(.checkbox)
+                        Text("The Apps pane still controls which applications use pointer focus.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Divider()
+
+                Text("Device Overrides")
+                    .font(.headline)
+
+                if displayedDevices.isEmpty {
+                    Text("No pointing devices detected.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                } else {
+                    VStack(spacing: 0) {
+                        ForEach(displayedDevices) { device in
+                            HStack(spacing: 10) {
+                                Image(systemName: device.category == .trackpad
+                                    ? "rectangle.and.hand.point.up.left"
+                                    : "computermouse")
+                                    .frame(width: 22)
+                                    .foregroundStyle(.secondary)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(device.displayName)
+                                        .lineLimit(1)
+                                    Text(device.category.title)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                featurePicker(
+                                    title: "Scroll",
+                                    selection: deviceReverseBinding(device),
+                                    defaultEnabled: categoryReverseDefault(device.category)
+                                )
+                                featurePicker(
+                                    title: "Focus",
+                                    selection: deviceFocusBinding(device),
+                                    defaultEnabled: categoryFocusDefault(device.category)
+                                )
+                                if settingsStore.settings.inputCustomization.deviceRules[device.id] != nil {
+                                    Button {
+                                        settingsStore.update {
+                                            $0.inputCustomization.removeDeviceRule(key: device.id)
+                                        }
+                                    } label: {
+                                        Image(systemName: "trash")
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .help("Forget this device override")
+                                }
+                            }
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 8)
+                            if device.id != displayedDevices.last?.id {
+                                Divider().padding(.leading, 42)
+                            }
+                        }
+                    }
+                    .background(Color(nsColor: .controlBackgroundColor))
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                    }
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
+        }
+        .frame(width: 660, height: 470)
+    }
+
+    private func actionPicker(selection: Binding<PointerButtonAction>) -> some View {
+        Picker("", selection: selection) {
+            ForEach(PointerButtonAction.allCases, id: \.self) { action in
+                Text(action.title).tag(action)
+            }
+        }
+        .labelsHidden()
+        .frame(width: 190, alignment: .leading)
+    }
+
+    private func featurePicker(
+        title: String,
+        selection: Binding<ApplicationFeatureSetting>,
+        defaultEnabled: Bool
+    ) -> some View {
+        Picker(title, selection: selection) {
+            Text("Default (\(defaultEnabled ? "On" : "Off"))")
+                .tag(ApplicationFeatureSetting.useDefault)
+            Text("On").tag(ApplicationFeatureSetting.enabled)
+            Text("Off").tag(ApplicationFeatureSetting.disabled)
+        }
+        .frame(width: 116)
+    }
+
+    private func categoryReverseDefault(_ category: PointingDeviceCategory) -> Bool {
+        switch category {
+        case .mouse: settingsStore.settings.inputCustomization.reverseMouseScrolling
+        case .trackpad: settingsStore.settings.inputCustomization.reverseTrackpadScrolling
+        case .unknown: false
+        }
+    }
+
+    private func categoryFocusDefault(_ category: PointingDeviceCategory) -> Bool {
+        switch category {
+        case .mouse: settingsStore.settings.inputCustomization.focusFollowsPointerForMouse
+        case .trackpad: settingsStore.settings.inputCustomization.focusFollowsPointerForTrackpad
+        case .unknown: true
+        }
+    }
+
+    private var enabledBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings.inputCustomization.isEnabled },
+            set: { value in settingsStore.update { $0.inputCustomization.isEnabled = value } }
+        )
+    }
+
+    private var reverseMouseBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings.inputCustomization.reverseMouseScrolling },
+            set: { value in
+                settingsStore.update { $0.inputCustomization.reverseMouseScrolling = value }
+            }
+        )
+    }
+
+    private var reverseTrackpadBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings.inputCustomization.reverseTrackpadScrolling },
+            set: { value in
+                settingsStore.update { $0.inputCustomization.reverseTrackpadScrolling = value }
+            }
+        )
+    }
+
+    private var universalBackForwardBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings.inputCustomization.universalBackForward },
+            set: { value in
+                settingsStore.update { $0.inputCustomization.universalBackForward = value }
+            }
+        )
+    }
+
+    private var buttonFourBinding: Binding<PointerButtonAction> {
+        Binding(
+            get: { settingsStore.settings.inputCustomization.buttonFourAction },
+            set: { value in settingsStore.update { $0.inputCustomization.buttonFourAction = value } }
+        )
+    }
+
+    private var buttonFiveBinding: Binding<PointerButtonAction> {
+        Binding(
+            get: { settingsStore.settings.inputCustomization.buttonFiveAction },
+            set: { value in settingsStore.update { $0.inputCustomization.buttonFiveAction = value } }
+        )
+    }
+
+    private var focusMouseBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings.inputCustomization.focusFollowsPointerForMouse },
+            set: { value in
+                settingsStore.update { $0.inputCustomization.focusFollowsPointerForMouse = value }
+            }
+        )
+    }
+
+    private var focusTrackpadBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings.inputCustomization.focusFollowsPointerForTrackpad },
+            set: { value in
+                settingsStore.update { $0.inputCustomization.focusFollowsPointerForTrackpad = value }
+            }
+        )
+    }
+
+    private func deviceReverseBinding(_ device: PointingDeviceInfo) -> Binding<ApplicationFeatureSetting> {
+        Binding(
+            get: {
+                settingsStore.settings.inputCustomization.deviceRules[device.id]?.reverseScrolling
+                    ?? .useDefault
+            },
+            set: { value in
+                settingsStore.update {
+                    $0.inputCustomization.setDeviceRule(
+                        key: device.id,
+                        displayName: device.displayName.replacingOccurrences(
+                            of: " — Disconnected",
+                            with: ""
+                        ),
+                        category: device.category,
+                        reverseScrolling: value
+                    )
+                }
+            }
+        )
+    }
+
+    private func deviceFocusBinding(_ device: PointingDeviceInfo) -> Binding<ApplicationFeatureSetting> {
+        Binding(
+            get: {
+                settingsStore.settings.inputCustomization.deviceRules[device.id]?.focusFollowsPointer
+                    ?? .useDefault
+            },
+            set: { value in
+                settingsStore.update {
+                    $0.inputCustomization.setDeviceRule(
+                        key: device.id,
+                        displayName: device.displayName.replacingOccurrences(
+                            of: " — Disconnected",
+                            with: ""
+                        ),
+                        category: device.category,
+                        focusFollowsPointer: value
+                    )
+                }
+            }
+        )
+    }
+}
+
 struct KeepAwakeSettingsPane: View {
     @ObservedObject var settingsStore: SettingsStore
     @ObservedObject var globalShortcutController: GlobalShortcutController
@@ -363,20 +681,6 @@ struct KeepAwakeSettingsPane: View {
                         .toggleStyle(.checkbox)
                 }
 
-                Divider()
-
-                Text("Advanced")
-                    .font(.headline)
-
-                PreferenceRow(label: "") {
-                    VStack(alignment: .leading, spacing: 5) {
-                        Toggle("Use improved monotonic timer", isOn: improvedTimerBinding)
-                            .toggleStyle(.checkbox)
-                        Text("Monotonic timing is resilient to changes to the system clock.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
@@ -453,12 +757,6 @@ struct KeepAwakeSettingsPane: View {
         )
     }
 
-    private var improvedTimerBinding: Binding<Bool> {
-        Binding(
-            get: { settingsStore.settings.keepAwakeUseImprovedTimer },
-            set: { value in settingsStore.update { $0.keepAwakeUseImprovedTimer = value } }
-        )
-    }
 }
 
 struct UpdateSettingsPane: View {

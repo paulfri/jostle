@@ -117,6 +117,26 @@ final class EventPolicyTests: XCTestCase {
         )
     }
 
+    func testOwnedMiddleButtonDoesNotConsumeAnExtraButtonRelease() {
+        let sideButtonUp = InputEvent(
+            type: .mouseUp,
+            button: .other,
+            modifiers: [],
+            buttonNumber: 3
+        )
+
+        XCTAssertEqual(
+            EventPolicy.intent(
+                for: sideButtonUp,
+                configuration: configuration(
+                    sessionActive: false,
+                    ownedActionButton: .other
+                )
+            ),
+            .passThrough
+        )
+    }
+
     func testOwnedMouseUpEndsAfterModifiersOrSessionAreLost() {
         let mouseUp = InputEvent(type: .mouseUp, button: .left, modifiers: [])
         XCTAssertEqual(

@@ -5,6 +5,7 @@ import JostleCore
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let settingsStore = SettingsStore()
     let loginItemController = LoginItemController()
+    let pointingDeviceManager = PointingDeviceManager()
     lazy var keepAwakeController = KeepAwakeController(settingsStore: settingsStore)
     lazy var globalShortcutController = GlobalShortcutController(settingsStore: settingsStore)
     private let updateController: SparkleUpdateController? = {
@@ -20,11 +21,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var runtimeHealthTimer: Timer?
     private let screenLockMonitor = ScreenLockMonitor()
     private let powerSourceMonitor = PowerSourceMonitor()
+    private var safeMode = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        safeMode = Self.beginLaunchSafetyTracking()
+        pointingDeviceManager.start()
         let throttleInterval = Self.minimumRefreshIntervalNanoseconds()
         let eventTapController = EventTapController(
             settingsStore: settingsStore,
+            pointingDeviceProvider: pointingDeviceManager,
+            safeMode: safeMode,
             gestureConfiguration: GestureConfiguration(
                 moveThrottleInterval: throttleInterval,
                 resizeThrottleInterval: throttleInterval
@@ -35,10 +41,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         globalShortcutController.onTrigger = { [weak keepAwakeController] in
             keepAwakeController?.toggle()
         }
+        eventTapController.onToggleKeepAwake = { [weak keepAwakeController] in
+            keepAwakeController?.toggle()
+        }
         let settingsWindowController = SettingsWindowController(
             settingsStore: settingsStore,
             loginItemController: loginItemController,
             globalShortcutController: globalShortcutController,
+            pointingDeviceManager: pointingDeviceManager,
+            safeMode: safeMode,
             updateController: updateController
         )
         let statusMenuController = StatusMenuController(
@@ -59,11 +70,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 statusMenuController?.setRecentApplication(application)
             }
         }
+        pointingDeviceManager.onDeviceDisconnected = { [weak eventTapController] _ in
+            eventTapController?.pointingDeviceDidDisconnect()
+        }
 
         self.eventTapController = eventTapController
         self.statusMenuController = statusMenuController
         self.settingsWindowController = settingsWindowController
-        if ProcessInfo.processInfo.arguments.contains("--show-settings") {
+        if ProcessInfo.processInfo.arguments.contains("--show-settings") || safeMode {
             DispatchQueue.main.async {
                 settingsWindowController.present()
             }
@@ -94,6 +108,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             name: NSWorkspace.sessionDidResignActiveNotification,
             object: nil
         )
+        notifications.addObserver(
+            self,
+            selector: #selector(systemWillSleep(_:)),
+            name: NSWorkspace.willSleepNotification,
+            object: nil
+        )
+        notifications.addObserver(
+            self,
+            selector: #selector(systemDidWake(_:)),
+            name: NSWorkspace.didWakeNotification,
+            object: nil
+        )
 
         screenLockMonitor.onLock = { [weak keepAwakeController] in
             keepAwakeController?.screenDidLock()
@@ -110,6 +136,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if settingsStore.settings.keepAwakeActivateAtLaunch {
             keepAwakeController.startDefault()
         }
+    }
+
+    func applicationShouldHandleReopen(
+        _ sender: NSApplication,
+        hasVisibleWindows flag: Bool
+    ) -> Bool {
+        settingsWindowController?.present()
+        return true
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
@@ -129,7 +163,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         powerSourceMonitor.stop()
         runtimeHealthTimer?.invalidate()
         eventTapController?.stop()
+        pointingDeviceManager.stop()
         keepAwakeController.shutdown()
+        Self.finishLaunchSafetyTracking()
     }
 
     @objc private func sessionDidBecomeActive(_ notification: Notification) {
@@ -139,6 +175,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func sessionDidResignActive(_ notification: Notification) {
         eventTapController?.setSessionActive(false)
+    }
+
+    @objc private func systemWillSleep(_ notification: Notification) {
+        eventTapController?.setSessionActive(false)
+    }
+
+    @objc private func systemDidWake(_ notification: Notification) {
+        eventTapController?.setSessionActive(true)
+        refreshRuntimeHealth()
     }
 
     @objc private func checkRuntimeHealth(_ timer: Timer) {
@@ -158,7 +203,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         let availability = RuntimeHealthPolicy.availability(
             accessibilityTrusted: trusted,
-            eventTapRequested: eventTapController.requestedEnabled,
+            eventTapRequested: eventTapController.eventTapRequested,
             eventTapOperational: operational && eventTapController.isOperational
         )
         statusMenuController.setRuntimeAvailability(availability)
@@ -169,6 +214,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true
         ] as CFDictionary
         return AXIsProcessTrustedWithOptions(options)
+    }
+
+    private static let cleanExitKey = "Jostle.launch.cleanExit"
+    private static let crashCountKey = "Jostle.launch.uncleanCount"
+
+    private static func beginLaunchSafetyTracking() -> Bool {
+        let defaults = UserDefaults.standard
+        let arguments = ProcessInfo.processInfo.arguments
+        let launchModifiers = NSEvent.modifierFlags.intersection([.shift, .option])
+        let requestedSafeMode = arguments.contains("--safe-mode")
+            || launchModifiers == [.shift, .option]
+
+        let hadPreviousMarker = defaults.object(forKey: cleanExitKey) != nil
+        let previousLaunchWasClean = defaults.bool(forKey: cleanExitKey)
+        let uncleanCount = hadPreviousMarker && !previousLaunchWasClean
+            ? defaults.integer(forKey: crashCountKey) + 1
+            : 0
+        defaults.set(uncleanCount, forKey: crashCountKey)
+        defaults.set(false, forKey: cleanExitKey)
+        return requestedSafeMode || uncleanCount >= 3
+    }
+
+    private static func finishLaunchSafetyTracking() {
+        let defaults = UserDefaults.standard
+        defaults.set(true, forKey: cleanExitKey)
+        defaults.set(0, forKey: crashCountKey)
     }
 
     private static func minimumRefreshIntervalNanoseconds() -> UInt64 {

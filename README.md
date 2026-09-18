@@ -13,7 +13,7 @@
   <a href="LICENSE.txt"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
 </p>
 
-Jostle is a native menu bar utility for controlling windows without hunting for title bars or tiny resize handles, and for preventing idle sleep when you need your Mac to stay awake. Hold a modifier, point anywhere inside a window, and drag, let focus follow the pointer for selected apps, or start a timed Keep Awake session from the same menu bar icon. Jostle stays out of the Dock and offers snapping, per-app rules, configurable spacing, automation, and optional launch-at-login and update checks.
+Jostle is a native menu bar utility for controlling windows without hunting for title bars or tiny resize handles, customizing mice and trackpads, and preventing idle sleep when you need your Mac to stay awake. Hold a modifier or an extra mouse button and drag from anywhere inside a window, reverse scrolling per device type, let focus follow the pointer for selected apps and devices, or start a timed Keep Awake session from the same menu bar icon. Jostle stays out of the Dock and offers snapping, per-app and per-device rules, configurable spacing, automation, and optional launch-at-login and update checks.
 
 ## Controls
 
@@ -32,6 +32,19 @@ The resize button can be changed from right click to middle click. Modifier keys
 
 The **Apps** settings let you choose the defaults for window controls and Focus Follows Pointer, then override either behavior for individual applications. This supports include-only setups such as enabling pointer focus for every `eqgame.exe` window while leaving all other applications unchanged. Focus can be immediate or delayed until the pointer rests.
 
+## Mouse and trackpad customization
+
+Enable **Input Customizations** from Jostle's menu or its **Input** settings tab. The opt-in MVP provides:
+
+- Independent reverse-scrolling defaults for mice and trackpads
+- Button 4 and Button 5 mappings for Back, Forward, move, resize, maximize, left/right tile, next display, and Keep Awake
+- A universal Back/Forward preset that maps otherwise-unassigned side buttons to `⌘[` and `⌘]`
+- Per-device scrolling and Focus Follows Pointer overrides for connected or previously configured pointing devices
+
+Button-held move and resize use the same safe window engine as Jostle's modifier gestures. A gesture remains bound to its initiating button through drag and release, and `Escape` cancels it. Input processing is fail-open: unsupported devices and unhandled events keep native macOS behavior.
+
+Input customization requires Accessibility permission. It can be disabled independently of window gestures and Keep Awake. After repeated unclean launches, Jostle starts in Safe Mode with input interception disabled; `--safe-mode` provides the same recovery path explicitly.
+
 ## Keep Awake
 
 Choose **Keep Awake** in Jostle's menu to prevent idle sleep indefinitely or for 10 or 30 minutes, or 1, 2, 4, 8, or 12 hours. By default, left-clicking the menu bar icon opens the menu and right-clicking toggles Keep Awake using your preferred duration. You can swap those actions or assign a global keyboard shortcut in Settings.
@@ -45,10 +58,9 @@ The Keep Awake settings also let you:
 - Turn Keep Awake off when the Mac switches from external power to battery
 - Start a session when Jostle launches
 - Choose the branded cup, a green or blue cup, or a fully colored active icon, and optionally dim the icon while inactive
-- Use a monotonic timer that remains accurate across sleep and clock changes
 - Show a notification when a timed session finishes
 
-Keep Awake is independent of Jostle's Accessibility permission, so it remains available even if window controls are disabled.
+Timed sessions always use monotonic timing so they remain accurate across sleep and system-clock changes. Keep Awake is independent of Jostle's Accessibility permission, so it remains available even if window controls are disabled.
 
 ### Automation
 
@@ -81,7 +93,10 @@ Duration parameters may use `hours` and `minutes` together. Values must be great
 - Use right click or middle click for resizing
 - Show the active resize edge while dragging
 - Add gaps between tiled windows and margins around the screen
-- Configure window controls and Focus Follows Pointer independently per app
+- Reverse scrolling independently for mice, trackpads, and individual pointing devices
+- Map extra mouse buttons to window, navigation, display, and Keep Awake actions
+- Move and resize windows by holding an extra mouse button
+- Configure window controls and Focus Follows Pointer independently per app and pointing device
 - Match apps without bundle identifiers, including Wine-hosted executables such as `eqgame.exe`
 - Choose immediate pointer focus or a 100, 250, or 500 ms dwell delay
 - Temporarily disable all window features from the menu bar icon
@@ -134,7 +149,7 @@ xcodebuild \
 swift test --package-path JostleCore
 ```
 
-The repository is split into a small AppKit/SwiftUI menu bar app in `Jostle/` and a deterministic Swift package in `JostleCore/` for event policy, gesture state, geometry, snapping, Keep Awake commands, URL parsing, and settings behavior.
+The repository is split into a small AppKit/SwiftUI menu bar app in `Jostle/` and a deterministic Swift package in `JostleCore/` for event policy, input profiles, gesture state, geometry, snapping, Keep Awake commands, URL parsing, and settings behavior.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidance and [docs/releasing.md](docs/releasing.md) for the signed release process.
 

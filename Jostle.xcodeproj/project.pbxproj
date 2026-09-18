@@ -54,6 +54,7 @@
 		B10000000000000000000013 /* ShortcutFormatterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000013 /* ShortcutFormatterTests.swift */; };
 		B10000000000000000000014 /* KeepAwakeIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000014 /* KeepAwakeIntents.swift */; };
 		B10000000000000000000015 /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B20000000000000000000015 /* AppIntents.framework */; };
+		C10000000000000000000001 /* PointingDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000001 /* PointingDeviceManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -111,6 +112,7 @@
 		B20000000000000000000013 /* ShortcutFormatterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutFormatterTests.swift; sourceTree = "<group>"; };
 		B20000000000000000000014 /* KeepAwakeIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepAwakeIntents.swift; sourceTree = "<group>"; };
 		B20000000000000000000015 /* AppIntents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppIntents.framework; path = System/Library/Frameworks/AppIntents.framework; sourceTree = SDKROOT; };
+		C20000000000000000000001 /* PointingDeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointingDeviceManager.swift; sourceTree = "<group>"; };
 		A2000000000000000000000C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000000000000000000000D /* Jostle.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Jostle.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2000000000000000000000E /* JostleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JostleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -185,6 +187,7 @@
 				B20000000000000000000011 /* ShortcutRecorder.swift */,
 				B20000000000000000000012 /* StatusIconRenderer.swift */,
 				B20000000000000000000014 /* KeepAwakeIntents.swift */,
+				C20000000000000000000001 /* PointingDeviceManager.swift */,
 				A20000000000000000000008 /* Images.xcassets */,
 				A20000000000000000000007 /* Jostle-Info.plist */,
 				A20000000000000000000009 /* InfoPlist.strings */,
@@ -362,6 +365,7 @@
 				B10000000000000000000011 /* ShortcutRecorder.swift in Sources */,
 				B10000000000000000000012 /* StatusIconRenderer.swift in Sources */,
 				B10000000000000000000014 /* KeepAwakeIntents.swift in Sources */,
+				C10000000000000000000001 /* PointingDeviceManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -38,6 +38,7 @@ final class StatusMenuControllerTests: XCTestCase {
 
         XCTAssertEqual(commandItems(in: controller).map(\.title), [
             "Window Features Enabled",
+            "Input Customizations Enabled",
             "Keep Mac Awake",
             "Keep Awake For",
             "Allow Display to Sleep",
@@ -89,6 +90,24 @@ final class StatusMenuControllerTests: XCTestCase {
             .off
         )
         XCTAssertEqual(refreshCount, 1)
+    }
+
+    func testInputCustomizationMenuItemUpdatesIndependentSetting() throws {
+        let store = SettingsStore(userDefaults: userDefaults)
+        let controller = makeController(settingsStore: store)
+        let item = try XCTUnwrap(
+            commandItems(in: controller).first { $0.title == "Input Customizations Enabled" }
+        )
+        XCTAssertEqual(item.state, .off)
+
+        XCTAssertTrue(NSApplication.shared.sendAction(item.action!, to: item.target, from: item))
+
+        XCTAssertTrue(store.settings.inputCustomization.isEnabled)
+        XCTAssertEqual(
+            commandItems(in: controller)
+                .first { $0.title == "Input Customizations Enabled" }?.state,
+            .on
+        )
     }
 
     func testStartAtLoginMenuItemTogglesTheLoginItemService() throws {
@@ -208,6 +227,7 @@ final class StatusMenuControllerTests: XCTestCase {
         XCTAssertEqual(commandItems(in: controller).map(\.title), [
             "Accessibility Access Required…",
             "Window Features Enabled",
+            "Input Customizations Enabled",
             "Keep Mac Awake",
             "Keep Awake For",
             "Allow Display to Sleep",
@@ -320,6 +340,7 @@ final class StatusMenuControllerTests: XCTestCase {
         XCTAssertEqual(commandItems(in: controller).map(\.title), [
             "Event Monitor Unavailable — Retry",
             "Window Features Enabled",
+            "Input Customizations Enabled",
             "Keep Mac Awake",
             "Keep Awake For",
             "Allow Display to Sleep",

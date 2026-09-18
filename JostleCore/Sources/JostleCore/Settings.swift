@@ -53,8 +53,8 @@ public struct JostleSettings: Codable, Equatable, Sendable {
     public var keepAwakeDeactivateOnBattery: Bool
     public var keepAwakeDimWhenInactive: Bool
     public var keepAwakeIndicatorStyle: KeepAwakeIndicatorStyle
-    public var keepAwakeUseImprovedTimer: Bool
     public var keepAwakeShortcut: GlobalShortcut?
+    public var inputCustomization: InputCustomizationSettings
 
     public init(
         modifiers: Set<Modifier> = [.control],
@@ -78,8 +78,8 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         keepAwakeDeactivateOnBattery: Bool = false,
         keepAwakeDimWhenInactive: Bool = false,
         keepAwakeIndicatorStyle: KeepAwakeIndicatorStyle = .normal,
-        keepAwakeUseImprovedTimer: Bool = true,
-        keepAwakeShortcut: GlobalShortcut? = nil
+        keepAwakeShortcut: GlobalShortcut? = nil,
+        inputCustomization: InputCustomizationSettings = .defaults
     ) {
         self.modifiers = modifiers
         self.bringWindowToFront = bringWindowToFront
@@ -102,8 +102,8 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         self.keepAwakeDeactivateOnBattery = keepAwakeDeactivateOnBattery
         self.keepAwakeDimWhenInactive = keepAwakeDimWhenInactive
         self.keepAwakeIndicatorStyle = keepAwakeIndicatorStyle
-        self.keepAwakeUseImprovedTimer = keepAwakeUseImprovedTimer
         self.keepAwakeShortcut = keepAwakeShortcut
+        self.inputCustomization = inputCustomization
     }
 
     public static let defaults = JostleSettings()
@@ -135,6 +135,23 @@ public struct JostleSettings: Codable, Equatable, Sendable {
             return focusFollowsPointerEnabledByDefault
         }
         return rule.focusFollowsPointer.resolve(default: focusFollowsPointerEnabledByDefault)
+    }
+
+    public func focusFollowsPointerEnabled(
+        forApplicationKey key: String?,
+        deviceKey: String?,
+        deviceCategory: PointingDeviceCategory
+    ) -> Bool {
+        guard focusFollowsPointerEnabled(forApplicationKey: key) else {
+            return false
+        }
+        guard inputCustomization.isEnabled else {
+            return true
+        }
+        return inputCustomization.allowsFocusFollowsPointer(
+            forDeviceKey: deviceKey,
+            category: deviceCategory
+        )
     }
 
     public mutating func addApplicationRule(key: String, displayName: String) {
@@ -209,8 +226,8 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         case keepAwakeDeactivateOnBattery
         case keepAwakeDimWhenInactive
         case keepAwakeIndicatorStyle
-        case keepAwakeUseImprovedTimer
         case keepAwakeShortcut
+        case inputCustomization
     }
 
     public init(from decoder: Decoder) throws {
@@ -299,14 +316,14 @@ public struct JostleSettings: Codable, Equatable, Sendable {
             KeepAwakeIndicatorStyle.self,
             forKey: .keepAwakeIndicatorStyle
         ) ?? Self.defaults.keepAwakeIndicatorStyle
-        keepAwakeUseImprovedTimer = try container.decodeIfPresent(
-            Bool.self,
-            forKey: .keepAwakeUseImprovedTimer
-        ) ?? Self.defaults.keepAwakeUseImprovedTimer
         keepAwakeShortcut = try container.decodeIfPresent(
             GlobalShortcut.self,
             forKey: .keepAwakeShortcut
         )
+        inputCustomization = try container.decodeIfPresent(
+            InputCustomizationSettings.self,
+            forKey: .inputCustomization
+        ) ?? .defaults
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -335,8 +352,8 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         try container.encode(keepAwakeDeactivateOnBattery, forKey: .keepAwakeDeactivateOnBattery)
         try container.encode(keepAwakeDimWhenInactive, forKey: .keepAwakeDimWhenInactive)
         try container.encode(keepAwakeIndicatorStyle, forKey: .keepAwakeIndicatorStyle)
-        try container.encode(keepAwakeUseImprovedTimer, forKey: .keepAwakeUseImprovedTimer)
         try container.encodeIfPresent(keepAwakeShortcut, forKey: .keepAwakeShortcut)
+        try container.encode(inputCustomization, forKey: .inputCustomization)
     }
 }
 

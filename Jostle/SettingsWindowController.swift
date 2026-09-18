@@ -8,6 +8,8 @@ final class SettingsWindowController: NSWindowController {
         settingsStore: SettingsStore,
         loginItemController: LoginItemController,
         globalShortcutController: GlobalShortcutController,
+        pointingDeviceManager: PointingDeviceManager,
+        safeMode: Bool = false,
         updateController: SparkleUpdateController? = nil
     ) {
         self.loginItemController = loginItemController
@@ -33,6 +35,22 @@ final class SettingsWindowController: NSWindowController {
         gesturesImage?.accessibilityDescription = "Jostle Gestures"
         generalItem.image = gesturesImage
         tabController.addTabViewItem(generalItem)
+
+        let inputController = NSHostingController(
+            rootView: InputSettingsPane(
+                settingsStore: settingsStore,
+                pointingDeviceManager: pointingDeviceManager,
+                safeMode: safeMode
+            )
+            .tint(Color(nsColor: AppBrand.accentColor))
+        )
+        let inputItem = NSTabViewItem(viewController: inputController)
+        inputItem.label = "Input"
+        inputItem.image = NSImage(
+            systemSymbolName: "computermouse",
+            accessibilityDescription: "Input Customization"
+        )
+        tabController.addTabViewItem(inputItem)
 
         let keepAwakeController = NSHostingController(
             rootView: KeepAwakeSettingsPane(

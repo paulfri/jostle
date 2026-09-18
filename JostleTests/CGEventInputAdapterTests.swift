@@ -49,6 +49,87 @@ final class CGEventInputAdapterTests: XCTestCase {
         )
     }
 
+    func testPreservesPhysicalMouseButtonNumber() {
+        XCTAssertEqual(
+            CGEventInputAdapter.input(
+                type: .otherMouseDown,
+                flags: [],
+                mouseButtonNumber: 4
+            ).buttonNumber,
+            4
+        )
+    }
+
+    func testReverseScrollNegatesIntegerFixedAndPointDeltas() throws {
+        let event = try XCTUnwrap(CGEvent(
+            scrollWheelEvent2Source: nil,
+            units: .pixel,
+            wheelCount: 2,
+            wheel1: 8,
+            wheel2: -3,
+            wheel3: 0
+        ))
+        let fields: [CGEventField] = [
+            .scrollWheelEventDeltaAxis1,
+            .scrollWheelEventDeltaAxis2,
+            .scrollWheelEventFixedPtDeltaAxis1,
+            .scrollWheelEventFixedPtDeltaAxis2,
+            .scrollWheelEventPointDeltaAxis1,
+            .scrollWheelEventPointDeltaAxis2,
+        ]
+        let originalValues = fields.map(event.getDoubleValueField)
+
+        CGEventScrollAdapter.reverse(event)
+
+        for (field, originalValue) in zip(fields, originalValues) {
+            XCTAssertEqual(event.getDoubleValueField(field), -originalValue, accuracy: 0.0001)
+        }
+    }
+
+    func testPointingDeviceClassifierRejectsKeyboardPrimaryCompositeDevices() {
+        XCTAssertNil(PointingDeviceClassifier.category(
+            primaryUsagePage: 1,
+            primaryUsage: 6,
+            conformsToTouchpad: false
+        ))
+    }
+
+    func testPointingDeviceClassifierAcceptsMousePointerAndTrackpadDevices() {
+        XCTAssertEqual(PointingDeviceClassifier.category(
+            primaryUsagePage: 1,
+            primaryUsage: 2,
+            conformsToTouchpad: false
+        ), .mouse)
+        XCTAssertEqual(PointingDeviceClassifier.category(
+            primaryUsagePage: 1,
+            primaryUsage: 1,
+            conformsToTouchpad: false
+        ), .mouse)
+        XCTAssertEqual(PointingDeviceClassifier.category(
+            primaryUsagePage: 13,
+            primaryUsage: 5,
+            conformsToTouchpad: true
+        ), .trackpad)
+    }
+
+    func testSafeModeSuppressesInputCustomizationIntent() {
+        let defaults = UserDefaults(suiteName: "CGEventInputAdapterTests.safe-mode")!
+        defaults.removePersistentDomain(forName: "CGEventInputAdapterTests.safe-mode")
+        let store = SettingsStore(userDefaults: defaults)
+        store.update { $0.inputCustomization.isEnabled = true }
+        let controller = EventTapController(
+            settingsStore: store,
+            safeMode: true,
+            gestureConfiguration: GestureConfiguration(
+                moveThrottleInterval: 1,
+                resizeThrottleInterval: 1
+            )
+        )
+
+        XCTAssertTrue(controller.isInSafeMode)
+        XCTAssertFalse(controller.inputCustomizationsRequested)
+    }
+
     func testMapsOnlySupportedModifierFlags() {
         let flags: CGEventFlags = [
             .maskControl,

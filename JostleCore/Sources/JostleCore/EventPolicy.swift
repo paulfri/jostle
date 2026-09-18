@@ -30,19 +30,22 @@ public struct InputEvent: Equatable, Sendable {
     public var modifiers: Set<Modifier>
     public var clickCount: Int
     public var keyCode: Int?
+    public var buttonNumber: Int?
 
     public init(
         type: InputEventType,
         button: MouseButton,
         modifiers: Set<Modifier>,
         clickCount: Int = 1,
-        keyCode: Int? = nil
+        keyCode: Int? = nil,
+        buttonNumber: Int? = nil
     ) {
         self.type = type
         self.button = button
         self.modifiers = modifiers
         self.clickCount = clickCount
         self.keyCode = keyCode
+        self.buttonNumber = buttonNumber
     }
 }
 
@@ -91,6 +94,10 @@ public enum EventIntent: Equatable, Sendable {
 public enum EventPolicy {
     public static func intent(for input: InputEvent, configuration: EventPolicyConfiguration) -> EventIntent {
         let resizeButton: MouseButton = configuration.middleClickResize ? .other : .right
+        let matchesResizeButton = input.button == resizeButton
+            && (!configuration.middleClickResize
+                || input.buttonNumber == nil
+                || input.buttonNumber == 2)
 
         if input.type == .tapDisabledByTimeout || input.type == .tapDisabledByUserInput {
             return .reenableEventTap
@@ -104,13 +111,14 @@ public enum EventPolicy {
 
         if let ownedActionButton = configuration.ownedActionButton,
            input.type == .mouseUp,
-           input.button == ownedActionButton {
+           input.button == ownedActionButton,
+           ownedActionButton != .other || input.buttonNumber == nil || input.buttonNumber == 2 {
             return .endActionClick
         }
 
         if configuration.gestureActive,
            input.type == .mouseUp,
-           input.button == .left || input.button == resizeButton {
+           input.button == .left || matchesResizeButton {
             return .endGesture
         }
 
@@ -128,14 +136,14 @@ public enum EventPolicy {
                 if input.button == .left, !configuration.resizeOnly {
                     return .toggleMaximize
                 }
-                if input.button == resizeButton {
+                if matchesResizeButton {
                     return .snapByRegion
                 }
             }
             if input.button == .left, !configuration.resizeOnly {
                 return .beginMove
             }
-            if input.button == resizeButton {
+            if matchesResizeButton {
                 return .beginResize
             }
         case .mouseDragged:
@@ -145,7 +153,7 @@ public enum EventPolicy {
             if input.button == .left {
                 return .continueMove
             }
-            if input.button == resizeButton {
+            if matchesResizeButton {
                 return .continueResize
             }
         case .mouseUp, .keyDown, .tapDisabledByTimeout, .tapDisabledByUserInput, .unknown:

@@ -25,7 +25,8 @@ enum CGEventInputAdapter {
         type: CGEventType,
         flags: CGEventFlags,
         clickCount: Int64 = 1,
-        keyCode: Int64? = nil
+        keyCode: Int64? = nil,
+        mouseButtonNumber: Int64? = nil
     ) -> InputEvent {
         let eventType: InputEventType
         let button: MouseButton
@@ -75,7 +76,8 @@ enum CGEventInputAdapter {
             button: button,
             modifiers: modifiers(from: flags),
             clickCount: Int(clickCount),
-            keyCode: keyCode.map(Int.init)
+            keyCode: keyCode.map(Int.init),
+            buttonNumber: button == .none ? nil : mouseButtonNumber.map(Int.init)
         )
     }
 
@@ -91,8 +93,41 @@ enum CGEventInputAdapter {
     }
 }
 
+enum CGEventScrollAdapter {
+    static func reverse(_ event: CGEvent) {
+        guard event.type == .scrollWheel else { return }
+        let integerFields: [CGEventField] = [
+            .scrollWheelEventDeltaAxis1,
+            .scrollWheelEventDeltaAxis2,
+            .scrollWheelEventDeltaAxis3,
+        ]
+        let doubleFields: [CGEventField] = [
+            .scrollWheelEventFixedPtDeltaAxis1,
+            .scrollWheelEventFixedPtDeltaAxis2,
+            .scrollWheelEventFixedPtDeltaAxis3,
+            .scrollWheelEventPointDeltaAxis1,
+            .scrollWheelEventPointDeltaAxis2,
+            .scrollWheelEventPointDeltaAxis3,
+        ]
+
+        // Core Graphics keeps the delta representations coupled. Snapshot them
+        // before writing so an earlier write cannot be read and negated twice.
+        let integerValues = integerFields.map(event.getIntegerValueField)
+        let doubleValues = doubleFields.map(event.getDoubleValueField)
+        for (field, value) in zip(integerFields, integerValues) {
+            event.setIntegerValueField(field, value: -value)
+        }
+        for (field, value) in zip(doubleFields, doubleValues) {
+            event.setDoubleValueField(field, value: -value)
+        }
+    }
+}
+
 final class EventTapController {
+    static let syntheticEventMarker: Int64 = 0x4A_4F_53_54_4C_45
+
     var onRecentApplication: ((RunningApplicationInfo) -> Void)?
+    var onToggleKeepAwake: (() -> Void)?
 
     private let settingsStore: SettingsStore
     private let windowSystem: AccessibilityWindowSystem
@@ -101,6 +136,8 @@ final class EventTapController {
     private let resizeFeedbackController: ResizeFeedbackController
     private let windowRestoreStore: WindowRestoreStore
     private let gestureConfiguration: GestureConfiguration
+    private weak var pointingDeviceProvider: PointingDeviceProviding?
+    private let safeMode: Bool
     private var eventTap: CFMachPort?
     private var runLoopSource: CFRunLoopSource?
     private var gestureState = GestureState.idle
@@ -115,7 +152,12 @@ final class EventTapController {
     private var ownedActionButton: MouseButton?
     private var pendingFocusWorkItem: DispatchWorkItem?
     private var pendingFocusPoint: CGPoint?
+    private var pendingFocusDevice: PointingDeviceInfo?
     private var lastFocusedWindow: AccessibilityWindowIdentity?
+    private var activeInputGestureButtonNumber: Int?
+    private var activeInputGestureAction: PointerButtonAction?
+    private var ownedInputActionButtonNumber: Int?
+    private var stopped = false
     private(set) var sessionActive = true
     private(set) var requestedEnabled = true
 
@@ -128,6 +170,20 @@ final class EventTapController {
         requestedEnabled && isOperational
     }
 
+    var inputCustomizationsRequested: Bool {
+        settingsStore.settings.inputCustomization.isEnabled && !safeMode
+    }
+
+    var eventTapRequested: Bool {
+        !stopped && (requestedEnabled || inputCustomizationsRequested)
+    }
+
+    var inputCustomizationsEnabled: Bool {
+        inputCustomizationsRequested && isOperational
+    }
+
+    var isInSafeMode: Bool { safeMode }
+
     init(
         settingsStore: SettingsStore,
         windowSystem: AccessibilityWindowSystem = AccessibilityWindowSystem(),
@@ -135,6 +191,8 @@ final class EventTapController {
         snapPreviewController: SnapPreviewController = SnapPreviewController(),
         resizeFeedbackController: ResizeFeedbackController = ResizeFeedbackController(),
         windowRestoreStore: WindowRestoreStore = WindowRestoreStore(),
+        pointingDeviceProvider: PointingDeviceProviding? = nil,
+        safeMode: Bool = false,
         gestureConfiguration: GestureConfiguration
     ) {
         self.settingsStore = settingsStore
@@ -143,6 +201,8 @@ final class EventTapController {
         self.snapPreviewController = snapPreviewController
         self.resizeFeedbackController = resizeFeedbackController
         self.windowRestoreStore = windowRestoreStore
+        self.pointingDeviceProvider = pointingDeviceProvider
+        self.safeMode = safeMode
         self.gestureConfiguration = gestureConfiguration
     }
 
@@ -152,13 +212,17 @@ final class EventTapController {
 
     @discardableResult
     func start() -> Bool {
+        stopped = false
         requestedEnabled = true
         return ensureOperational()
     }
 
     @discardableResult
     func ensureOperational() -> Bool {
-        guard requestedEnabled else { return true }
+        guard eventTapRequested else {
+            tearDownEventTap()
+            return true
+        }
 
         if let eventTap, CFMachPortIsValid(eventTap) {
             if !CGEvent.tapIsEnabled(tap: eventTap) {
@@ -178,6 +242,7 @@ final class EventTapController {
     }
 
     func stop() {
+        stopped = true
         requestedEnabled = false
         tearDownEventTap()
     }
@@ -189,8 +254,18 @@ final class EventTapController {
             return ensureOperational()
         }
 
-        cancelGesture()
+        let activeInputButton = activeInputGestureButtonNumber
+        let canceledInputGesture = activeInputButton != nil && cancelGestureAndRestore()
+        if activeInputButton == nil {
+            cancelGesture()
+        }
         cancelPendingFocus(resetLastWindow: true)
+        guard !inputCustomizationsRequested else {
+            if canceledInputGesture {
+                ownedInputActionButtonNumber = activeInputButton
+            }
+            return ensureOperational()
+        }
         if let eventTap, CFMachPortIsValid(eventTap) {
             CGEvent.tapEnable(tap: eventTap, enable: false)
         }
@@ -209,6 +284,7 @@ final class EventTapController {
             .rightMouseUp,
             .otherMouseUp,
             .mouseMoved,
+            .scrollWheel,
             .keyDown
         ].reduce(CGEventMask(0)) { $0 | (CGEventMask(1) << $1.rawValue) }
 
@@ -239,7 +315,7 @@ final class EventTapController {
     }
 
     private func tearDownEventTap() {
-        cancelGesture()
+        cancelGestureForInterruption()
         cancelPendingFocus(resetLastWindow: true)
         if let source = runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
@@ -254,14 +330,29 @@ final class EventTapController {
     func setSessionActive(_ active: Bool) {
         sessionActive = active
         if !active {
-            cancelGesture()
+            cancelGestureForInterruption()
             cancelPendingFocus(resetLastWindow: true)
         }
     }
 
+    func pointingDeviceDidDisconnect() {
+        cancelGestureForInterruption()
+        cancelPendingFocus(resetLastWindow: true)
+    }
+
     fileprivate func handle(type: CGEventType, event: CGEvent) -> Bool {
+        if event.getIntegerValueField(.eventSourceUserData) == Self.syntheticEventMarker {
+            return false
+        }
+
+        let device = inputCustomizationsRequested
+            ? pointingDeviceProvider?.device(for: event)
+            : nil
+        if type == .scrollWheel {
+            return handleScroll(event, device: device)
+        }
         if type == .mouseMoved {
-            scheduleFocusFollowsPointer(at: event.location)
+            scheduleFocusFollowsPointer(at: event.location, device: device)
             return false
         }
         if type == .leftMouseDown
@@ -281,10 +372,25 @@ final class EventTapController {
             clickCount: event.getIntegerValueField(.mouseEventClickState),
             keyCode: type == .keyDown
                 ? event.getIntegerValueField(.keyboardEventKeycode)
-                : nil
+                : nil,
+            mouseButtonNumber: type == .keyDown
+                ? nil
+                : event.getIntegerValueField(.mouseEventButtonNumber)
         )
+
+        if (inputCustomizationsRequested
+            || activeInputGestureButtonNumber != nil
+            || ownedInputActionButtonNumber != nil),
+           let handled = handleInputButtonEvent(
+               input,
+               event: event,
+               settings: settings
+           ) {
+            return handled
+        }
+
         let configuration = EventPolicyConfiguration(
-            sessionActive: sessionActive,
+            sessionActive: sessionActive && requestedEnabled,
             gestureActive: gestureState.isActive,
             middleClickResize: settings.middleClickResize,
             resizeOnly: settings.resizeOnly,
@@ -297,7 +403,22 @@ final class EventTapController {
         case .passThrough:
             return false
         case .reenableEventTap:
-            if let eventTap, requestedEnabled, CFMachPortIsValid(eventTap) {
+            let inputButtonNumber = activeInputGestureButtonNumber
+            let interruptedButton: MouseButton?
+            if case .resizing = gestureState {
+                interruptedButton = settings.middleClickResize ? .other : .right
+            } else if gestureState.isActive {
+                interruptedButton = .left
+            } else {
+                interruptedButton = nil
+            }
+            cancelGestureForInterruption()
+            if let inputButtonNumber {
+                ownedInputActionButtonNumber = inputButtonNumber
+            } else {
+                ownedActionButton = interruptedButton
+            }
+            if let eventTap, eventTapRequested, CFMachPortIsValid(eventTap) {
                 CGEvent.tapEnable(tap: eventTap, enable: true)
             }
             return false
@@ -342,6 +463,11 @@ final class EventTapController {
             ownedActionButton = nil
             return true
         case .cancelGesture:
+            if let inputButtonNumber = activeInputGestureButtonNumber {
+                let handled = cancelGestureAndRestore()
+                ownedInputActionButtonNumber = handled ? inputButtonNumber : nil
+                return handled
+            }
             let button: MouseButton
             if case .resizing = gestureState {
                 button = settings.middleClickResize ? .other : .right
@@ -357,6 +483,182 @@ final class EventTapController {
             }
             return endGesture()
         }
+    }
+
+    private func handleScroll(
+        _ event: CGEvent,
+        device: PointingDeviceInfo?
+    ) -> Bool {
+        guard inputCustomizationsRequested else { return false }
+        let category = device?.category
+            ?? (event.getIntegerValueField(.scrollWheelEventIsContinuous) != 0
+                ? .trackpad
+                : .mouse)
+        guard settingsStore.settings.inputCustomization.reverseScrolling(
+            forDeviceKey: device?.id,
+            category: category
+        ) else {
+            return false
+        }
+        CGEventScrollAdapter.reverse(event)
+        return false
+    }
+
+    private func handleInputButtonEvent(
+        _ input: InputEvent,
+        event: CGEvent,
+        settings: JostleSettings
+    ) -> Bool? {
+        guard let buttonNumber = input.buttonNumber,
+              buttonNumber >= 3 else {
+            return nil
+        }
+
+        if ownedInputActionButtonNumber == buttonNumber {
+            switch input.type {
+            case .mouseUp:
+                ownedInputActionButtonNumber = nil
+                return true
+            case .mouseDragged:
+                return true
+            default:
+                break
+            }
+        }
+
+        if let activeInputGestureButtonNumber,
+           buttonNumber != activeInputGestureButtonNumber {
+            return nil
+        }
+        guard activeInputGestureButtonNumber != nil || !gestureState.isActive else {
+            return nil
+        }
+
+        let action = inputCustomizationsRequested
+            ? settings.inputCustomization.action(forButtonNumber: buttonNumber)
+            : .systemDefault
+        switch PointerButtonGesturePolicy.intent(
+            eventType: input.type,
+            buttonNumber: buttonNumber,
+            configuredAction: action,
+            activeButtonNumber: activeInputGestureButtonNumber,
+            activeAction: activeInputGestureAction
+        ) {
+        case .beginMove:
+            guard requestedEnabled else { return nil }
+            clearResizeFeedback()
+            let began = beginGesture(at: event.location, resize: false)
+            if began {
+                activeInputGestureButtonNumber = buttonNumber
+                activeInputGestureAction = .moveWindow
+            }
+            return began
+        case .beginResize:
+            guard requestedEnabled else { return nil }
+            clearSnapPreview()
+            let began = beginGesture(at: event.location, resize: true)
+            if began {
+                activeInputGestureButtonNumber = buttonNumber
+                activeInputGestureAction = .resizeWindow
+                updateResizeFeedback(settings: settings)
+            }
+            return began
+        case .continueMove:
+            moveDidDrag = true
+            guard performPendingWindowRestore() else { return true }
+            updateSnapPreview(at: event.location, settings: settings)
+            return reduce(.moveBy(
+                deltaX: event.getDoubleValueField(.mouseEventDeltaX),
+                deltaY: event.getDoubleValueField(.mouseEventDeltaY),
+                timestamp: now
+            ))
+        case .continueResize:
+            if !resizeDidDrag, let targetWindow {
+                windowRestoreStore.removeFrame(for: targetWindow.identity)
+            }
+            resizeDidDrag = true
+            let handled = reduce(.resizeBy(
+                deltaX: event.getDoubleValueField(.mouseEventDeltaX),
+                deltaY: event.getDoubleValueField(.mouseEventDeltaY),
+                timestamp: now
+            ))
+            updateResizeFeedback(settings: settings)
+            return handled
+        case .end:
+            if moveDidDrag, case .moving = gestureState {
+                updateSnapPreview(at: event.location, settings: settings)
+            }
+            let handled = endGesture()
+            activeInputGestureButtonNumber = nil
+            activeInputGestureAction = nil
+            return handled
+        case .passThrough:
+            break
+        }
+
+        guard input.type == .mouseDown,
+              action != .systemDefault,
+              !action.beginsWindowGesture else {
+            return nil
+        }
+        let handled = performInputAction(action, at: event.location, settings: settings)
+        if handled {
+            ownedInputActionButtonNumber = buttonNumber
+        }
+        return handled
+    }
+
+    private func performInputAction(
+        _ action: PointerButtonAction,
+        at point: CGPoint,
+        settings: JostleSettings
+    ) -> Bool {
+        switch action {
+        case .systemDefault, .moveWindow, .resizeWindow:
+            return false
+        case .back:
+            return postCommandShortcut(keyCode: 33)
+        case .forward:
+            return postCommandShortcut(keyCode: 30)
+        case .toggleMaximize:
+            return requestedEnabled && toggleMaximize(at: point, settings: settings)
+        case .tileLeft:
+            return requestedEnabled
+                && snapWindow(at: point, target: .leftHalf, settings: settings)
+        case .tileRight:
+            return requestedEnabled
+                && snapWindow(at: point, target: .rightHalf, settings: settings)
+        case .moveToNextDisplay:
+            return requestedEnabled && moveWindowToNextDisplay(at: point, settings: settings)
+        case .toggleKeepAwake:
+            guard let onToggleKeepAwake else { return false }
+            onToggleKeepAwake()
+            return true
+        }
+    }
+
+    private func postCommandShortcut(keyCode: CGKeyCode) -> Bool {
+        let source = CGEventSource(stateID: .hidSystemState)
+        guard let keyDown = CGEvent(
+            keyboardEventSource: source,
+            virtualKey: keyCode,
+            keyDown: true
+        ), let keyUp = CGEvent(
+            keyboardEventSource: source,
+            virtualKey: keyCode,
+            keyDown: false
+        ) else {
+            return false
+        }
+        for event in [keyDown, keyUp] {
+            event.flags = .maskCommand
+            event.setIntegerValueField(
+                .eventSourceUserData,
+                value: Self.syntheticEventMarker
+            )
+            event.post(tap: .cgSessionEventTap)
+        }
+        return true
     }
 
     private var now: MonotonicTime {
@@ -423,6 +725,73 @@ final class EventTapController {
                 for: target.identity
             )
         }
+        return true
+    }
+
+    private func snapWindow(
+        at point: CGPoint,
+        target snapTarget: SnapTarget,
+        settings: JostleSettings
+    ) -> Bool {
+        guard let (target, currentFrame) = actionTarget(at: point, settings: settings),
+              let screen = screenGeometryProvider.geometry(
+                  containing: Point(x: point.x, y: point.y)
+              ) else {
+            return false
+        }
+        let snapFrame = SnapPolicy.frame(
+            for: snapTarget,
+            in: screen.visibleFrame,
+            gap: settings.snapGap,
+            screenMargin: settings.snapScreenMargin
+        )
+        let restoreFrame = windowRestoreStore.frame(for: target.identity) ?? currentFrame
+        guard windowSystem.setFrame(snapFrame, of: target) else { return false }
+        windowRestoreStore.remember(
+            restoreFrame,
+            kind: snapTarget == .maximize ? .maximized : .snapped,
+            for: target.identity
+        )
+        return true
+    }
+
+    private func moveWindowToNextDisplay(
+        at point: CGPoint,
+        settings: JostleSettings
+    ) -> Bool {
+        guard let (target, currentFrame) = actionTarget(at: point, settings: settings) else {
+            return false
+        }
+        let screens = screenGeometryProvider.geometries
+        guard screens.count > 1 else { return false }
+        let center = Point(
+            x: currentFrame.origin.x + currentFrame.size.width / 2,
+            y: currentFrame.origin.y + currentFrame.size.height / 2
+        )
+        guard let sourceIndex = screens.firstIndex(where: { screen in
+            center.x >= screen.frame.origin.x
+                && center.x <= screen.frame.origin.x + screen.frame.size.width
+                && center.y >= screen.frame.origin.y
+                && center.y <= screen.frame.origin.y + screen.frame.size.height
+        }) else {
+            return false
+        }
+        let source = screens[sourceIndex].visibleFrame
+        let destination = screens[(sourceIndex + 1) % screens.count].visibleFrame
+        let width = min(currentFrame.size.width, destination.size.width)
+        let height = min(currentFrame.size.height, destination.size.height)
+        let sourceTravelX = max(1, source.size.width - currentFrame.size.width)
+        let sourceTravelY = max(1, source.size.height - currentFrame.size.height)
+        let relativeX = min(1, max(0, (currentFrame.origin.x - source.origin.x) / sourceTravelX))
+        let relativeY = min(1, max(0, (currentFrame.origin.y - source.origin.y) / sourceTravelY))
+        let movedFrame = Frame(
+            x: destination.origin.x + relativeX * max(0, destination.size.width - width),
+            y: destination.origin.y + relativeY * max(0, destination.size.height - height),
+            width: width,
+            height: height
+        )
+        guard windowSystem.setFrame(movedFrame, of: target) else { return false }
+        windowRestoreStore.removeFrame(for: target.identity)
         return true
     }
 
@@ -503,6 +872,8 @@ final class EventTapController {
             }
         }
         resetMoveTracking()
+        activeInputGestureButtonNumber = nil
+        activeInputGestureAction = nil
         return handled
     }
 
@@ -596,7 +967,10 @@ final class EventTapController {
         return reduce(.beginMove(frame: frame, timestamp: now))
     }
 
-    private func scheduleFocusFollowsPointer(at point: CGPoint) {
+    private func scheduleFocusFollowsPointer(
+        at point: CGPoint,
+        device: PointingDeviceInfo?
+    ) {
         let settings = settingsStore.settings
         guard requestedEnabled,
               sessionActive,
@@ -607,6 +981,7 @@ final class EventTapController {
         }
 
         pendingFocusPoint = point
+        pendingFocusDevice = device
         let configuredDelay = max(0, settings.focusFollowsPointerDelay)
         if configuredDelay == 0, pendingFocusWorkItem != nil {
             return
@@ -615,16 +990,20 @@ final class EventTapController {
 
         let workItem = DispatchWorkItem { [weak self] in
             guard let self, let point = pendingFocusPoint else { return }
-            applyFocusFollowsPointer(at: point)
+            applyFocusFollowsPointer(at: point, device: pendingFocusDevice)
         }
         pendingFocusWorkItem = workItem
         let delay = configuredDelay == 0 ? 0.016 : configuredDelay
         DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
     }
 
-    private func applyFocusFollowsPointer(at point: CGPoint) {
+    private func applyFocusFollowsPointer(
+        at point: CGPoint,
+        device: PointingDeviceInfo?
+    ) {
         pendingFocusWorkItem = nil
         pendingFocusPoint = nil
+        pendingFocusDevice = nil
         let settings = settingsStore.settings
         guard requestedEnabled,
               sessionActive,
@@ -634,7 +1013,9 @@ final class EventTapController {
               let target = windowSystem.window(at: point),
               target.identity.processIdentifier != ProcessInfo.processInfo.processIdentifier,
               settings.focusFollowsPointerEnabled(
-                  forApplicationKey: target.applicationInfo?.key
+                  forApplicationKey: target.applicationInfo?.key,
+                  deviceKey: device?.id,
+                  deviceCategory: device?.category ?? .unknown
               ) else {
             return
         }
@@ -650,6 +1031,7 @@ final class EventTapController {
         pendingFocusWorkItem?.cancel()
         pendingFocusWorkItem = nil
         pendingFocusPoint = nil
+        pendingFocusDevice = nil
         if resetLastWindow {
             lastFocusedWindow = nil
         }
@@ -695,6 +1077,12 @@ final class EventTapController {
         return true
     }
 
+    private func cancelGestureForInterruption() {
+        if !cancelGestureAndRestore() {
+            cancelGesture()
+        }
+    }
+
     private func cancelGestureAndRestore() -> Bool {
         guard gestureState.isActive else { return false }
         let target = targetWindow
@@ -734,6 +1122,9 @@ final class EventTapController {
         gestureState = transition.state
         targetWindow = nil
         ownedActionButton = nil
+        ownedInputActionButtonNumber = nil
+        activeInputGestureButtonNumber = nil
+        activeInputGestureAction = nil
         resetMoveTracking()
     }
 

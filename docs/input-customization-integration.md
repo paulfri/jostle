@@ -1,0 +1,612 @@
+# Input Customization Integration Plan
+
+Status: differentiated MVP implemented; broader parity plan remains proposed
+
+Scope source: the five LinearMouse screenshots supplied for this design
+
+Target: Jostle on macOS 13+
+
+## Decision
+
+Build the interaction features into Jostle as native subsystems; do **not** launch or bundle a second menu bar app.
+
+The product thesis is narrower than LinearMouse parity: **Jostle turns a pointing device into a faster way to control windows and common desktop actions.** Device-aware window gestures, navigation, and Keep Awake integration are the differentiators. General-purpose pointer tuning, vendor protocols, and broad hardware control remain later compatibility work rather than MVP promises.
+
+The integration should have:
+
+1. one event-tap owner and an ordered event-transformation pipeline;
+2. deterministic profiles for device, app, and display contexts;
+3. pure policy and transformation engines in `JostleCore`;
+4. macOS, HID, Accessibility, and vendor adapters in the app target;
+5. conservative defaults, a fail-open event path, and a recovery mode;
+6. staged delivery, with pointer-system and device-firmware writes gated behind compatibility spikes.
+
+This preserves the goal—one app for window control, Keep Awake, and input customization—while keeping profile and interaction policy typed and testable and preserving a path to extract the tap runtime as later features demand it.
+
+## Implemented differentiated MVP
+
+The first implementation slice now includes:
+
+- backward-compatible typed settings with opt-in defaults;
+- IOHID device inventory, stable privacy-preserving identifiers, mouse/trackpad categorization, sender attribution, and a bounded recent-device fallback;
+- reverse scrolling by device category or exact device;
+- Button 4/5 mappings for universal Back/Forward, move, resize, maximize, left/right tile, next display, and Keep Awake;
+- interaction pinning for button-held move/resize, synthetic-event tagging, Escape cancellation, and cleanup on disable, disconnect, session loss, sleep, tap teardown, and quit;
+- per-device gating layered onto existing per-app Focus Follows Pointer policy;
+- one menu-bar toggle, an Input settings pane, disconnected-device overrides, crash-loop Safe Mode, `--safe-mode`, and Shift-Option launch recovery;
+- unit coverage for profile precedence, migration/default behavior, button interaction routing, side-button persistence, status-menu behavior, and every Core Graphics scroll-delta representation.
+
+The MVP deliberately does **not** implement pointer acceleration/speed, hardware DPI, high-resolution wheel modes, smoothing, battery telemetry, or vendor protocols. The existing main-run-loop tap remains the MVP owner; a dedicated transformation thread is deferred until immutable settings/device snapshots and main-actor window commands have a measured, tested boundary. See [ADR 0001](adr/0001-input-customization-runtime.md).
+
+## What “all this” includes
+
+| Screenshot area | Capability | Jostle today | Integration disposition |
+| --- | --- | --- | --- |
+| Pointer | Disable pointer acceleration | No | Add after an API/OS compatibility spike |
+| Pointer | Convert pointer movement to scroll events | No | Add as an advanced, default-off transformer |
+| Pointer | Acceleration, speed, and hardware DPI | No | Add typed settings; gate hardware writes by capability |
+| Scrolling | Independent vertical/horizontal configuration | No | Add axis-specific settings |
+| Scrolling | Reverse scrolling | No | Add first; low-risk event transform |
+| Scrolling | High-resolution wheel | No | Add only for positively identified supported devices |
+| Scrolling | Smoothed scrolling, response, speed, acceleration, inertia, bounce | No | Add with a deterministic engine and synthetic-event loop protection |
+| Scrolling | Modifier-key scroll actions | No | Add exact-modifier mappings with a “system default” fallback |
+| Buttons | Universal back/forward | No | Add app-compatible side-button translation |
+| Buttons | Swap primary and secondary buttons | No | Add while preserving balanced down/drag/up streams |
+| Buttons | Click debouncing | No | Add after contract tests for click/drag correctness |
+| Buttons | Auto-scroll | No | Add as an advanced stateful interaction |
+| Buttons | Gesture button | No | Add after the basic mapping engine |
+| Buttons | Assign actions to mouse buttons/wheel | No | Add a recorder and typed action catalog |
+| General | Menu bar visibility | Always visible | Add only after a reliable reopen/recovery path exists |
+| General | Current device battery | No | Add read-only capability providers; never imply unsupported data |
+| General | Dock visibility | Always hidden | Add an explicit mode; relaunch if required by activation-policy behavior |
+| General | Start at login | Yes | Reuse `LoginItemController` |
+| General | Show pointer location | No | Add a non-activating overlay and configurable trigger |
+| General | Bypass events generated by other apps | No | Add source attribution and Jostle synthetic-event tagging |
+| General | Version and update controls | Yes | Keep the existing Sparkle integration |
+| General | Export logs / support links | No | Add privacy-redacted diagnostics; links are product configuration |
+| Menu | Batteries, Settings, Config, login, current-app configuration, quit | Partial | Fold into the existing Jostle status menu |
+
+The screenshots are a feature reference, not a requirement to copy LinearMouse’s layout, terminology, defaults, or implementation.
+
+## Boundaries
+
+### In scope
+
+- Mouse and trackpad pointer/scroll/button customization.
+- Per-device, per-app, and per-display selection.
+- Device inventory and optional battery/capability reporting.
+- One settings window and one menu bar item for all Jostle features.
+- Compatibility, recovery, diagnostics, migration, and test work needed to ship safely.
+
+### Not in the first release
+
+- Arbitrary shell-command actions. They expand the threat model and are not required by the screenshots.
+- Exclusive HID device seizure.
+- Claiming support for a device capability based only on vendor/product name.
+- Silent import of another app’s configuration.
+- Private or unstable APIs in a release build without an explicit owner decision, documented fallback, and supported-OS test evidence.
+- Cloud sync or telemetry.
+
+## Current architecture findings
+
+Jostle is already well positioned for this work:
+
+- `EventTapController.swift` owns a `cghidEventTap`, window gestures, focus-follows-pointer, and tap recovery.
+- `JostleCore` contains deterministic event policy, geometry, gesture, snapping, Keep Awake, and settings behavior with focused tests.
+- `SettingsStore` persists one backward-compatible Codable document.
+- `AppDelegate` composes long-lived controllers.
+- Settings use an `NSTabViewController` with SwiftUI panes.
+- Keep Awake is intentionally independent of Accessibility and should remain so.
+
+The main constraints are:
+
+- The event tap currently runs on the main run loop. High-rate pointer and 120 Hz smoothing work must not be added there.
+- `EventTapController` is already responsible for several window behaviors. It should become a consumer of a shared input service, not absorb all new transformations.
+- `JostleSettings` is a flat structure. Adding dozens of input fields directly would make migration and profile inheritance fragile.
+- Settings toolbar tabs will not scale to the additional panes and context selectors.
+
+## Proposed architecture
+
+```text
+AppDelegate
+├── InputRuntimeController
+│   ├── EventTapService             one tap, watchdog, dedicated event thread
+│   ├── EventRouter                 context resolution + interaction pinning
+│   ├── EventTransformerPipeline    ordered, fail-open transforms
+│   ├── DeviceService               IOHID inventory on its own queue
+│   ├── DeviceCapabilityRegistry    generic + vendor-specific providers
+│   ├── SystemPointerController     guarded system-setting mutations
+│   └── InputDiagnostics
+├── WindowInteractionController     current move/resize/snap/focus behavior
+├── KeepAwakeController             remains independent
+├── SettingsStore
+└── StatusMenuController
+
+JostleCore
+├── InputProfileResolver
+├── InputEvent / OutputEvent models
+├── PointerPolicy
+├── ScrollTransformEngine
+├── SmoothedScrollEngine
+├── ButtonMappingEngine
+├── ClickDebounceEngine
+├── StatefulInteractionRouter
+└── Settings validation + migration
+```
+
+### 1. One event tap, dedicated thread
+
+Replace direct ownership by `EventTapController` with `EventTapService`:
+
+- Install one `.cghidEventTap` at `.headInsertEventTap`.
+- Run it on a dedicated `Thread`/`CFRunLoop` with `.userInteractive` quality of service.
+- Publish immutable settings/profile snapshots to that thread atomically.
+- Keep UI, `NSWorkspace`, and SwiftUI work off the callback path.
+- Re-enable after `.tapDisabledByTimeout` and `.tapDisabledByUserInput` when appropriate.
+- Health-check validity and expose one runtime status to the menu.
+- Pass the original event through on unknown input, missing context, adapter failure, or disabled features.
+
+The callback must do bounded work. No disk I/O, device enumeration, process inspection, synchronous main-thread calls, or unbounded logging is allowed on the event thread.
+
+### 2. Ordered transformation pipeline
+
+Recommended order:
+
+1. capture immutable event metadata and source/device/context;
+2. reject or bypass Jostle-generated and optionally other-app-generated events;
+3. deliver continuations to the route that owns an active interaction;
+4. normalize physical device input, including supported high-resolution wheels;
+5. apply primary/secondary swap so later stages see logical buttons;
+6. convert pointer movement to a logical scroll event when that advanced mode is active;
+7. apply reverse scrolling so wheel mappings use the user-visible direction;
+8. arbitrate Jostle’s exact-modifier window gestures before general button mappings;
+9. resolve high-priority stateful interactions (auto-scroll and gesture button);
+10. resolve explicit button/wheel mappings;
+11. apply modifier-key scroll actions;
+12. apply linear scroll speed/acceleration;
+13. apply smoothed scrolling and scheduled momentum output;
+14. let focus-follows-pointer observe only surviving pointer movement;
+15. return, replace, suppress, or defer the result.
+
+Deferred events resume at the stage after the transformer that created them, rather than starting the pipeline again. The exact order becomes a versioned behavioral contract. A later reorder is a behavior change and requires contract-test updates.
+
+### 3. Synthetic-event ownership
+
+Every event Jostle posts must carry a private marker in a suitable event field. The pipeline must recognize that marker and avoid transforming the event again, except for an explicit continuation stage. This prevents:
+
+- smoothed scrolling feeding itself;
+- remapped buttons recursively remapping;
+- pointer-to-scroll output re-entering scroll transforms;
+- action-generated shortcuts triggering their own mapping.
+
+Events generated by other processes are separate. When “bypass events from other apps” is on, pass them unchanged unless they are continuations of an interaction Jostle already owns. Never drop a matching release merely because the source or active profile changed.
+
+### 4. Stateful interaction pinning
+
+A mouse down, chord, long press, drag, gesture, held shortcut, or smoothing tail can outlive the profile that began it. Pin each claimed interaction to its original transformer route until it drains.
+
+On disable, permission loss, sleep, session resignation, device removal, or app termination:
+
+- cancel timers;
+- emit required key/button releases;
+- cancel gesture phases cleanly;
+- clear retained route state;
+- restore guarded hardware/system settings.
+
+This is required to prevent stuck mouse buttons, stuck modifier keys, orphaned drags, and momentum continuing in the wrong app.
+
+### 5. Device service
+
+`DeviceService` should use IOHID only for inventory, identity, input attribution support, capabilities, and explicitly supported hardware features. It runs on a queue separate from the event thread.
+
+A stable device key should prefer:
+
+1. transport + vendor ID + product ID + stable serial;
+2. transport + vendor ID + product ID + stable location identity;
+3. vendor ID + product ID with an explicit “identical devices may share this profile” limitation.
+
+Do not persist transient registry IDs as the only identity. Model capability availability explicitly:
+
+```swift
+enum DeviceCapabilityStatus<Value> {
+    case unsupported
+    case unavailable(reason: String)
+    case available(Value)
+}
+```
+
+The UI should hide or explain unsupported DPI, high-resolution wheel, and battery controls rather than showing toggles that do nothing.
+
+### 6. System and hardware mutation boundary
+
+Pointer acceleration/speed and hardware DPI may require settings or device writes rather than ordinary event transforms. Isolate these behind `SystemPointerController` and vendor capability providers.
+
+Before the first mutation, record a restoration ledger containing:
+
+- stable device/context key;
+- parameter name;
+- observed baseline;
+- value last written by Jostle;
+- timestamp and app version;
+- pending-restoration state.
+
+Restoration must be compare-and-swap: restore the baseline only if the current value still equals the last value written by Jostle. If another app or the user changed it, do not overwrite that newer choice.
+
+Reconcile on profile changes, feature disable, device reconnect, wake, session switch, clean termination, and next launch after an unclean exit. Hardware writes must be clamped, capability-checked, idempotent, rate-limited, and never issued from the event callback.
+
+A release gate must verify the actual APIs and semantics on every supported macOS family. If reliable restoration or per-device behavior cannot be demonstrated, label the control experimental or omit it.
+
+## Configuration model
+
+Keep existing settings fields compatible. Add one nested, versioned input document rather than flattening every new value into `JostleSettings`.
+
+```swift
+struct JostleSettings: Codable, Equatable, Sendable {
+    // Existing fields remain decodable.
+    var input: InputCustomizationSettings
+}
+
+struct InputCustomizationSettings: Codable, Equatable, Sendable {
+    var schemaVersion: Int
+    var isEnabled: Bool
+    var profiles: [InputProfile]
+    var general: InputGeneralSettings
+}
+
+struct InputProfile: Codable, Equatable, Identifiable, Sendable {
+    var id: UUID
+    var match: InputProfileMatch
+    var pointer: PointerSettingsPatch
+    var scrolling: ScrollingSettingsPatch
+    var buttons: ButtonSettingsPatch
+}
+
+struct InputProfileMatch: Codable, Hashable, Sendable {
+    var device: DeviceMatch?
+    var application: ApplicationMatch?
+    var display: DisplayMatch?
+}
+```
+
+Contextual fields use an explicit inherited/value representation. Do not overload `false`, zero, or a missing key to mean multiple things.
+
+### Profile precedence
+
+Resolve effective settings in this documented order:
+
+1. safe built-in defaults;
+2. global user profile;
+3. device-category profile;
+4. exact-device profile;
+5. application profile;
+6. display profile;
+7. the exact device + application + display combination.
+
+Within one level, reject duplicate match keys during validation rather than depending on array order. The settings UI must show both the effective value and its source, for example “0.68 — inherited from MX Master 3S.”
+
+Application identity should reuse Jostle’s bundle-ID-first behavior and its name fallback for Wine/non-bundled processes. Display matching needs a stable identifier strategy plus a human-readable name; display names alone are not sufficient when two monitors are identical.
+
+### Validation
+
+Clamp and validate at decode and mutation boundaries:
+
+- all numeric ranges are finite and documented;
+- smoothing presets produce stable coefficients;
+- no duplicate mapping triggers in one effective profile;
+- a trigger cannot map to itself recursively;
+- held actions always have a release path;
+- DPI/high-resolution wheel values require a matching capability;
+- at least one recovery path remains visible when menu and Dock modes change;
+- unknown future enum cases decode safely or disable only the affected feature.
+
+Malformed input settings must not discard unrelated Jostle window or Keep Awake settings. Preserve the invalid document for diagnostics and fall back only the invalid input section.
+
+## UI and information architecture
+
+### Options considered
+
+1. **More toolbar tabs** — visually consistent with Jostle today, but does not scale and leaves no good home for device/app/display context.
+2. **Category sidebar with a context bar — recommended** — familiar macOS utility layout, scalable, and keeps context visible.
+3. **Profile-first editor** — most powerful for experts but makes common changes feel like rule programming.
+
+Use option 2 and expose advanced profile detail progressively.
+
+### Recommended sidebar
+
+```text
+WINDOWS
+  Gestures
+  Snapping
+
+INPUT
+  Pointer
+  Scrolling
+  Buttons
+
+AUTOMATION
+  Applications
+  Keep Awake
+
+JOSTLE
+  General
+  Updates
+```
+
+Pointer, Scrolling, and Buttons show a compact context bar:
+
+```text
+[ MX Master 3S ▾ ]  [ All Apps ▾ ]  [ All Displays ▾ ]
+```
+
+Rules:
+
+- “All …” edits the inherited layer; a concrete selection edits that context.
+- Clearly distinguish “Use inherited value” from an explicit on/off value.
+- Show disconnected saved devices without pretending they are currently available.
+- Disable unsupported controls with a short reason and capability detail.
+- Put “Restore this profile” beside the profile context, not as an ambiguous app-wide reset.
+- Keep Jostle’s existing accent, native typography, standard controls, and restrained density.
+- Use SF Symbols or existing assets; do not copy LinearMouse artwork.
+- Support keyboard navigation, VoiceOver labels, reduce motion, increased contrast, and light/dark appearances.
+
+### Menu design
+
+Keep the status menu operational even when input customization fails:
+
+```text
+Jostle status / optional device battery summary
+Input Customizations Enabled        ✓
+Window Features Enabled             ✓
+Keep Mac Awake …
+Configure Current Context           >
+Start at Login                      ✓
+Settings…
+Check for Updates…
+Quit Jostle
+```
+
+“Configure Current Context” opens Pointer/Scrolling/Buttons with the last active device, frontmost app, and display preselected. Battery rows appear only for identified devices with fresh readings and include a stale/unavailable state when necessary.
+
+Window features and input customizations must have independent toggles. Keep Awake remains available without Accessibility permission or an operational event tap.
+
+## Safety, privacy, and compatibility requirements
+
+### Recovery paths
+
+Ship all of these before any event-suppressing customization:
+
+- Menu item: **Disable Input Customizations**.
+- Launch argument: `--safe-mode` starts without the input pipeline or hardware writes.
+- Launch gesture: hold Shift+Option while launching to enter safe mode.
+- Reopen behavior: launching Jostle while it is already running presents Settings.
+- Crash-loop guard: repeated unclean launches automatically disable input customization and explain why.
+- A documented terminal recovery command.
+- “Reset Input Customizations” does not erase window, Keep Awake, login, or update settings.
+
+### Conflict handling
+
+At launch and when enabling input customization, detect known concurrently running input utilities where practical (for example LinearMouse, SteerMouse, BetterMouse, USB Overdrive, Logi Options+, and relevant Karabiner components). Show a non-blocking compatibility warning; never terminate or modify another app.
+
+The event path must remain deterministic if another event tap is present, but Jostle should recommend enabling transformations in only one utility. Add a diagnostics field for event-tap health and observed repeated synthetic input without recording user content.
+
+### Permissions
+
+- Reuse the existing Accessibility explanation and health flow.
+- Probe actual capability rather than inferring permission from a preference alone.
+- Explain why event observation/modification is needed before opening System Settings.
+- Do not request Screen Recording.
+- If a future device feature requires a different permission, request it only when that feature is enabled.
+- Test Secure Input scenarios and fail open when keyboard events are unavailable.
+
+### Privacy and diagnostics
+
+- No input content, typed keys, pointer trails, window titles, or scroll history is persisted.
+- Use unified logging with privacy annotations and bounded rates.
+- Exported diagnostics redact device serials, usernames, process paths, app context, and display serials by default.
+- Let the user preview the export.
+- Battery polling is local and rate-limited.
+- No telemetry is added by this project.
+
+### Upstream responsibility
+
+LinearMouse is an MIT-licensed behavioral and architectural reference. Jostle should initially implement its own small interfaces around Jostle’s existing architecture. If source is reused later:
+
+- pin and record the upstream commit;
+- preserve MIT copyright/license notices in reused files;
+- add a third-party notices document;
+- audit transitive package and embedded-code licenses;
+- document local modifications and an upstream update process;
+- do not copy names, artwork, screenshots, or trade dress.
+
+References:
+
+- [LinearMouse repository and MIT license](https://github.com/linearmouse/linearmouse)
+- [LinearMouse configuration behavior](https://github.com/linearmouse/linearmouse/blob/main/Documentation/Configuration.md)
+- [Apple event monitoring overview](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/EventOverview/MonitoringEvents/MonitoringEvents.html)
+- [Apple IOHIDManager API](https://developer.apple.com/documentation/iokit/iohidmanager_h)
+
+## Delivery plan and implementation checklist
+
+A phase is complete only when its exit criteria pass. Do not hide incomplete risk work behind a disabled UI toggle.
+
+### Phase 0 — behavior, API, and licensing spikes
+
+- [ ] Write an ADR accepting the one-tap pipeline, dedicated event thread, profile precedence, and fail-open policy.
+- [ ] Capture a behavior specification for every control in the screenshots, including units, ranges, defaults, inheritance, and reset semantics.
+- [ ] Prototype pointer acceleration/speed changes on macOS 13 and the newest supported macOS; record public/private API use and restoration behavior.
+- [ ] Prototype event-to-device attribution for USB, Bluetooth, Apple trackpad, and receiver-connected mice.
+- [ ] Prototype synthetic-event tagging and confirm no recursion through Jostle’s own tap.
+- [ ] Prototype primary-button swap and prove balanced down/drag/up output.
+- [ ] Prototype smooth-scroll output at 120 Hz without tap timeouts or main-thread work.
+- [ ] Determine whether Dock visibility changes safely at runtime or requires relaunch.
+- [ ] Audit LinearMouse source/dependencies before any code reuse and create `THIRD_PARTY_NOTICES.md` if reuse occurs.
+- [ ] Decide the supported Logitech connection/device matrix before promising DPI, wheel, or battery support.
+
+**Exit:** written evidence identifies a supportable API for each Phase 5/6 feature, or that feature is explicitly deferred.
+
+### Phase 1 — foundations with no behavior change
+
+- [ ] Add `InputCustomizationSettings` with schema versioning and backward-compatible decoding.
+- [ ] Add isolated reset/export/import operations for the input section.
+- [ ] Implement deterministic profile matching, precedence, inheritance, validation, and effective-value/source reporting in `JostleCore`.
+- [ ] Add profile resolver tests for global, category, device, app, display, combination, duplicate, and missing-device cases.
+- [ ] Extract event-tap lifecycle into `EventTapService` on a dedicated event thread.
+- [ ] Adapt current window gesture and focus behavior to the shared service without changing its observable behavior.
+- [ ] Add tap timeout/invalidation recovery tests and runtime diagnostics.
+- [ ] Add synthetic-event markers and loop-prevention tests.
+- [ ] Implement safe mode, launch gesture, reopen-to-settings, crash-loop guard, and independent subsystem toggles.
+- [ ] Add a CI test proving existing settings documents still decode to the same effective behavior.
+
+**Exit:** existing Jostle controls pass all tests and manual smoke checks through the new event service; input customization remains off by default.
+
+### Phase 2 — settings shell and device inventory
+
+- [ ] Replace toolbar tabs with the sidebar settings shell.
+- [ ] Preserve all current Gestures, Snapping, Applications, Keep Awake, and Updates behavior.
+- [ ] Add the device/app/display context bar and inherited-value presentation.
+- [ ] Implement `DeviceService` identity, connect/disconnect, sleep/wake, and stale-device handling.
+- [ ] Add display identity and frontmost-application snapshots outside the event callback.
+- [ ] Show capability states without enabling hardware writes.
+- [ ] Add keyboard navigation, VoiceOver labels, contrast, reduce-motion, and appearance checks.
+- [ ] Add screenshot/UI smoke coverage for every sidebar destination and empty/disconnected states.
+
+**Exit:** profiles can be created and edited against stable contexts, with unsupported capabilities represented honestly.
+
+### Phase 3 — scrolling MVP
+
+- [ ] Implement vertical and horizontal reverse scrolling as a pure `JostleCore` transform.
+- [ ] Implement bounded linear speed and acceleration transforms.
+- [ ] Implement exact modifier-key actions with system-default fallback.
+- [ ] Preserve untouched axes and all relevant scroll metadata.
+- [ ] Add source-app bypass behavior and tests.
+- [ ] Add fixtures for discrete wheels, continuous trackpads, diagonal scrolling, momentum, and zero-delta events.
+- [ ] Verify Safari, Chromium, Electron, AppKit, SwiftUI, and remote-desktop apps.
+- [ ] Verify no transformation of Jostle synthetic events.
+
+**Exit:** default-off scrolling settings are deterministic, reversible immediately, and do not regress native trackpad gestures.
+
+### Phase 4 — basic buttons
+
+- [ ] Implement primary/secondary swap with complete down/drag/up stream remapping.
+- [ ] Implement universal back/forward with app compatibility tests.
+- [ ] Define a typed action catalog: pass through, suppress, mouse button, scroll, keyboard shortcut, media, Mission Control, spaces, App Exposé, Launchpad, desktop, and smart zoom.
+- [ ] Build a button/wheel recorder that never captures typed text.
+- [ ] Reject duplicate or recursive mappings in one effective profile.
+- [ ] Implement press, release, short press, repeat, and hold lifecycles where the chosen action requires them.
+- [ ] Pin active mappings across profile/app/display/device changes.
+- [ ] Release held synthetic keys/buttons on disable, disconnect, sleep, session change, and quit.
+- [ ] Add interaction-sequence contract fixtures to `TestContracts`.
+
+**Exit:** mappings cannot leave a button or modifier stuck in fault-injection tests.
+
+### Phase 5 — advanced scrolling and buttons
+
+- [ ] Implement smoothed-scroll math with an injected monotonic clock.
+- [ ] Add presets plus response, speed, acceleration, inertia, and bounce controls with validated ranges.
+- [ ] Schedule output on the event thread; cancel phases/timers cleanly.
+- [ ] Implement click debouncing with explicit modes and drag-safe release handling.
+- [ ] Implement auto-scroll with cancellation by Escape, click, profile disable, and device loss.
+- [ ] Implement gesture-button recognition with documented thresholds and movement dead zones.
+- [ ] Implement pointer-to-scroll redirection with an always-available cancellation path.
+- [ ] Test chord/long-press/gesture ambiguity and deterministic winner selection.
+- [ ] Run latency and CPU benchmarks at 125, 500, 1,000, and 8,000 Hz input rates where hardware permits.
+
+**Exit:** event callback p95 is under 1 ms and p99 under 2 ms on the agreed baseline Mac, there are no event-tap timeouts in a one-hour stress run, and idle overhead meets the agreed release budget.
+
+### Phase 6 — pointer settings and guarded mutations
+
+- [ ] Implement `SystemPointerController` only with the Phase 0 approved mechanism.
+- [ ] Add system/default, disabled/linear, and custom acceleration semantics without ambiguous zero values.
+- [ ] Add pointer speed with explicit units/range and a reset-to-observed-system-default action.
+- [ ] Implement the persistent restoration ledger and compare-and-swap restoration.
+- [ ] Reconcile changes on app/display/profile switches without excessive writes.
+- [ ] Restore safely after crash, relaunch, wake, reconnect, and permission loss.
+- [ ] Detect unsupported Apple/OS/device combinations and disable controls with an explanation.
+- [ ] Verify Jostle does not overwrite a concurrent user or third-party setting change.
+
+**Exit:** every supported OS/device pair passes apply, switch, disable, quit, forced-crash, reboot/relaunch, and third-party-change restoration tests.
+
+### Phase 7 — vendor capabilities and batteries
+
+- [ ] Define a provider protocol separate from generic device inventory.
+- [ ] Implement high-resolution wheel only for proven device/transport combinations.
+- [ ] Implement hardware DPI with model-specific bounds, idempotence, rate limiting, and restoration.
+- [ ] Implement read-only battery state with freshness timestamps and unavailable/stale states.
+- [ ] Cover Bluetooth, receiver, direct USB, sleep/wake, receiver removal, and duplicate-device cases.
+- [ ] Keep vendor failures isolated from generic event processing.
+- [ ] Document the supported-device matrix in the README and UI.
+
+**Exit:** unsupported devices receive no vendor commands, and all vendor features degrade to ordinary input without affecting window controls or Keep Awake.
+
+### Phase 8 — General pane, menu, diagnostics, and release
+
+- [ ] Add menu bar visibility only after reopen and recovery behavior is proven.
+- [ ] Add Dock visibility with clear relaunch behavior if necessary.
+- [ ] Add pointer-location overlay with multi-display and accessibility testing.
+- [ ] Integrate battery summary and current-context configuration into the status menu.
+- [ ] Add privacy-redacted log export with user preview.
+- [ ] Add compatibility warnings for concurrently running input utilities.
+- [ ] Update onboarding and Accessibility explanation.
+- [ ] Update README, screenshots, privacy statement, troubleshooting, and recovery instructions.
+- [ ] Run the full manual matrix below.
+- [ ] Beta with input customization opt-in and collect explicit bug reports, not telemetry.
+- [ ] Keep a remote rollback path through Sparkle and preserve settings when downgrading where possible.
+
+**Exit:** release checklist is signed off with no P0/P1 input-loss, stuck-input, restoration, permission, or crash defects.
+
+## Required test matrix
+
+### macOS and machines
+
+- [ ] macOS 13 minimum supported version.
+- [ ] Every intervening major version available to the team.
+- [ ] Latest public macOS update.
+- [ ] Apple silicon; Intel if Jostle continues to ship/support it.
+- [ ] One, two, and three displays; mirrored and rotated display cases.
+
+### Input devices
+
+- [ ] Built-in Apple trackpad.
+- [ ] Magic Mouse / Magic Trackpad where available.
+- [ ] Generic USB three-button mouse.
+- [ ] Generic five-button mouse.
+- [ ] Bluetooth mouse.
+- [ ] Supported Logitech devices over Bluetooth, Bolt/Unifying receiver, and direct USB as applicable.
+- [ ] Two identical devices attached simultaneously.
+- [ ] Hot-plug, receiver removal, sleep/wake, and low-battery transitions.
+
+### Applications and environments
+
+- [ ] AppKit, SwiftUI, Safari, Chromium, Electron, and games.
+- [ ] Terminal, secure-input/password fields, and screen lock.
+- [ ] Remote desktop, screen sharing, and virtual machines.
+- [ ] Wine/non-bundled process identity.
+- [ ] Full-screen apps, Mission Control, Spaces, and multiple displays.
+- [ ] Concurrent LinearMouse/SteerMouse/BetterMouse/Logi Options+/Karabiner scenarios.
+
+### Failure injection
+
+- [ ] Accessibility revoked while idle and during every stateful interaction.
+- [ ] Event tap disabled by timeout and user input.
+- [ ] Device disappears between down and up.
+- [ ] App/display/profile changes between down and up.
+- [ ] Settings document truncated, unknown-versioned, and partially invalid.
+- [ ] Forced kill during a system or hardware mutation.
+- [ ] Synthetic event marker missing or malformed.
+- [ ] Event thread restart while smoothing, auto-scroll, or a held action is active.
+- [ ] Menu hidden, Dock hidden, and settings window closed; recovery remains possible.
+
+## Definition of done
+
+The integration is done when:
+
+- [ ] Every capability in the scope table is shipped or explicitly documented as unsupported/deferred with evidence.
+- [ ] One Jostle process and one status item control windowing, Keep Awake, and input customization.
+- [ ] Existing users’ settings migrate without behavior changes.
+- [ ] Input customization is opt-in and independently disableable.
+- [ ] The callback is bounded, fail-open, and free of main-thread or disk dependencies.
+- [ ] Stateful input always drains or releases safely.
+- [ ] System/hardware changes restore without overwriting newer external changes.
+- [ ] Keep Awake works when Accessibility or the event tap is unavailable.
+- [ ] The full automated suite and required manual matrix pass.
+- [ ] Recovery, privacy, supported devices, conflicts, licensing, and troubleshooting are documented.

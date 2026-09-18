@@ -174,6 +174,19 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
             && eventTapController.requestedEnabled ? .on : .off
         enabledItem.isEnabled = runtimeAvailability == .ready
         menu.addItem(enabledItem)
+
+        let inputItem = NSMenuItem(
+            title: eventTapController.isInSafeMode
+                ? "Input Customizations — Safe Mode"
+                : "Input Customizations Enabled",
+            action: #selector(toggleInputCustomizations(_:)),
+            keyEquivalent: ""
+        )
+        inputItem.target = self
+        inputItem.state = eventTapController.inputCustomizationsRequested ? .on : .off
+        inputItem.isEnabled = runtimeAvailability == .ready
+            && !eventTapController.isInSafeMode
+        menu.addItem(inputItem)
     }
 
     private func addKeepAwakeItems() {
@@ -433,6 +446,14 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
 
     @objc private func toggleOverallDisabled(_ sender: NSMenuItem) {
         eventTapController.setEnabled(!eventTapController.requestedEnabled)
+        onRuntimeRefresh()
+        refresh()
+    }
+
+    @objc private func toggleInputCustomizations(_ sender: NSMenuItem) {
+        settingsStore.update { settings in
+            settings.inputCustomization.isEnabled.toggle()
+        }
         onRuntimeRefresh()
         refresh()
     }

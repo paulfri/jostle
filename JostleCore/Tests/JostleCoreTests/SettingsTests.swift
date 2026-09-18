@@ -26,8 +26,8 @@ final class SettingsTests: XCTestCase {
         XCTAssertFalse(JostleSettings.defaults.keepAwakeDeactivateOnBattery)
         XCTAssertFalse(JostleSettings.defaults.keepAwakeDimWhenInactive)
         XCTAssertEqual(JostleSettings.defaults.keepAwakeIndicatorStyle, .normal)
-        XCTAssertTrue(JostleSettings.defaults.keepAwakeUseImprovedTimer)
         XCTAssertNil(JostleSettings.defaults.keepAwakeShortcut)
+        XCTAssertEqual(JostleSettings.defaults.inputCustomization, .defaults)
     }
 
     func testSettingsRoundTripThroughCodable() throws {
@@ -59,8 +59,12 @@ final class SettingsTests: XCTestCase {
             keepAwakeDeactivateOnBattery: true,
             keepAwakeDimWhenInactive: true,
             keepAwakeIndicatorStyle: .coloredGreen,
-            keepAwakeUseImprovedTimer: false,
-            keepAwakeShortcut: GlobalShortcut(keyCode: 37, modifiers: [.control, .command])
+            keepAwakeShortcut: GlobalShortcut(keyCode: 37, modifiers: [.control, .command]),
+            inputCustomization: InputCustomizationSettings(
+                isEnabled: true,
+                reverseMouseScrolling: true,
+                buttonFourAction: .moveWindow
+            )
         )
 
         let data = try JSONEncoder().encode(settings)
@@ -74,6 +78,7 @@ final class SettingsTests: XCTestCase {
           "bringWindowToFront": true,
           "middleClickResize": false,
           "resizeOnly": false,
+          "keepAwakeUseImprovedTimer": false,
           "excludedApplications": {"com.example.Game": "Game"}
         }
         """.utf8)
@@ -108,8 +113,12 @@ final class SettingsTests: XCTestCase {
         XCTAssertFalse(settings.keepAwakeDeactivateOnBattery)
         XCTAssertFalse(settings.keepAwakeDimWhenInactive)
         XCTAssertEqual(settings.keepAwakeIndicatorStyle, .normal)
-        XCTAssertTrue(settings.keepAwakeUseImprovedTimer)
         XCTAssertNil(settings.keepAwakeShortcut)
+        XCTAssertEqual(settings.inputCustomization, .defaults)
+        let migratedJSON = try XCTUnwrap(
+            String(data: JSONEncoder().encode(settings), encoding: .utf8)
+        )
+        XCTAssertFalse(migratedJSON.contains("keepAwakeUseImprovedTimer"))
     }
 
     func testApplicationRulesResolveAgainstIndependentDefaults() {
