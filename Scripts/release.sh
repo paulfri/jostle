@@ -186,6 +186,11 @@ for architecture in arm64 x86_64; do
         exit 1
     fi
 done
+LOAD_COMMANDS="$(otool -l "$APP_PATH/Contents/MacOS/Jostle")"
+if [[ "$LOAD_COMMANDS" != *"path @executable_path/../Frameworks"* ]]; then
+    echo "error: release binary is missing the embedded-framework runpath" >&2
+    exit 1
+fi
 
 if [[ "$SKIP_NOTARIZATION" != "1" ]]; then
     echo "==> Submitting application for notarization"

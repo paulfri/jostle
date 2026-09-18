@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026.9.2 — 2026-09-18
+
+- Add the application runpath required to load Sparkle at launch.
+
 ## 2026.9.1 — 2026-09-18
 
 - Use Control alone as the default activation modifier.
