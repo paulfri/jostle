@@ -1,8 +1,10 @@
 import AppKit
 import SwiftUI
 
-final class SettingsWindowController: NSWindowController {
+final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private let loginItemController: LoginItemController
+    private var activationPolicyBeforePresenting: NSApplication.ActivationPolicy?
+    private var commandQMonitor: Any?
 
     init(
         settingsStore: SettingsStore,
@@ -134,6 +136,7 @@ final class SettingsWindowController: NSWindowController {
         window.center()
 
         super.init(window: window)
+        window.delegate = self
     }
 
     @available(*, unavailable)
@@ -141,10 +144,67 @@ final class SettingsWindowController: NSWindowController {
         fatalError("init(coder:) is unavailable")
     }
 
+    deinit {
+        stopMonitoringCommandQ()
+    }
+
     func present() {
+        let application = NSApplication.shared
+        if window?.isVisible != true {
+            activationPolicyBeforePresenting = application.activationPolicy()
+        }
+        application.setActivationPolicy(.regular)
+        startMonitoringCommandQ()
+
         loginItemController.refresh()
         showWindow(nil)
         window?.makeKeyAndOrderFront(nil)
-        NSApplication.shared.activate(ignoringOtherApps: true)
+        application.activate(ignoringOtherApps: true)
+    }
+
+    func dismiss() {
+        window?.performClose(nil)
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        stopMonitoringCommandQ()
+        let application = NSApplication.shared
+        application.setActivationPolicy(activationPolicyBeforePresenting ?? .accessory)
+        activationPolicyBeforePresenting = nil
+    }
+
+    static func isCloseSettingsShortcut(
+        charactersIgnoringModifiers: String?,
+        modifierFlags: NSEvent.ModifierFlags
+    ) -> Bool {
+        let shortcutModifiers = modifierFlags.intersection([
+            .command,
+            .option,
+            .control,
+            .shift,
+        ])
+        return charactersIgnoringModifiers?.lowercased() == "q"
+            && shortcutModifiers == .command
+    }
+
+    private func startMonitoringCommandQ() {
+        guard commandQMonitor == nil else { return }
+        commandQMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
+            [weak self] event in
+            guard Self.isCloseSettingsShortcut(
+                charactersIgnoringModifiers: event.charactersIgnoringModifiers,
+                modifierFlags: event.modifierFlags
+            ) else {
+                return event
+            }
+            self?.dismiss()
+            return nil
+        }
+    }
+
+    private func stopMonitoringCommandQ() {
+        guard let commandQMonitor else { return }
+        NSEvent.removeMonitor(commandQMonitor)
+        self.commandQMonitor = nil
     }
 }

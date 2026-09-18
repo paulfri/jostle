@@ -20,6 +20,33 @@ final class StatusMenuControllerTests: XCTestCase {
         super.tearDown()
     }
 
+    func testCommandQIsReservedForClosingSettings() {
+        XCTAssertTrue(
+            SettingsWindowController.isCloseSettingsShortcut(
+                charactersIgnoringModifiers: "q",
+                modifierFlags: [.command]
+            )
+        )
+        XCTAssertTrue(
+            SettingsWindowController.isCloseSettingsShortcut(
+                charactersIgnoringModifiers: "Q",
+                modifierFlags: [.command, .capsLock]
+            )
+        )
+        XCTAssertFalse(
+            SettingsWindowController.isCloseSettingsShortcut(
+                charactersIgnoringModifiers: "q",
+                modifierFlags: [.command, .shift]
+            )
+        )
+        XCTAssertFalse(
+            SettingsWindowController.isCloseSettingsShortcut(
+                charactersIgnoringModifiers: "w",
+                modifierFlags: [.command]
+            )
+        )
+    }
+
     func testSettingsItemInvokesOwnedWindowPresenter() throws {
         var presentationCount = 0
         let controller = makeController(onOpenSettings: {
