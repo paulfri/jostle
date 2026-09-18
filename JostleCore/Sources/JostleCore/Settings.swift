@@ -11,7 +11,7 @@ public struct JostleSettings: Codable, Equatable, Sendable {
     public var excludedApplications: [String: String]
 
     public init(
-        modifiers: Set<Modifier> = [.control, .command],
+        modifiers: Set<Modifier> = [.control],
         bringWindowToFront: Bool = false,
         middleClickResize: Bool = false,
         resizeOnly: Bool = false,
@@ -39,7 +39,7 @@ public struct JostleSettings: Codable, Equatable, Sendable {
     public mutating func setModifier(_ modifier: Modifier, enabled: Bool) {
         if enabled {
             modifiers.insert(modifier)
-        } else {
+        } else if modifiers.count > 1 || !modifiers.contains(modifier) {
             modifiers.remove(modifier)
         }
     }

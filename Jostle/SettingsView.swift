@@ -25,7 +25,6 @@ struct GeneralSettingsPane: View {
                         Toggle(option.title, isOn: modifierBinding(option.modifier))
                             .toggleStyle(.checkbox)
                             .fixedSize()
-                            .disabled(isOnlySelectedModifier(option.modifier))
                     }
                 }
             }
@@ -115,10 +114,6 @@ struct GeneralSettingsPane: View {
                 }
             }
         )
-    }
-
-    private func isOnlySelectedModifier(_ modifier: JostleCore.Modifier) -> Bool {
-        settingsStore.settings.modifiers == [modifier]
     }
 
     private var middleClickResizeBinding: Binding<Bool> {

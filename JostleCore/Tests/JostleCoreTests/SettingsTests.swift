@@ -4,7 +4,7 @@ import XCTest
 
 final class SettingsTests: XCTestCase {
     func testDefaultsAreImmediatelyUsable() {
-        XCTAssertEqual(JostleSettings.defaults.modifiers, [.control, .command])
+        XCTAssertEqual(JostleSettings.defaults.modifiers, [.control])
         XCTAssertFalse(JostleSettings.defaults.bringWindowToFront)
         XCTAssertFalse(JostleSettings.defaults.middleClickResize)
         XCTAssertFalse(JostleSettings.defaults.resizeOnly)
@@ -62,7 +62,7 @@ final class SettingsTests: XCTestCase {
         settings.setModifier(.shift, enabled: true)
         settings.setModifier(.shift, enabled: true)
         settings.setModifier(.control, enabled: false)
-        XCTAssertEqual(settings.modifiers, [.command, .shift])
+        XCTAssertEqual(settings.modifiers, [.shift])
 
         settings.setApplicationExcluded(key: "com.example.Game", displayName: "Game", excluded: true)
         settings.setApplicationExcluded(key: "com.example.Game", displayName: "Renamed", excluded: true)
@@ -71,6 +71,14 @@ final class SettingsTests: XCTestCase {
         settings.setApplicationExcluded(key: "com.example.Game", displayName: nil, excluded: false)
         settings.setApplicationExcluded(key: "com.example.Game", displayName: nil, excluded: false)
         XCTAssertEqual(settings.excludedApplications, [:])
+    }
+
+    func testLastSelectedModifierCannotBeRemoved() {
+        var settings = JostleSettings.defaults
+
+        settings.setModifier(.control, enabled: false)
+
+        XCTAssertEqual(settings.modifiers, [.control])
     }
 
     func testApplicationIdentityUsesNonemptyBundleThenName() {

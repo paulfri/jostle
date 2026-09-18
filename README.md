@@ -8,7 +8,7 @@ Jostle is a small native Swift menu-bar utility inspired by X11/Linux window man
 
 ## Usage
 
-The default modifier combination is **Command + Control**:
+The default modifier is **Control**:
 
 - **Left-drag** anywhere inside a window to move it.
 - **Right-drag** anywhere inside a window to resize it.

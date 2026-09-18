@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026.9.1 — Unreleased
+
+- Use Control alone as the default activation modifier.
+- Keep the required last modifier visually active in Settings instead of dimming its checkbox.
+
 ## 2026.9.0 — 2026-09-17
 
 - Rebrand the project as Jostle.
