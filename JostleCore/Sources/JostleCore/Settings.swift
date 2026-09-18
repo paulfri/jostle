@@ -1,3 +1,36 @@
+public enum ApplicationFeatureSetting: String, CaseIterable, Codable, Equatable, Sendable {
+    case useDefault
+    case enabled
+    case disabled
+
+    public func resolve(default defaultValue: Bool) -> Bool {
+        switch self {
+        case .useDefault:
+            defaultValue
+        case .enabled:
+            true
+        case .disabled:
+            false
+        }
+    }
+}
+
+public struct ApplicationRule: Codable, Equatable, Sendable {
+    public var displayName: String
+    public var windowControls: ApplicationFeatureSetting
+    public var focusFollowsPointer: ApplicationFeatureSetting
+
+    public init(
+        displayName: String,
+        windowControls: ApplicationFeatureSetting = .useDefault,
+        focusFollowsPointer: ApplicationFeatureSetting = .useDefault
+    ) {
+        self.displayName = displayName
+        self.windowControls = windowControls
+        self.focusFollowsPointer = focusFollowsPointer
+    }
+}
+
 public struct JostleSettings: Codable, Equatable, Sendable {
     public var modifiers: Set<Modifier>
     public var bringWindowToFront: Bool
@@ -8,7 +41,10 @@ public struct JostleSettings: Codable, Equatable, Sendable {
     public var snapEnabled: Bool
     public var snapGap: Double
     public var snapScreenMargin: Double
-    public var excludedApplications: [String: String]
+    public var windowControlsEnabledByDefault: Bool
+    public var focusFollowsPointerEnabledByDefault: Bool
+    public var focusFollowsPointerDelay: Double
+    public var applicationRules: [String: ApplicationRule]
     public var keepAwakeDefaultDuration: KeepAwakeDurationPreset
     public var keepAwakeActivateAtLaunch: Bool
     public var keepAwakeActivateOnLeftClick: Bool
@@ -30,7 +66,10 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         snapEnabled: Bool = true,
         snapGap: Double = 8,
         snapScreenMargin: Double = 0,
-        excludedApplications: [String: String] = [:],
+        windowControlsEnabledByDefault: Bool = true,
+        focusFollowsPointerEnabledByDefault: Bool = false,
+        focusFollowsPointerDelay: Double = 0.1,
+        applicationRules: [String: ApplicationRule] = [:],
         keepAwakeDefaultDuration: KeepAwakeDurationPreset = .indefinitely,
         keepAwakeActivateAtLaunch: Bool = false,
         keepAwakeActivateOnLeftClick: Bool = false,
@@ -51,7 +90,10 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         self.snapEnabled = snapEnabled
         self.snapGap = snapGap
         self.snapScreenMargin = snapScreenMargin
-        self.excludedApplications = excludedApplications
+        self.windowControlsEnabledByDefault = windowControlsEnabledByDefault
+        self.focusFollowsPointerEnabledByDefault = focusFollowsPointerEnabledByDefault
+        self.focusFollowsPointerDelay = focusFollowsPointerDelay
+        self.applicationRules = applicationRules
         self.keepAwakeDefaultDuration = keepAwakeDefaultDuration
         self.keepAwakeActivateAtLaunch = keepAwakeActivateAtLaunch
         self.keepAwakeActivateOnLeftClick = keepAwakeActivateOnLeftClick
@@ -66,6 +108,13 @@ public struct JostleSettings: Codable, Equatable, Sendable {
 
     public static let defaults = JostleSettings()
 
+    public var hasEnabledFocusFollowsPointerRule: Bool {
+        focusFollowsPointerEnabledByDefault
+            || applicationRules.values.contains {
+                $0.focusFollowsPointer.resolve(default: focusFollowsPointerEnabledByDefault)
+            }
+    }
+
     public mutating func setModifier(_ modifier: Modifier, enabled: Bool) {
         if enabled {
             modifiers.insert(modifier)
@@ -74,17 +123,67 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         }
     }
 
-    public mutating func setApplicationExcluded(
+    public func windowControlsEnabled(forApplicationKey key: String?) -> Bool {
+        guard let key, let rule = applicationRules[key] else {
+            return windowControlsEnabledByDefault
+        }
+        return rule.windowControls.resolve(default: windowControlsEnabledByDefault)
+    }
+
+    public func focusFollowsPointerEnabled(forApplicationKey key: String?) -> Bool {
+        guard let key, let rule = applicationRules[key] else {
+            return focusFollowsPointerEnabledByDefault
+        }
+        return rule.focusFollowsPointer.resolve(default: focusFollowsPointerEnabledByDefault)
+    }
+
+    public mutating func addApplicationRule(key: String, displayName: String) {
+        guard !key.isEmpty else { return }
+        if applicationRules[key] == nil {
+            applicationRules[key] = ApplicationRule(
+                displayName: displayName.isEmpty ? key : displayName
+            )
+        }
+    }
+
+    public mutating func removeApplicationRule(key: String) {
+        applicationRules.removeValue(forKey: key)
+    }
+
+    public mutating func setWindowControls(
+        _ setting: ApplicationFeatureSetting,
+        forApplicationKey key: String,
+        displayName: String
+    ) {
+        updateApplicationRule(key: key, displayName: displayName) {
+            $0.windowControls = setting
+        }
+    }
+
+    public mutating func setFocusFollowsPointer(
+        _ setting: ApplicationFeatureSetting,
+        forApplicationKey key: String,
+        displayName: String
+    ) {
+        updateApplicationRule(key: key, displayName: displayName) {
+            $0.focusFollowsPointer = setting
+        }
+    }
+
+    private mutating func updateApplicationRule(
         key: String,
-        displayName: String?,
-        excluded: Bool
+        displayName: String,
+        mutation: (inout ApplicationRule) -> Void
     ) {
         guard !key.isEmpty else { return }
-        if excluded {
-            excludedApplications[key] = displayName.flatMap { $0.isEmpty ? nil : $0 } ?? key
-        } else {
-            excludedApplications.removeValue(forKey: key)
+        var rule = applicationRules[key] ?? ApplicationRule(
+            displayName: displayName.isEmpty ? key : displayName
+        )
+        if !displayName.isEmpty {
+            rule.displayName = displayName
         }
+        mutation(&rule)
+        applicationRules[key] = rule
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -97,6 +196,10 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         case snapEnabled
         case snapGap
         case snapScreenMargin
+        case windowControlsEnabledByDefault
+        case focusFollowsPointerEnabledByDefault
+        case focusFollowsPointerDelay
+        case applicationRules
         case excludedApplications
         case keepAwakeDefaultDuration
         case keepAwakeActivateAtLaunch
@@ -132,10 +235,38 @@ public struct JostleSettings: Codable, Equatable, Sendable {
             ?? Self.defaults.snapGap
         snapScreenMargin = try container.decodeIfPresent(Double.self, forKey: .snapScreenMargin)
             ?? Self.defaults.snapScreenMargin
-        excludedApplications = try container.decodeIfPresent(
-            [String: String].self,
-            forKey: .excludedApplications
-        ) ?? Self.defaults.excludedApplications
+        windowControlsEnabledByDefault = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .windowControlsEnabledByDefault
+        ) ?? Self.defaults.windowControlsEnabledByDefault
+        focusFollowsPointerEnabledByDefault = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .focusFollowsPointerEnabledByDefault
+        ) ?? Self.defaults.focusFollowsPointerEnabledByDefault
+        focusFollowsPointerDelay = try container.decodeIfPresent(
+            Double.self,
+            forKey: .focusFollowsPointerDelay
+        ) ?? Self.defaults.focusFollowsPointerDelay
+
+        if let decodedRules = try container.decodeIfPresent(
+            [String: ApplicationRule].self,
+            forKey: .applicationRules
+        ) {
+            applicationRules = decodedRules
+        } else {
+            let legacyExclusions = try container.decodeIfPresent(
+                [String: String].self,
+                forKey: .excludedApplications
+            ) ?? [:]
+            applicationRules = legacyExclusions.mapValues {
+                ApplicationRule(
+                    displayName: $0,
+                    windowControls: .disabled,
+                    focusFollowsPointer: .disabled
+                )
+            }
+        }
+
         keepAwakeDefaultDuration = try container.decodeIfPresent(
             KeepAwakeDurationPreset.self,
             forKey: .keepAwakeDefaultDuration
@@ -189,7 +320,13 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         try container.encode(snapEnabled, forKey: .snapEnabled)
         try container.encode(snapGap, forKey: .snapGap)
         try container.encode(snapScreenMargin, forKey: .snapScreenMargin)
-        try container.encode(excludedApplications, forKey: .excludedApplications)
+        try container.encode(windowControlsEnabledByDefault, forKey: .windowControlsEnabledByDefault)
+        try container.encode(
+            focusFollowsPointerEnabledByDefault,
+            forKey: .focusFollowsPointerEnabledByDefault
+        )
+        try container.encode(focusFollowsPointerDelay, forKey: .focusFollowsPointerDelay)
+        try container.encode(applicationRules, forKey: .applicationRules)
         try container.encode(keepAwakeDefaultDuration, forKey: .keepAwakeDefaultDuration)
         try container.encode(keepAwakeActivateAtLaunch, forKey: .keepAwakeActivateAtLaunch)
         try container.encode(keepAwakeActivateOnLeftClick, forKey: .keepAwakeActivateOnLeftClick)

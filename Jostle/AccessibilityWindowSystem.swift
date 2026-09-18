@@ -102,6 +102,21 @@ final class AccessibilityWindowSystem {
 
     func bringToFront(_ target: AccessibilityWindowTarget) {
         target.application?.activate(options: [.activateIgnoringOtherApps])
+        if target.identity.processIdentifier > 0 {
+            let applicationElement = AXUIElementCreateApplication(
+                target.identity.processIdentifier
+            )
+            AXUIElementSetAttributeValue(
+                applicationElement,
+                kAXMainWindowAttribute as CFString,
+                target.element
+            )
+            AXUIElementSetAttributeValue(
+                applicationElement,
+                kAXFocusedWindowAttribute as CFString,
+                target.element
+            )
+        }
         AXUIElementPerformAction(target.element, kAXRaiseAction as CFString)
     }
 

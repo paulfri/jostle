@@ -1,3 +1,4 @@
+import AppKit
 import JostleCore
 import SwiftUI
 
@@ -99,7 +100,7 @@ struct GeneralSettingsPane: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This also clears the excluded applications list.")
+            Text("This also clears all app overrides.")
         }
     }
 
@@ -526,89 +527,306 @@ struct UpdateSettingsPane: View {
     }
 }
 
-struct ExcludedApplicationsSettingsPane: View {
+struct ApplicationsSettingsPane: View {
     @ObservedObject var settingsStore: SettingsStore
+    @State private var runningApplications: [RunningApplicationInfo] = []
 
-    private var applications: [(key: String, name: String)] {
-        settingsStore.settings.excludedApplications
-            .map { (key: $0.key, name: $0.value) }
+    private let focusDelays: [(value: Double, title: String)] = [
+        (0, "Immediate"),
+        (0.1, "100 ms"),
+        (0.25, "250 ms"),
+        (0.5, "500 ms")
+    ]
+
+    private var applications: [(key: String, rule: ApplicationRule)] {
+        settingsStore.settings.applicationRules
+            .map { (key: $0.key, rule: $0.value) }
             .sorted {
-                let order = $0.name.localizedCaseInsensitiveCompare($1.name)
+                let order = $0.rule.displayName.localizedCaseInsensitiveCompare(
+                    $1.rule.displayName
+                )
                 return order == .orderedSame ? $0.key < $1.key : order == .orderedAscending
             }
     }
 
+    private var availableRunningApplications: [RunningApplicationInfo] {
+        runningApplications.filter {
+            settingsStore.settings.applicationRules[$0.key] == nil
+        }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Excluded Applications")
+        VStack(alignment: .leading, spacing: 12) {
+            Text("App Defaults")
                 .font(.headline)
-            Text("\(AppBrand.applicationName) ignores windows belonging to these applications.")
-                .font(.callout)
+
+            PreferenceRow(label: "Window controls:") {
+                Toggle(
+                    "Enable move, resize, and snapping",
+                    isOn: windowControlsDefaultBinding
+                )
+                .toggleStyle(.checkbox)
+            }
+
+            PreferenceRow(label: "Pointer focus:") {
+                Toggle(
+                    "Focus follows pointer",
+                    isOn: focusDefaultBinding
+                )
+                .toggleStyle(.checkbox)
+            }
+
+            PreferenceRow(label: "Focus delay:") {
+                Picker("", selection: focusDelayBinding) {
+                    ForEach(focusDelays, id: \.value) { delay in
+                        Text(delay.title).tag(delay.value)
+                    }
+                }
+                .labelsHidden()
+                .frame(width: 130, alignment: .leading)
+                .disabled(!settingsStore.settings.hasEnabledFocusFollowsPointerRule)
+            }
+
+            Text(
+                "Defaults apply unless an app has an override below. "
+                    + "Pointer focus raises the window after the pointer rests for the selected delay."
+            )
+                .font(.caption)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Divider()
+
+            HStack {
+                Text("App Overrides")
+                    .font(.headline)
+                Spacer()
+                Menu {
+                    ForEach(availableRunningApplications, id: \.key) { application in
+                        Button(application.name) {
+                            settingsStore.update { settings in
+                                settings.addApplicationRule(
+                                    key: application.key,
+                                    displayName: application.name
+                                )
+                            }
+                        }
+                    }
+                } label: {
+                    Label("Add Running App", systemImage: "plus")
+                }
+                .disabled(availableRunningApplications.isEmpty)
+            }
 
             if applications.isEmpty {
-                VStack(spacing: 10) {
-                    Image(systemName: "checkmark.circle")
-                        .font(.system(size: 32, weight: .light))
+                VStack(spacing: 8) {
+                    Image(systemName: "app.badge.checkmark")
+                        .font(.system(size: 30, weight: .light))
                         .foregroundStyle(.secondary)
-                    Text("No excluded applications")
+                    Text("No app overrides")
                         .font(.headline)
-                    Text("After dragging a window, choose Exclude from the \(AppBrand.applicationName) menu.")
+                    Text("Add a running app here, or use the current-app controls in the menu bar.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List(applications, id: \.key) { application in
+                VStack(spacing: 0) {
                     HStack(spacing: 10) {
-                        if let icon = ApplicationIconProvider.icon(
-                            applicationKey: application.key,
-                            displayName: application.name
-                        ) {
-                            Image(nsImage: icon)
-                                .frame(width: 32, height: 32)
-                                .accessibilityHidden(true)
-                        } else {
-                            Image(systemName: "app.dashed")
-                                .font(.system(size: 24))
-                                .foregroundStyle(.secondary)
-                                .frame(width: 32, height: 32)
-                                .accessibilityHidden(true)
-                        }
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(application.name)
-                            if application.key != application.name {
-                                Text(application.key)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
-                            }
-                        }
-                        Spacer()
-                        Button {
-                            settingsStore.update { settings in
-                                settings.setApplicationExcluded(
-                                    key: application.key,
-                                    displayName: nil,
-                                    excluded: false
-                                )
-                            }
-                        } label: {
-                            Image(systemName: "minus.circle")
-                        }
-                        .buttonStyle(.borderless)
-                        .help("Remove \(application.name) from exclusions")
-                        .accessibilityLabel("Remove \(application.name)")
+                        Text("Application")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Text("Window controls")
+                            .frame(width: 130, alignment: .leading)
+                        Text("Pointer focus")
+                            .frame(width: 120, alignment: .leading)
+                        Color.clear.frame(width: 22, height: 1)
                     }
-                    .padding(.vertical, 3)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+
+                    Divider()
+
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            ForEach(applications, id: \.key) { application in
+                                HStack(spacing: 10) {
+                                    applicationLabel(
+                                        key: application.key,
+                                        name: application.rule.displayName
+                                    )
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                                    featurePicker(
+                                        selection: windowControlsBinding(for: application.key),
+                                        defaultEnabled: settingsStore.settings.windowControlsEnabledByDefault
+                                    )
+                                    .frame(width: 130)
+
+                                    featurePicker(
+                                        selection: focusBinding(for: application.key),
+                                        defaultEnabled: settingsStore.settings.focusFollowsPointerEnabledByDefault
+                                    )
+                                    .frame(width: 120)
+
+                                    Button {
+                                        settingsStore.update {
+                                            $0.removeApplicationRule(key: application.key)
+                                        }
+                                    } label: {
+                                        Image(systemName: "minus.circle")
+                                    }
+                                    .buttonStyle(.borderless)
+                                    .help("Remove override for \(application.rule.displayName)")
+                                    .accessibilityLabel(
+                                        "Remove \(application.rule.displayName) override"
+                                    )
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 8)
+
+                                if application.key != applications.last?.key {
+                                    Divider()
+                                        .padding(.leading, 52)
+                                }
+                            }
+                        }
+                    }
                 }
-                .listStyle(.inset)
+                .background(Color(nsColor: .controlBackgroundColor))
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                }
+                .frame(maxHeight: .infinity, alignment: .top)
             }
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
         .frame(width: 660, height: 470)
+        .onAppear(perform: refreshRunningApplications)
+    }
+
+    @ViewBuilder
+    private func applicationLabel(key: String, name: String) -> some View {
+        HStack(spacing: 10) {
+            if let icon = ApplicationIconProvider.icon(
+                applicationKey: key,
+                displayName: name
+            ) {
+                Image(nsImage: icon)
+                    .frame(width: 32, height: 32)
+                    .accessibilityHidden(true)
+            } else {
+                Image(systemName: "app.dashed")
+                    .font(.system(size: 24))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 32, height: 32)
+                    .accessibilityHidden(true)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(name)
+                    .lineLimit(1)
+                if key != name {
+                    Text(key)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+            }
+        }
+    }
+
+    private func featurePicker(
+        selection: Binding<ApplicationFeatureSetting>,
+        defaultEnabled: Bool
+    ) -> some View {
+        Picker("", selection: selection) {
+            Text("Default (\(defaultEnabled ? "On" : "Off"))")
+                .tag(ApplicationFeatureSetting.useDefault)
+            Text("On").tag(ApplicationFeatureSetting.enabled)
+            Text("Off").tag(ApplicationFeatureSetting.disabled)
+        }
+        .labelsHidden()
+    }
+
+    private var windowControlsDefaultBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings.windowControlsEnabledByDefault },
+            set: { value in
+                settingsStore.update { $0.windowControlsEnabledByDefault = value }
+            }
+        )
+    }
+
+    private var focusDefaultBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings.focusFollowsPointerEnabledByDefault },
+            set: { value in
+                settingsStore.update { $0.focusFollowsPointerEnabledByDefault = value }
+            }
+        )
+    }
+
+    private var focusDelayBinding: Binding<Double> {
+        Binding(
+            get: { settingsStore.settings.focusFollowsPointerDelay },
+            set: { value in
+                settingsStore.update { $0.focusFollowsPointerDelay = value }
+            }
+        )
+    }
+
+    private func windowControlsBinding(for key: String) -> Binding<ApplicationFeatureSetting> {
+        Binding(
+            get: {
+                settingsStore.settings.applicationRules[key]?.windowControls ?? .useDefault
+            },
+            set: { value in
+                guard let rule = settingsStore.settings.applicationRules[key] else { return }
+                settingsStore.update {
+                    $0.setWindowControls(
+                        value,
+                        forApplicationKey: key,
+                        displayName: rule.displayName
+                    )
+                }
+            }
+        )
+    }
+
+    private func focusBinding(for key: String) -> Binding<ApplicationFeatureSetting> {
+        Binding(
+            get: {
+                settingsStore.settings.applicationRules[key]?.focusFollowsPointer ?? .useDefault
+            },
+            set: { value in
+                guard let rule = settingsStore.settings.applicationRules[key] else { return }
+                settingsStore.update {
+                    $0.setFocusFollowsPointer(
+                        value,
+                        forApplicationKey: key,
+                        displayName: rule.displayName
+                    )
+                }
+            }
+        )
+    }
+
+    private func refreshRunningApplications() {
+        var applicationsByKey: [String: RunningApplicationInfo] = [:]
+        for application in NSWorkspace.shared.runningApplications
+        where application.processIdentifier != ProcessInfo.processInfo.processIdentifier
+            && application.activationPolicy == .regular {
+            guard let info = RunningApplicationInfo(application: application) else { continue }
+            applicationsByKey[info.key] = info
+        }
+        runningApplications = applicationsByKey.values.sorted {
+            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+        }
     }
 }
 

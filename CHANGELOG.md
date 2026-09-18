@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add configurable Focus Follows Pointer with immediate or delayed activation.
+- Replace global app exclusions with independent per-app rules for window controls and pointer focus in the new Apps settings tab.
 - Add integrated Keep Awake sessions with preset durations, display-sleep control, lock pausing, battery deactivation, completion notifications, and configurable menu-bar indicators.
 - Introduce Jostle's Calm frame identity across the app icon, menu bar, Settings, and Keep Awake state language.
 - Add configurable menu-bar click behavior and a recordable global Keep Awake shortcut.

@@ -37,12 +37,12 @@ final class StatusMenuControllerTests: XCTestCase {
         let controller = makeController()
 
         XCTAssertEqual(commandItems(in: controller).map(\.title), [
-            "Window Gestures Enabled",
+            "Window Features Enabled",
             "Keep Mac Awake",
             "Keep Awake For",
             "Allow Display to Sleep",
             "Start at Login",
-            "Exclude Current App",
+            "Current App",
             "Settings…",
             "Quit Jostle"
         ])
@@ -78,14 +78,14 @@ final class StatusMenuControllerTests: XCTestCase {
             refreshCount += 1
         })
         let item = try XCTUnwrap(
-            commandItems(in: controller).first { $0.title == "Window Gestures Enabled" }
+            commandItems(in: controller).first { $0.title == "Window Features Enabled" }
         )
         XCTAssertEqual(item.state, .on)
 
         XCTAssertTrue(NSApplication.shared.sendAction(item.action!, to: item.target, from: item))
 
         XCTAssertEqual(
-            commandItems(in: controller).first { $0.title == "Window Gestures Enabled" }?.state,
+            commandItems(in: controller).first { $0.title == "Window Features Enabled" }?.state,
             .off
         )
         XCTAssertEqual(refreshCount, 1)
@@ -119,55 +119,85 @@ final class StatusMenuControllerTests: XCTestCase {
 
         controller.menuWillOpen(controller.renderedMenu)
 
-        let item = try XCTUnwrap(
-            commandItems(in: controller).first { $0.title == "Exclude Example Editor" }
+        let appItem = try XCTUnwrap(
+            commandItems(in: controller).first { $0.title == "App: Example Editor" }
         )
-        XCTAssertTrue(item.isEnabled)
-        XCTAssertEqual(item.state, .off)
+        let windowControlsItem = try XCTUnwrap(
+            appItem.submenu?.item(withTitle: "Window Controls")
+        )
+        XCTAssertTrue(appItem.isEnabled)
+        XCTAssertEqual(windowControlsItem.state, .on)
 
-        XCTAssertTrue(NSApplication.shared.sendAction(item.action!, to: item.target, from: item))
+        XCTAssertTrue(
+            NSApplication.shared.sendAction(
+                windowControlsItem.action!,
+                to: windowControlsItem.target,
+                from: windowControlsItem
+            )
+        )
         XCTAssertEqual(
-            settingsStore.settings.excludedApplications[application.key],
-            application.name
+            settingsStore.settings.applicationRules[application.key]?.windowControls,
+            .disabled
         )
     }
 
-    func testRecentApplicationExclusionIsAnEnabledToggle() throws {
+    func testRecentApplicationFeaturesAreIndependentToggles() throws {
         let settingsStore = SettingsStore(userDefaults: userDefaults)
         let controller = makeController(settingsStore: settingsStore)
         let application = RunningApplicationInfo(key: "com.example.Game", name: "Example Game")
 
         controller.setRecentApplication(application)
-        var excludeItem = try XCTUnwrap(
-            commandItems(in: controller).first { $0.title == "Exclude Example Game" }
+        var appItem = try XCTUnwrap(
+            commandItems(in: controller).first { $0.title == "App: Example Game" }
         )
-        XCTAssertTrue(excludeItem.isEnabled)
-        XCTAssertEqual(excludeItem.state, .off)
-
-        settingsStore.update { settings in
-            settings.setApplicationExcluded(
-                key: application.key,
-                displayName: application.name,
-                excluded: true
-            )
-        }
-        excludeItem = try XCTUnwrap(
-            commandItems(in: controller).first { $0.title == "Exclude Example Game" }
+        var windowControlsItem = try XCTUnwrap(
+            appItem.submenu?.item(withTitle: "Window Controls")
         )
-        XCTAssertTrue(excludeItem.isEnabled)
-        XCTAssertEqual(excludeItem.state, .on)
+        var focusItem = try XCTUnwrap(
+            appItem.submenu?.item(withTitle: "Focus Follows Pointer")
+        )
+        XCTAssertEqual(windowControlsItem.state, .on)
+        XCTAssertEqual(focusItem.state, .off)
 
         XCTAssertTrue(
             NSApplication.shared.sendAction(
-                excludeItem.action!,
-                to: excludeItem.target,
-                from: excludeItem
+                focusItem.action!,
+                to: focusItem.target,
+                from: focusItem
             )
         )
-        XCTAssertNil(settingsStore.settings.excludedApplications[application.key])
         XCTAssertEqual(
-            commandItems(in: controller).first { $0.title == "Exclude Example Game" }?.state,
-            .off
+            settingsStore.settings.applicationRules[application.key]?.focusFollowsPointer,
+            .enabled
+        )
+
+        appItem = try XCTUnwrap(
+            commandItems(in: controller).first { $0.title == "App: Example Game" }
+        )
+        windowControlsItem = try XCTUnwrap(
+            appItem.submenu?.item(withTitle: "Window Controls")
+        )
+        focusItem = try XCTUnwrap(
+            appItem.submenu?.item(withTitle: "Focus Follows Pointer")
+        )
+        XCTAssertEqual(windowControlsItem.state, .on)
+        XCTAssertEqual(focusItem.state, .on)
+
+        let defaultsItem = try XCTUnwrap(
+            appItem.submenu?.item(withTitle: "Use App Defaults")
+        )
+        XCTAssertTrue(
+            NSApplication.shared.sendAction(
+                defaultsItem.action!,
+                to: defaultsItem.target,
+                from: defaultsItem
+            )
+        )
+        XCTAssertNil(settingsStore.settings.applicationRules[application.key])
+        XCTAssertFalse(
+            settingsStore.settings.focusFollowsPointerEnabled(
+                forApplicationKey: application.key
+            )
         )
     }
 
@@ -177,12 +207,12 @@ final class StatusMenuControllerTests: XCTestCase {
 
         XCTAssertEqual(commandItems(in: controller).map(\.title), [
             "Accessibility Access Required…",
-            "Window Gestures Enabled",
+            "Window Features Enabled",
             "Keep Mac Awake",
             "Keep Awake For",
             "Allow Display to Sleep",
             "Start at Login",
-            "Exclude Current App",
+            "Current App",
             "Settings…",
             "Quit Jostle"
         ])
@@ -289,12 +319,12 @@ final class StatusMenuControllerTests: XCTestCase {
 
         XCTAssertEqual(commandItems(in: controller).map(\.title), [
             "Event Monitor Unavailable — Retry",
-            "Window Gestures Enabled",
+            "Window Features Enabled",
             "Keep Mac Awake",
             "Keep Awake For",
             "Allow Display to Sleep",
             "Start at Login",
-            "Exclude Current App",
+            "Current App",
             "Settings…",
             "Quit Jostle"
         ])

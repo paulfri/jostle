@@ -113,6 +113,9 @@ final class EventTapController {
     private var moveDidDrag = false
     private var resizeDidDrag = false
     private var ownedActionButton: MouseButton?
+    private var pendingFocusWorkItem: DispatchWorkItem?
+    private var pendingFocusPoint: CGPoint?
+    private var lastFocusedWindow: AccessibilityWindowIdentity?
     private(set) var sessionActive = true
     private(set) var requestedEnabled = true
 
@@ -187,6 +190,7 @@ final class EventTapController {
         }
 
         cancelGesture()
+        cancelPendingFocus(resetLastWindow: true)
         if let eventTap, CFMachPortIsValid(eventTap) {
             CGEvent.tapEnable(tap: eventTap, enable: false)
         }
@@ -204,6 +208,7 @@ final class EventTapController {
             .leftMouseUp,
             .rightMouseUp,
             .otherMouseUp,
+            .mouseMoved,
             .keyDown
         ].reduce(CGEventMask(0)) { $0 | (CGEventMask(1) << $1.rawValue) }
 
@@ -235,6 +240,7 @@ final class EventTapController {
 
     private func tearDownEventTap() {
         cancelGesture()
+        cancelPendingFocus(resetLastWindow: true)
         if let source = runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
         }
@@ -249,10 +255,25 @@ final class EventTapController {
         sessionActive = active
         if !active {
             cancelGesture()
+            cancelPendingFocus(resetLastWindow: true)
         }
     }
 
     fileprivate func handle(type: CGEventType, event: CGEvent) -> Bool {
+        if type == .mouseMoved {
+            scheduleFocusFollowsPointer(at: event.location)
+            return false
+        }
+        if type == .leftMouseDown
+            || type == .rightMouseDown
+            || type == .otherMouseDown
+            || type == .leftMouseDragged
+            || type == .rightMouseDragged
+            || type == .otherMouseDragged
+            || type == .keyDown {
+            cancelPendingFocus(resetLastWindow: true)
+        }
+
         let settings = settingsStore.settings
         let input = CGEventInputAdapter.input(
             type: type,
@@ -413,8 +434,9 @@ final class EventTapController {
               let frame = windowSystem.frame(of: target) else {
             return nil
         }
-        if let applicationInfo = target.applicationInfo,
-           settings.excludedApplications[applicationInfo.key] != nil {
+        if !settings.windowControlsEnabled(
+            forApplicationKey: target.applicationInfo?.key
+        ) {
             return nil
         }
         if let applicationInfo = target.applicationInfo {
@@ -530,8 +552,9 @@ final class EventTapController {
             cancelGesture()
             return false
         }
-        if let applicationInfo = target.applicationInfo,
-           settingsStore.settings.excludedApplications[applicationInfo.key] != nil {
+        if !settingsStore.settings.windowControlsEnabled(
+            forApplicationKey: target.applicationInfo?.key
+        ) {
             cancelGesture()
             return false
         }
@@ -571,6 +594,65 @@ final class EventTapController {
             return reduce(.beginResize(frame: frame, section: section, timestamp: now))
         }
         return reduce(.beginMove(frame: frame, timestamp: now))
+    }
+
+    private func scheduleFocusFollowsPointer(at point: CGPoint) {
+        let settings = settingsStore.settings
+        guard requestedEnabled,
+              sessionActive,
+              !gestureState.isActive,
+              settings.hasEnabledFocusFollowsPointerRule else {
+            cancelPendingFocus(resetLastWindow: false)
+            return
+        }
+
+        pendingFocusPoint = point
+        let configuredDelay = max(0, settings.focusFollowsPointerDelay)
+        if configuredDelay == 0, pendingFocusWorkItem != nil {
+            return
+        }
+        pendingFocusWorkItem?.cancel()
+
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self, let point = pendingFocusPoint else { return }
+            applyFocusFollowsPointer(at: point)
+        }
+        pendingFocusWorkItem = workItem
+        let delay = configuredDelay == 0 ? 0.016 : configuredDelay
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: workItem)
+    }
+
+    private func applyFocusFollowsPointer(at point: CGPoint) {
+        pendingFocusWorkItem = nil
+        pendingFocusPoint = nil
+        let settings = settingsStore.settings
+        guard requestedEnabled,
+              sessionActive,
+              !gestureState.isActive,
+              NSEvent.pressedMouseButtons == 0,
+              settings.hasEnabledFocusFollowsPointerRule,
+              let target = windowSystem.window(at: point),
+              target.identity.processIdentifier != ProcessInfo.processInfo.processIdentifier,
+              settings.focusFollowsPointerEnabled(
+                  forApplicationKey: target.applicationInfo?.key
+              ) else {
+            return
+        }
+        if target.identity == lastFocusedWindow, target.application?.isActive == true {
+            return
+        }
+
+        windowSystem.bringToFront(target)
+        lastFocusedWindow = target.identity
+    }
+
+    private func cancelPendingFocus(resetLastWindow: Bool) {
+        pendingFocusWorkItem?.cancel()
+        pendingFocusWorkItem = nil
+        pendingFocusPoint = nil
+        if resetLastWindow {
+            lastFocusedWindow = nil
+        }
     }
 
     @discardableResult

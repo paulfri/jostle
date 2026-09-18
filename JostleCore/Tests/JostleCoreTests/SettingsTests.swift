@@ -13,7 +13,11 @@ final class SettingsTests: XCTestCase {
         XCTAssertTrue(JostleSettings.defaults.snapEnabled)
         XCTAssertEqual(JostleSettings.defaults.snapGap, 8)
         XCTAssertEqual(JostleSettings.defaults.snapScreenMargin, 0)
-        XCTAssertEqual(JostleSettings.defaults.excludedApplications, [:])
+        XCTAssertTrue(JostleSettings.defaults.windowControlsEnabledByDefault)
+        XCTAssertFalse(JostleSettings.defaults.focusFollowsPointerEnabledByDefault)
+        XCTAssertEqual(JostleSettings.defaults.focusFollowsPointerDelay, 0.1)
+        XCTAssertEqual(JostleSettings.defaults.applicationRules, [:])
+        XCTAssertFalse(JostleSettings.defaults.hasEnabledFocusFollowsPointerRule)
         XCTAssertEqual(JostleSettings.defaults.keepAwakeDefaultDuration, .indefinitely)
         XCTAssertFalse(JostleSettings.defaults.keepAwakeActivateAtLaunch)
         XCTAssertFalse(JostleSettings.defaults.keepAwakeActivateOnLeftClick)
@@ -37,7 +41,16 @@ final class SettingsTests: XCTestCase {
             snapEnabled: false,
             snapGap: 14,
             snapScreenMargin: 6,
-            excludedApplications: ["com.example.Game": "Game"],
+            windowControlsEnabledByDefault: false,
+            focusFollowsPointerEnabledByDefault: true,
+            focusFollowsPointerDelay: 0.5,
+            applicationRules: [
+                "com.example.Game": ApplicationRule(
+                    displayName: "Game",
+                    windowControls: .enabled,
+                    focusFollowsPointer: .disabled
+                )
+            ],
             keepAwakeDefaultDuration: .fourHours,
             keepAwakeActivateAtLaunch: true,
             keepAwakeActivateOnLeftClick: true,
@@ -54,7 +67,7 @@ final class SettingsTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(JostleSettings.self, from: data), settings)
     }
 
-    func testOlderDocumentsReceiveSnappingDefaults() throws {
+    func testOlderDocumentsMigrateExclusionsToDisabledAppRules() throws {
         let data = Data("""
         {
           "modifiers": ["option"],
@@ -74,7 +87,19 @@ final class SettingsTests: XCTestCase {
         XCTAssertTrue(settings.snapEnabled)
         XCTAssertEqual(settings.snapGap, 8)
         XCTAssertEqual(settings.snapScreenMargin, 0)
-        XCTAssertEqual(settings.excludedApplications, ["com.example.Game": "Game"])
+        XCTAssertTrue(settings.windowControlsEnabledByDefault)
+        XCTAssertFalse(settings.focusFollowsPointerEnabledByDefault)
+        XCTAssertEqual(settings.focusFollowsPointerDelay, 0.1)
+        XCTAssertEqual(
+            settings.applicationRules["com.example.Game"],
+            ApplicationRule(
+                displayName: "Game",
+                windowControls: .disabled,
+                focusFollowsPointer: .disabled
+            )
+        )
+        XCTAssertFalse(settings.windowControlsEnabled(forApplicationKey: "com.example.Game"))
+        XCTAssertFalse(settings.focusFollowsPointerEnabled(forApplicationKey: "com.example.Game"))
         XCTAssertEqual(settings.keepAwakeDefaultDuration, .indefinitely)
         XCTAssertFalse(settings.keepAwakeActivateAtLaunch)
         XCTAssertFalse(settings.keepAwakeActivateOnLeftClick)
@@ -87,20 +112,63 @@ final class SettingsTests: XCTestCase {
         XCTAssertNil(settings.keepAwakeShortcut)
     }
 
+    func testApplicationRulesResolveAgainstIndependentDefaults() {
+        var settings = JostleSettings.defaults
+        settings.setWindowControls(
+            .disabled,
+            forApplicationKey: "com.example.Game",
+            displayName: "Game"
+        )
+        settings.setFocusFollowsPointer(
+            .enabled,
+            forApplicationKey: "com.example.Game",
+            displayName: "Renamed Game"
+        )
+
+        XCTAssertFalse(settings.windowControlsEnabled(forApplicationKey: "com.example.Game"))
+        XCTAssertTrue(settings.focusFollowsPointerEnabled(forApplicationKey: "com.example.Game"))
+        XCTAssertEqual(settings.applicationRules["com.example.Game"]?.displayName, "Renamed Game")
+        XCTAssertTrue(settings.windowControlsEnabled(forApplicationKey: "com.example.Editor"))
+        XCTAssertFalse(settings.focusFollowsPointerEnabled(forApplicationKey: "com.example.Editor"))
+        XCTAssertTrue(settings.hasEnabledFocusFollowsPointerRule)
+
+        settings.windowControlsEnabledByDefault = false
+        settings.focusFollowsPointerEnabledByDefault = true
+        settings.setWindowControls(
+            .useDefault,
+            forApplicationKey: "com.example.Game",
+            displayName: "Game"
+        )
+        settings.setFocusFollowsPointer(
+            .useDefault,
+            forApplicationKey: "com.example.Game",
+            displayName: "Game"
+        )
+
+        XCTAssertFalse(settings.windowControlsEnabled(forApplicationKey: "com.example.Game"))
+        XCTAssertTrue(settings.focusFollowsPointerEnabled(forApplicationKey: "com.example.Game"))
+    }
+
+    func testApplicationRuleMutationsAreIdempotent() {
+        var settings = JostleSettings.defaults
+        settings.addApplicationRule(key: "eqgame.exe", displayName: "EverQuest")
+        settings.addApplicationRule(key: "eqgame.exe", displayName: "Ignored Rename")
+        XCTAssertEqual(
+            settings.applicationRules["eqgame.exe"],
+            ApplicationRule(displayName: "EverQuest")
+        )
+
+        settings.removeApplicationRule(key: "eqgame.exe")
+        settings.removeApplicationRule(key: "eqgame.exe")
+        XCTAssertEqual(settings.applicationRules, [:])
+    }
+
     func testMutationsAreTypedAndIdempotent() {
         var settings = JostleSettings.defaults
         settings.setModifier(.shift, enabled: true)
         settings.setModifier(.shift, enabled: true)
         settings.setModifier(.control, enabled: false)
         XCTAssertEqual(settings.modifiers, [.shift])
-
-        settings.setApplicationExcluded(key: "com.example.Game", displayName: "Game", excluded: true)
-        settings.setApplicationExcluded(key: "com.example.Game", displayName: "Renamed", excluded: true)
-        XCTAssertEqual(settings.excludedApplications, ["com.example.Game": "Renamed"])
-
-        settings.setApplicationExcluded(key: "com.example.Game", displayName: nil, excluded: false)
-        settings.setApplicationExcluded(key: "com.example.Game", displayName: nil, excluded: false)
-        XCTAssertEqual(settings.excludedApplications, [:])
     }
 
     func testLastSelectedModifierCannotBeRemoved() {

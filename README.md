@@ -13,7 +13,7 @@
   <a href="LICENSE.txt"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
 </p>
 
-Jostle is a native menu bar utility for controlling windows without hunting for title bars or tiny resize handles, and for preventing idle sleep when you need your Mac to stay awake. Hold a modifier, point anywhere inside a window, and drag, or start a timed Keep Awake session from the same menu bar icon. Jostle stays out of the Dock and offers snapping, per-app exclusions, configurable spacing, automation, and optional launch-at-login and update checks.
+Jostle is a native menu bar utility for controlling windows without hunting for title bars or tiny resize handles, and for preventing idle sleep when you need your Mac to stay awake. Hold a modifier, point anywhere inside a window, and drag, let focus follow the pointer for selected apps, or start a timed Keep Awake session from the same menu bar icon. Jostle stays out of the Dock and offers snapping, per-app rules, configurable spacing, automation, and optional launch-at-login and update checks.
 
 ## Controls
 
@@ -29,6 +29,8 @@ The default modifier is **Control** (`⌃`). Jostle only responds when the exact
 | Cancel an active move or resize | `Escape` |
 
 The resize button can be changed from right click to middle click. Modifier keys, double-click actions, snapping, resize feedback, tile gaps, and screen margins are all configurable from Settings.
+
+The **Apps** settings let you choose the defaults for window controls and Focus Follows Pointer, then override either behavior for individual applications. This supports include-only setups such as enabling pointer focus for every `eqgame.exe` window while leaving all other applications unchanged. Focus can be immediate or delayed until the pointer rests.
 
 ## Keep Awake
 
@@ -79,8 +81,10 @@ Duration parameters may use `hours` and `minutes` together. Values must be great
 - Use right click or middle click for resizing
 - Show the active resize edge while dragging
 - Add gaps between tiled windows and margins around the screen
-- Ignore selected applications, including apps without bundle identifiers
-- Temporarily disable window controls from the menu bar icon
+- Configure window controls and Focus Follows Pointer independently per app
+- Match apps without bundle identifiers, including Wine-hosted executables such as `eqgame.exe`
+- Choose immediate pointer focus or a 100, 250, or 500 ms dwell delay
+- Temporarily disable all window features from the menu bar icon
 - Keep the Mac awake indefinitely or for a selected duration
 - Control Keep Awake by menu-bar click, global shortcut, `jostle:` URL, or Shortcuts action
 - Pause while locked or deactivate automatically when switching to battery power
@@ -100,7 +104,7 @@ Reopen Jostle after granting Accessibility access if macOS does not activate it 
 
 ## Accessibility permission
 
-Jostle uses the macOS Accessibility API to find the window under the pointer and update its position and size. It does not require Screen Recording permission. Apps that do not expose movable or resizable windows through Accessibility may not respond to every action.
+Jostle uses the macOS Accessibility API to find the window under the pointer, update its position and size, and raise it when Focus Follows Pointer applies. It does not require Screen Recording permission. Apps that do not expose movable or resizable windows through Accessibility may not respond to every action.
 
 If Jostle loses permission or its event monitor stops, the menu bar icon dims and its menu provides an action to fix or retry the unavailable service.
 

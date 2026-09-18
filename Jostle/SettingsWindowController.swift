@@ -61,17 +61,17 @@ final class SettingsWindowController: NSWindowController {
         )
         tabController.addTabViewItem(snappingItem)
 
-        let exclusionsController = NSHostingController(
-            rootView: ExcludedApplicationsSettingsPane(settingsStore: settingsStore)
+        let applicationsController = NSHostingController(
+            rootView: ApplicationsSettingsPane(settingsStore: settingsStore)
                 .tint(Color(nsColor: AppBrand.accentColor))
         )
-        let exclusionsItem = NSTabViewItem(viewController: exclusionsController)
-        exclusionsItem.label = "Exclusions"
-        exclusionsItem.image = NSImage(
-            systemSymbolName: "nosign",
-            accessibilityDescription: "Exclusions"
+        let applicationsItem = NSTabViewItem(viewController: applicationsController)
+        applicationsItem.label = "Apps"
+        applicationsItem.image = NSImage(
+            systemSymbolName: "app",
+            accessibilityDescription: "Apps"
         )
-        tabController.addTabViewItem(exclusionsItem)
+        tabController.addTabViewItem(applicationsItem)
 
         if let updateController {
             let updatesController = NSHostingController(

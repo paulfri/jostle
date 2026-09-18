@@ -38,15 +38,27 @@ final class SettingsStoreTests: XCTestCase {
             settings.bringWindowToFront = true
             settings.middleClickResize = true
             settings.resizeOnly = true
-            settings.setApplicationExcluded(
-                key: "com.example.Game",
-                displayName: "Game",
-                excluded: true
+            settings.setWindowControls(
+                .disabled,
+                forApplicationKey: "com.example.Game",
+                displayName: "Game"
+            )
+            settings.setFocusFollowsPointer(
+                .enabled,
+                forApplicationKey: "com.example.Game",
+                displayName: "Game"
             )
         }
 
         XCTAssertEqual(SettingsStore(userDefaults: userDefaults).settings, store.settings)
-        XCTAssertEqual(store.settings.excludedApplications, ["com.example.Game": "Game"])
+        XCTAssertEqual(
+            store.settings.applicationRules["com.example.Game"],
+            ApplicationRule(
+                displayName: "Game",
+                windowControls: .disabled,
+                focusFollowsPointer: .enabled
+            )
+        )
         let persistedKeys = Set(userDefaults.persistentDomain(forName: suiteName)?.keys.map { $0 } ?? [])
         XCTAssertEqual(persistedKeys, [SettingsStore.storageKey])
     }

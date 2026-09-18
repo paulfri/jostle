@@ -165,7 +165,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
 
     private func addWindowGestureItems() {
         let enabledItem = NSMenuItem(
-            title: "Window Gestures Enabled",
+            title: "Window Features Enabled",
             action: #selector(toggleOverallDisabled(_:)),
             keyEquivalent: ""
         )
@@ -229,15 +229,45 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         startAtLoginItem.state = loginItemController.isEnabled ? .on : .off
         menu.addItem(startAtLoginItem)
 
-        let excludeItem = NSMenuItem(
-            title: recentApplication.map { "Exclude \($0.name)" } ?? "Exclude Current App",
-            action: #selector(excludeRecentApplication(_:)),
+        let appItem = NSMenuItem(
+            title: recentApplication.map { "App: \($0.name)" } ?? "Current App",
+            action: nil,
             keyEquivalent: ""
         )
-        excludeItem.target = self
-        excludeItem.isEnabled = recentApplication != nil
-        excludeItem.state = isRecentApplicationExcluded ? .on : .off
-        menu.addItem(excludeItem)
+        appItem.isEnabled = recentApplication != nil
+
+        let appMenu = NSMenu(title: appItem.title)
+        let windowControlsItem = NSMenuItem(
+            title: "Window Controls",
+            action: #selector(toggleRecentApplicationWindowControls(_:)),
+            keyEquivalent: ""
+        )
+        windowControlsItem.target = self
+        windowControlsItem.state = recentApplicationWindowControlsEnabled ? .on : .off
+        appMenu.addItem(windowControlsItem)
+
+        let focusItem = NSMenuItem(
+            title: "Focus Follows Pointer",
+            action: #selector(toggleRecentApplicationFocus(_:)),
+            keyEquivalent: ""
+        )
+        focusItem.target = self
+        focusItem.state = recentApplicationFocusEnabled ? .on : .off
+        appMenu.addItem(focusItem)
+
+        if hasRecentApplicationOverride {
+            appMenu.addItem(.separator())
+            let defaultsItem = NSMenuItem(
+                title: "Use App Defaults",
+                action: #selector(removeRecentApplicationOverride(_:)),
+                keyEquivalent: ""
+            )
+            defaultsItem.target = self
+            appMenu.addItem(defaultsItem)
+        }
+
+        appItem.submenu = appMenu
+        menu.addItem(appItem)
     }
 
     private func addUpdateItemIfAvailable() {
@@ -293,9 +323,21 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         return duration == preset.duration
     }
 
-    private var isRecentApplicationExcluded: Bool {
+    private var recentApplicationWindowControlsEnabled: Bool {
+        settingsStore.settings.windowControlsEnabled(
+            forApplicationKey: recentApplication?.key
+        )
+    }
+
+    private var recentApplicationFocusEnabled: Bool {
+        settingsStore.settings.focusFollowsPointerEnabled(
+            forApplicationKey: recentApplication?.key
+        )
+    }
+
+    private var hasRecentApplicationOverride: Bool {
         guard let recentApplication else { return false }
-        return settingsStore.settings.excludedApplications[recentApplication.key] != nil
+        return settingsStore.settings.applicationRules[recentApplication.key] != nil
     }
 
     private func updateCurrentApplication() {
@@ -426,15 +468,38 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         loginItemController.clearError()
     }
 
-    @objc private func excludeRecentApplication(_ sender: NSMenuItem) {
+    @objc private func toggleRecentApplicationWindowControls(_ sender: NSMenuItem) {
         guard let recentApplication else { return }
-        let shouldExclude = !isRecentApplicationExcluded
+        let setting: ApplicationFeatureSetting = recentApplicationWindowControlsEnabled
+            ? .disabled
+            : .enabled
         settingsStore.update { settings in
-            settings.setApplicationExcluded(
-                key: recentApplication.key,
-                displayName: shouldExclude ? recentApplication.name : nil,
-                excluded: shouldExclude
+            settings.setWindowControls(
+                setting,
+                forApplicationKey: recentApplication.key,
+                displayName: recentApplication.name
             )
+        }
+    }
+
+    @objc private func toggleRecentApplicationFocus(_ sender: NSMenuItem) {
+        guard let recentApplication else { return }
+        let setting: ApplicationFeatureSetting = recentApplicationFocusEnabled
+            ? .disabled
+            : .enabled
+        settingsStore.update { settings in
+            settings.setFocusFollowsPointer(
+                setting,
+                forApplicationKey: recentApplication.key,
+                displayName: recentApplication.name
+            )
+        }
+    }
+
+    @objc private func removeRecentApplicationOverride(_ sender: NSMenuItem) {
+        guard let recentApplication else { return }
+        settingsStore.update { settings in
+            settings.removeApplicationRule(key: recentApplication.key)
         }
     }
 
