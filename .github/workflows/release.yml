@@ -56,6 +56,7 @@ jobs:
           DEVELOPER_ID_P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
         shell: bash
         run: |
           set -euo pipefail
@@ -63,7 +64,8 @@ jobs:
             DEVELOPER_ID_P12_BASE64 \
             DEVELOPER_ID_P12_PASSWORD \
             APPLE_ID \
-            APPLE_APP_SPECIFIC_PASSWORD; do
+            APPLE_APP_SPECIFIC_PASSWORD \
+            SPARKLE_ED_PRIVATE_KEY; do
             if [[ -z "${!name:-}" ]]; then
               echo "Required repository secret '$name' is not configured." >&2
               exit 1
@@ -117,7 +119,9 @@ jobs:
             --keychain "$KEYCHAIN_PATH" \
             --validate
 
-      - name: Build, sign, and notarize release
+      - name: Build, sign, notarize, and generate appcast
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
         shell: bash
         run: Scripts/release.sh
 
@@ -156,6 +160,7 @@ jobs:
             "$ARTIFACT_DIR/Jostle-$VERSION.zip"
             "$ARTIFACT_DIR/Jostle-$VERSION-dSYMs.zip"
             "$ARTIFACT_DIR/Jostle-$VERSION-SHA256SUMS.txt"
+            "$ARTIFACT_DIR/appcast.xml"
           )
 
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then

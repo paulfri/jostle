@@ -20,7 +20,7 @@ The default modifier is **Control**:
 - Resizing enforces a practical 320×200-point fallback minimum and synchronizes with larger size constraints imposed by the target application.
 - A subtle Jostle-gold bracket shows the active resize edge or corner; it can be disabled in General Settings.
 
-The compact menu-bar menu lets you enable or disable Jostle, toggle exclusion for the current app, open Settings, or quit. The native macOS Settings window contains modifier keys, resize-button selection, window behavior, snapping controls, reset, and excluded-app management. Tile gaps and screen margins are configurable in the Snapping pane.
+The compact menu-bar menu lets you enable or disable Jostle, toggle exclusion for the current app, check for updates, open Settings, or quit. The native macOS Settings window contains modifier keys, resize-button selection, window behavior, snapping controls, update preferences, reset, and excluded-app management. Tile gaps and screen margins are configurable in the Snapping pane. Sparkle performs signed in-app updates from notarized GitHub release ZIPs; automatic checks are opt-in.
 
 App exclusions use a bundle identifier when one is available and otherwise use the process name, which supports unbundled Wine and CrossOver processes.
 

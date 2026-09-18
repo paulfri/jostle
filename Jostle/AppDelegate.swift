@@ -5,6 +5,13 @@ import JostleCore
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let settingsStore = SettingsStore()
     let loginItemController = LoginItemController()
+    private let updateController: SparkleUpdateController? = {
+#if JOSTLE_DEVELOPMENT
+        nil
+#else
+        SparkleUpdateController()
+#endif
+    }()
     private var eventTapController: EventTapController?
     private var statusMenuController: StatusMenuController?
     private var settingsWindowController: SettingsWindowController?
@@ -21,12 +28,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         let settingsWindowController = SettingsWindowController(
             settingsStore: settingsStore,
-            loginItemController: loginItemController
+            loginItemController: loginItemController,
+            updateController: updateController
         )
         let statusMenuController = StatusMenuController(
             settingsStore: settingsStore,
             eventTapController: eventTapController,
             loginItemController: loginItemController,
+            updateController: updateController,
             onRuntimeRefresh: { [weak self] in
                 self?.refreshRuntimeHealth()
             },

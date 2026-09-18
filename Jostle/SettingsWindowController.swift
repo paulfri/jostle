@@ -4,7 +4,11 @@ import SwiftUI
 final class SettingsWindowController: NSWindowController {
     private let loginItemController: LoginItemController
 
-    init(settingsStore: SettingsStore, loginItemController: LoginItemController) {
+    init(
+        settingsStore: SettingsStore,
+        loginItemController: LoginItemController,
+        updateController: SparkleUpdateController? = nil
+    ) {
         self.loginItemController = loginItemController
         let tabController = NSTabViewController()
         tabController.tabStyle = .toolbar
@@ -48,6 +52,20 @@ final class SettingsWindowController: NSWindowController {
             accessibilityDescription: "Exclusions"
         )
         tabController.addTabViewItem(exclusionsItem)
+
+        if let updateController {
+            let updatesController = NSHostingController(
+                rootView: UpdateSettingsPane(updateController: updateController)
+                    .tint(Color(nsColor: AppBrand.accentColor))
+            )
+            let updatesItem = NSTabViewItem(viewController: updatesController)
+            updatesItem.label = "Updates"
+            updatesItem.image = NSImage(
+                systemSymbolName: "arrow.triangle.2.circlepath",
+                accessibilityDescription: "Updates"
+            )
+            tabController.addTabViewItem(updatesItem)
+        }
 
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 660, height: 470),

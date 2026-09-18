@@ -50,6 +50,25 @@ final class StatusMenuControllerTests: XCTestCase {
         XCTAssertEqual(settingsItem.keyEquivalentModifierMask, [.command])
     }
 
+    func testUpdateItemTracksAvailabilityAndInvokesUpdater() throws {
+        let updateController = TestUpdateController()
+        let controller = makeController(updateController: updateController)
+        var item = try XCTUnwrap(
+            commandItems(in: controller).first { $0.title == "Check for Updates…" }
+        )
+        XCTAssertTrue(item.isEnabled)
+
+        XCTAssertTrue(NSApplication.shared.sendAction(item.action!, to: item.target, from: item))
+        XCTAssertEqual(updateController.checkCount, 1)
+
+        updateController.canCheckForUpdates = false
+        controller.refresh()
+        item = try XCTUnwrap(
+            commandItems(in: controller).first { $0.title == "Check for Updates…" }
+        )
+        XCTAssertFalse(item.isEnabled)
+    }
+
     func testEnabledItemTracksEventTapIntent() throws {
         var refreshCount = 0
         let controller = makeController(onRuntimeRefresh: {
@@ -194,6 +213,7 @@ final class StatusMenuControllerTests: XCTestCase {
     private func makeController(
         settingsStore: SettingsStore? = nil,
         loginItemService: LoginItemServicing? = nil,
+        updateController: UpdateControlling? = nil,
         currentApplicationProvider: @escaping () -> RunningApplicationInfo? = { nil },
         onRuntimeRefresh: @escaping () -> Void = {},
         onOpenSettings: @escaping () -> Void = {}
@@ -213,6 +233,7 @@ final class StatusMenuControllerTests: XCTestCase {
             settingsStore: store,
             eventTapController: eventTapController,
             loginItemController: loginItemController,
+            updateController: updateController,
             currentApplicationProvider: currentApplicationProvider,
             applicationName: "Jostle",
             onRuntimeRefresh: onRuntimeRefresh,
@@ -222,6 +243,20 @@ final class StatusMenuControllerTests: XCTestCase {
 
     private func commandItems(in controller: StatusMenuController) -> [NSMenuItem] {
         controller.renderedMenu.items.filter { !$0.isSeparatorItem }
+    }
+}
+
+private final class TestUpdateController: UpdateControlling {
+    var canCheckForUpdates = true
+    var automaticallyChecksForUpdates = false
+    private(set) var checkCount = 0
+
+    func setAutomaticallyChecksForUpdates(_ enabled: Bool) {
+        automaticallyChecksForUpdates = enabled
+    }
+
+    func checkForUpdates() {
+        checkCount += 1
     }
 }
 

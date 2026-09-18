@@ -4,6 +4,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     private let settingsStore: SettingsStore
     private let eventTapController: EventTapController
     private let loginItemController: LoginItemController
+    private let updateController: UpdateControlling?
     private let currentApplicationProvider: () -> RunningApplicationInfo?
     private let applicationName: String
     private let onRuntimeRefresh: () -> Void
@@ -19,6 +20,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         settingsStore: SettingsStore,
         eventTapController: EventTapController,
         loginItemController: LoginItemController,
+        updateController: UpdateControlling? = nil,
         currentApplicationProvider: @escaping () -> RunningApplicationInfo? = {
             guard let application = NSWorkspace.shared.frontmostApplication,
                   application.bundleIdentifier != Bundle.main.bundleIdentifier else {
@@ -33,6 +35,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         self.settingsStore = settingsStore
         self.eventTapController = eventTapController
         self.loginItemController = loginItemController
+        self.updateController = updateController
         self.currentApplicationProvider = currentApplicationProvider
         self.applicationName = applicationName
         self.onRuntimeRefresh = onRuntimeRefresh
@@ -138,6 +141,18 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         excludeItem.state = isRecentApplicationExcluded ? .on : .off
         menu.addItem(excludeItem)
 
+        if let updateController {
+            menu.addItem(.separator())
+            let updateItem = NSMenuItem(
+                title: "Check for Updates…",
+                action: #selector(checkForUpdates(_:)),
+                keyEquivalent: ""
+            )
+            updateItem.target = self
+            updateItem.isEnabled = updateController.canCheckForUpdates
+            menu.addItem(updateItem)
+        }
+
         let settingsItem = NSMenuItem(
             title: "Settings…",
             action: #selector(openSettings(_:)),
@@ -201,6 +216,10 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
 
     @objc private func openSettings(_ sender: NSMenuItem) {
         onOpenSettings()
+    }
+
+    @objc private func checkForUpdates(_ sender: NSMenuItem) {
+        updateController?.checkForUpdates()
     }
 
     @objc private func retryEventMonitor(_ sender: NSMenuItem) {

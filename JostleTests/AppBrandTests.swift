@@ -19,4 +19,19 @@ final class AppBrandTests: XCTestCase {
             XCTAssertEqual(color.blueComponent, 93.0 / 255.0, accuracy: 0.001)
         }
     }
+
+    func testSparkleConfigurationIsEmbeddedInApplicationBundle() {
+        XCTAssertEqual(
+            Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") as? String,
+            "https://github.com/paulfri/jostle/releases/latest/download/appcast.xml"
+        )
+        XCTAssertEqual(
+            Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String,
+            "ge9/YT9aFJmz+JgpPUb5TQKC+zJnm6yPwN2vUnloM9Q="
+        )
+        XCTAssertEqual(
+            Bundle.main.object(forInfoDictionaryKey: "SUEnableAutomaticChecks") as? Bool,
+            false
+        )
+    }
 }

@@ -268,6 +268,72 @@ struct SnappingSettingsPane: View {
     }
 }
 
+struct UpdateSettingsPane: View {
+    @ObservedObject private var updateController: SparkleUpdateController
+    @State private var automaticallyChecksForUpdates: Bool
+
+    init(updateController: SparkleUpdateController) {
+        self.updateController = updateController
+        _automaticallyChecksForUpdates = State(
+            initialValue: updateController.automaticallyChecksForUpdates
+        )
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Automatic Updates")
+                .font(.headline)
+
+            Toggle(
+                "Automatically check for updates",
+                isOn: automaticallyChecksBinding
+            )
+            .toggleStyle(.checkbox)
+
+            Text("When enabled, Jostle checks for a new release once per day.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+
+            Divider()
+
+            Text("Manual Updates")
+                .font(.headline)
+
+            Button("Check for Updates…") {
+                updateController.checkForUpdates()
+            }
+            .disabled(!updateController.canCheckForUpdates)
+
+            Text("Installed version: \(Self.installedVersion)")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
+        .frame(width: 660, height: 470)
+    }
+
+    private var automaticallyChecksBinding: Binding<Bool> {
+        Binding(
+            get: { automaticallyChecksForUpdates },
+            set: { enabled in
+                automaticallyChecksForUpdates = enabled
+                updateController.setAutomaticallyChecksForUpdates(enabled)
+            }
+        )
+    }
+
+    private static var installedVersion: String {
+        let version = Bundle.main.object(
+            forInfoDictionaryKey: "CFBundleShortVersionString"
+        ) as? String ?? "Unknown"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
+        return build.map { "\(version) (\($0))" } ?? version
+    }
+}
+
 struct ExcludedApplicationsSettingsPane: View {
     @ObservedObject var settingsStore: SettingsStore
 

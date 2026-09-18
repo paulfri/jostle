@@ -34,5 +34,11 @@
 	<string>Copyright © 2013 Daniel Marcotte; © 2026 Paul Friedman.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>SUEnableAutomaticChecks</key>
+	<false/>
+	<key>SUFeedURL</key>
+	<string>https://github.com/paulfri/jostle/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>ge9/YT9aFJmz+JgpPUb5TQKC+zJnm6yPwN2vUnloM9Q=</string>
 </dict>
 </plist>

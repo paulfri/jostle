@@ -36,6 +36,8 @@
 		A1000000000000000000001C /* RuntimeHealthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* RuntimeHealthTests.swift */; };
 		A1000000000000000000001D /* AppBrand.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000022 /* AppBrand.swift */; };
 		A1000000000000000000001E /* AppBrandTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000023 /* AppBrandTests.swift */; };
+		A1000000000000000000001F /* UpdateController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* UpdateController.swift */; };
+		A10000000000000000000020 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000005 /* Sparkle */; };
 		A1000000000000000000000C /* JostleCore in Frameworks */ = {isa = PBXBuildFile; productRef = A90000000000000000000003 /* JostleCore */; };
 /* End PBXBuildFile section */
 
@@ -78,6 +80,7 @@
 		A20000000000000000000021 /* RuntimeHealthTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeHealthTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000022 /* AppBrand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBrand.swift; sourceTree = "<group>"; };
 		A20000000000000000000023 /* AppBrandTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBrandTests.swift; sourceTree = "<group>"; };
+		A20000000000000000000024 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
 		A2000000000000000000000C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000000000000000000000D /* Jostle.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Jostle.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2000000000000000000000E /* JostleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JostleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -92,6 +95,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000009 /* JostleCore in Frameworks */,
+				A10000000000000000000020 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -137,6 +141,7 @@
 				A2000000000000000000001E /* ResizeFeedbackController.swift */,
 				A20000000000000000000020 /* RuntimeHealth.swift */,
 				A20000000000000000000022 /* AppBrand.swift */,
+				A20000000000000000000024 /* UpdateController.swift */,
 				A20000000000000000000008 /* Images.xcassets */,
 				A20000000000000000000007 /* Jostle-Info.plist */,
 				A20000000000000000000009 /* InfoPlist.strings */,
@@ -197,6 +202,7 @@
 			name = Jostle;
 			packageProductDependencies = (
 				A90000000000000000000002 /* JostleCore */,
+				A90000000000000000000005 /* Sparkle */,
 			);
 			productName = Jostle;
 			productReference = A2000000000000000000000D /* Jostle.app */;
@@ -245,6 +251,7 @@
 			mainGroup = A50000000000000000000001;
 			packageReferences = (
 				A90000000000000000000001 /* XCLocalSwiftPackageReference "JostleCore" */,
+				A90000000000000000000004 /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			productRefGroup = A50000000000000000000005 /* Products */;
 			projectDirPath = "";
@@ -296,6 +303,7 @@
 				A10000000000000000000019 /* ResizeFeedbackController.swift in Sources */,
 				A1000000000000000000001B /* RuntimeHealth.swift in Sources */,
 				A1000000000000000000001D /* AppBrand.swift in Sources */,
+				A1000000000000000000001F /* UpdateController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -341,6 +349,17 @@
 		AC0000000000000000000001 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section (localized) */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		A90000000000000000000004 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.10.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCLocalSwiftPackageReference section */
 		A90000000000000000000001 /* XCLocalSwiftPackageReference "JostleCore" */ = {
 			isa = XCLocalSwiftPackageReference;
@@ -358,6 +377,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A90000000000000000000001 /* XCLocalSwiftPackageReference "JostleCore" */;
 			productName = JostleCore;
+		};
+		A90000000000000000000005 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A90000000000000000000004 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
 		};
 /* End XCSwiftPackageProductDependency section */
 
