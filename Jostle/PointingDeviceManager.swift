@@ -11,6 +11,27 @@ struct PointingDeviceInfo: Equatable, Identifiable {
     let displayName: String
     let category: PointingDeviceCategory
     let registryID: UInt64?
+    let vendorID: Int?
+    let productID: Int?
+    let serialNumber: String?
+
+    init(
+        id: String,
+        displayName: String,
+        category: PointingDeviceCategory,
+        registryID: UInt64?,
+        vendorID: Int? = nil,
+        productID: Int? = nil,
+        serialNumber: String? = nil
+    ) {
+        self.id = id
+        self.displayName = displayName
+        self.category = category
+        self.registryID = registryID
+        self.vendorID = vendorID
+        self.productID = productID
+        self.serialNumber = serialNumber
+    }
 }
 
 protocol PointingDeviceProviding: AnyObject {
@@ -103,6 +124,7 @@ enum PointingDeviceClassifier {
 
 final class PointingDeviceManager: ObservableObject, PointingDeviceProviding {
     @Published private(set) var devices: [PointingDeviceInfo] = []
+    var onDevicesChanged: (([PointingDeviceInfo]) -> Void)?
     var onDeviceDisconnected: ((String) -> Void)?
 
     private let manager: IOHIDManager
@@ -269,9 +291,11 @@ final class PointingDeviceManager: ObservableObject, PointingDeviceProviding {
         }
         if Thread.isMainThread {
             devices = snapshot
+            onDevicesChanged?(snapshot)
         } else {
             DispatchQueue.main.async { [weak self] in
                 self?.devices = snapshot
+                self?.onDevicesChanged?(snapshot)
             }
         }
     }
@@ -316,7 +340,10 @@ final class PointingDeviceManager: ObservableObject, PointingDeviceProviding {
             id: "hid-\(digest)",
             displayName: name,
             category: category,
-            registryID: registryID
+            registryID: registryID,
+            vendorID: vendorID,
+            productID: productID,
+            serialNumber: serial
         )
     }
 

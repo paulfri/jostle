@@ -1,6 +1,6 @@
 # Input Customization Integration Plan
 
-Status: differentiated MVP implemented; broader parity plan remains proposed
+Status: differentiated MVP and active LinearMouse scrolling migration implemented; broader pointer/hardware plan remains proposed
 
 Scope source: the five LinearMouse screenshots supplied for this design
 
@@ -25,18 +25,22 @@ This preserves the goal—one app for window control, Keep Awake, and input cust
 
 ## Implemented differentiated MVP
 
-The first implementation slice now includes:
+The implemented input system includes:
 
 - backward-compatible typed settings with opt-in defaults;
 - IOHID device inventory, stable privacy-preserving identifiers, mouse/trackpad categorization, sender attribution, and a bounded recent-device fallback;
-- reverse scrolling by device category or exact device;
+- per-axis reverse, automatic/line/pixel distance, speed, acceleration, smoothing, inertia, and bounce controls;
+- ordered scroll profiles matched by device category, exact device, app bundle ID, and process name;
+- a 120 Hz smoothing engine with marked synthetic events and touch/momentum phases;
 - Button 4/5 mappings for universal Back/Forward, move, resize, maximize, left/right tile, next display, and Keep Awake;
 - interaction pinning for button-held move/resize, synthetic-event tagging, Escape cancellation, and cleanup on disable, disconnect, session loss, sleep, tap teardown, and quit;
 - per-device gating layered onto existing per-app Focus Follows Pointer policy;
-- one menu-bar toggle, an Input settings pane, disconnected-device overrides, crash-loop Safe Mode, `--safe-mode`, and Shift-Option launch recovery;
-- unit coverage for profile precedence, migration/default behavior, button interaction routing, side-button persistence, status-menu behavior, and every Core Graphics scroll-delta representation.
+- optional read-only battery reporting through the public Bluetooth Battery Service for supported pointing devices;
+- one menu-bar toggle, an Input settings pane with ordered profile editing, disconnected-device overrides, crash-loop Safe Mode, `--safe-mode`, and Shift-Option launch recovery;
+- a one-time importer for the supported subset of an existing LinearMouse configuration;
+- unit coverage for profile precedence, migration/default behavior, smoothing phases, scroll transforms, button interaction routing, side-button persistence, battery menu behavior, and every Core Graphics scroll-delta representation.
 
-The MVP deliberately does **not** implement pointer acceleration/speed, hardware DPI, high-resolution wheel modes, smoothing, battery telemetry, or vendor protocols. The existing main-run-loop tap remains the MVP owner; a dedicated transformation thread is deferred until immutable settings/device snapshots and main-actor window commands have a measured, tested boundary. See [ADR 0001](adr/0001-input-customization-runtime.md).
+Jostle deliberately does **not** implement pointer acceleration/speed, hardware DPI, Logitech high-resolution wheel mode, or vendor protocols. The existing main-run-loop tap remains the owner; a dedicated transformation thread is deferred until immutable settings/device snapshots and main-actor window commands have a measured, tested boundary. See [ADR 0001](adr/0001-input-customization-runtime.md).
 
 ## What “all this” includes
 
@@ -45,19 +49,19 @@ The MVP deliberately does **not** implement pointer acceleration/speed, hardware
 | Pointer | Disable pointer acceleration | No | Add after an API/OS compatibility spike |
 | Pointer | Convert pointer movement to scroll events | No | Add as an advanced, default-off transformer |
 | Pointer | Acceleration, speed, and hardware DPI | No | Add typed settings; gate hardware writes by capability |
-| Scrolling | Independent vertical/horizontal configuration | No | Add axis-specific settings |
-| Scrolling | Reverse scrolling | No | Add first; low-risk event transform |
+| Scrolling | Independent vertical/horizontal configuration | Yes | Implemented with ordered contextual profiles |
+| Scrolling | Reverse scrolling | Yes | Implemented by category, exact device, app, and process context |
 | Scrolling | High-resolution wheel | No | Add only for positively identified supported devices |
-| Scrolling | Smoothed scrolling, response, speed, acceleration, inertia, bounce | No | Add with a deterministic engine and synthetic-event loop protection |
+| Scrolling | Smoothed scrolling, response, speed, acceleration, inertia, bounce | Yes | Implemented with a deterministic engine and synthetic-event loop protection |
 | Scrolling | Modifier-key scroll actions | No | Add exact-modifier mappings with a “system default” fallback |
-| Buttons | Universal back/forward | No | Add app-compatible side-button translation |
+| Buttons | Universal back/forward | Yes | Implemented with app-compatible side-button translation |
 | Buttons | Swap primary and secondary buttons | No | Add while preserving balanced down/drag/up streams |
 | Buttons | Click debouncing | No | Add after contract tests for click/drag correctness |
 | Buttons | Auto-scroll | No | Add as an advanced stateful interaction |
 | Buttons | Gesture button | No | Add after the basic mapping engine |
 | Buttons | Assign actions to mouse buttons/wheel | No | Add a recorder and typed action catalog |
 | General | Menu bar visibility | Always visible | Add only after a reliable reopen/recovery path exists |
-| General | Current device battery | No | Add read-only capability providers; never imply unsupported data |
+| General | Current device battery | Partial | Public Bluetooth Battery Service implemented; vendor-specific devices remain unsupported |
 | General | Dock visibility | Always hidden | Add an explicit mode; relaunch if required by activation-policy behavior |
 | General | Start at login | Yes | Reuse `LoginItemController` |
 | General | Show pointer location | No | Add a non-activating overlay and configurable trigger |
@@ -83,7 +87,7 @@ The screenshots are a feature reference, not a requirement to copy LinearMouse�
 - Arbitrary shell-command actions. They expand the threat model and are not required by the screenshots.
 - Exclusive HID device seizure.
 - Claiming support for a device capability based only on vendor/product name.
-- Silent import of another app’s configuration.
+- Repeated or destructive import of another app’s configuration. Jostle performs one non-destructive supported-subset migration when no scroll profiles exist.
 - Private or unstable APIs in a release build without an explicit owner decision, documented fallback, and supported-OS test evidence.
 - Cloud sync or telemetry.
 
@@ -100,7 +104,7 @@ Jostle is already well positioned for this work:
 
 The main constraints are:
 
-- The event tap currently runs on the main run loop. High-rate pointer and 120 Hz smoothing work must not be added there.
+- The event tap and current 120 Hz smoothing timer run on the main run loop. Their latency must be measured before adding higher-rate pointer transformation.
 - `EventTapController` is already responsible for several window behaviors. It should become a consumer of a shared input service, not absorb all new transformations.
 - `JostleSettings` is a flat structure. Adding dozens of input fields directly would make migration and profile inheritance fragile.
 - Settings toolbar tabs will not scale to the additional panes and context selectors.

@@ -74,9 +74,11 @@ public struct InputCustomizationSettings: Codable, Equatable, Sendable {
     public var focusFollowsPointerForMouse: Bool
     public var focusFollowsPointerForTrackpad: Bool
     public var deviceRules: [String: PointingDeviceRule]
+    public var scrollProfiles: [ScrollProfile]
+    public var batteryDisplayMode: PointingDeviceBatteryDisplayMode
 
     public init(
-        schemaVersion: Int = 1,
+        schemaVersion: Int = 2,
         isEnabled: Bool = false,
         reverseMouseScrolling: Bool = false,
         reverseTrackpadScrolling: Bool = false,
@@ -85,7 +87,9 @@ public struct InputCustomizationSettings: Codable, Equatable, Sendable {
         buttonFiveAction: PointerButtonAction = .systemDefault,
         focusFollowsPointerForMouse: Bool = true,
         focusFollowsPointerForTrackpad: Bool = true,
-        deviceRules: [String: PointingDeviceRule] = [:]
+        deviceRules: [String: PointingDeviceRule] = [:],
+        scrollProfiles: [ScrollProfile] = [],
+        batteryDisplayMode: PointingDeviceBatteryDisplayMode = .never
     ) {
         self.schemaVersion = schemaVersion
         self.isEnabled = isEnabled
@@ -97,6 +101,8 @@ public struct InputCustomizationSettings: Codable, Equatable, Sendable {
         self.focusFollowsPointerForMouse = focusFollowsPointerForMouse
         self.focusFollowsPointerForTrackpad = focusFollowsPointerForTrackpad
         self.deviceRules = deviceRules
+        self.scrollProfiles = scrollProfiles
+        self.batteryDisplayMode = batteryDisplayMode
     }
 
     public static let defaults = InputCustomizationSettings()
@@ -112,6 +118,8 @@ public struct InputCustomizationSettings: Codable, Equatable, Sendable {
         case focusFollowsPointerForMouse
         case focusFollowsPointerForTrackpad
         case deviceRules
+        case scrollProfiles
+        case batteryDisplayMode
     }
 
     public init(from decoder: Decoder) throws {
@@ -150,6 +158,14 @@ public struct InputCustomizationSettings: Codable, Equatable, Sendable {
             [String: PointingDeviceRule].self,
             forKey: .deviceRules
         ) ?? [:]
+        scrollProfiles = try container.decodeIfPresent(
+            [ScrollProfile].self,
+            forKey: .scrollProfiles
+        ) ?? []
+        batteryDisplayMode = try container.decodeIfPresent(
+            PointingDeviceBatteryDisplayMode.self,
+            forKey: .batteryDisplayMode
+        ) ?? .never
     }
 
     public func reverseScrolling(

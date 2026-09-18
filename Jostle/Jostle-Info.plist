@@ -43,6 +43,8 @@
 	<string>${MACOSX_DEPLOYMENT_TARGET}</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Jostle reads the battery level reported by supported Bluetooth pointing devices.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2013 Daniel Marcotte; © 2026 Paul Friedman.</string>
 	<key>NSPrincipalClass</key>

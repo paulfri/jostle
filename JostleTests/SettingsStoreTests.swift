@@ -71,4 +71,118 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(store.settings, .defaults)
         XCTAssertEqual(SettingsStore(userDefaults: userDefaults).settings, .defaults)
     }
+
+    func testLinearMouseMigrationImportsContextualScrollBehavior() throws {
+        let data = Data(#"""
+        {
+          "schemes": [
+            {
+              "buttons": { "universalBackForward": true },
+              "if": { "device": { "category": "mouse" } },
+              "scrolling": { "reverse": true }
+            },
+            {
+              "if": [
+                { "app": "com.apple.Safari", "device": { "category": "mouse" } },
+                { "app": "com.apple.mail", "device": { "category": "mouse" } }
+              ],
+              "scrolling": {
+                "smoothed": {
+                  "preset": "linear", "speed": 0.5,
+                  "acceleration": 0, "inertia": 0.3, "bouncing": true
+                }
+              }
+            },
+            {
+              "if": {
+                "device": {
+                  "category": "mouse", "productName": "MX Master 3S",
+                  "productID": "0xb034", "vendorID": "0x46d",
+                  "serialNumber": "D6C79C59"
+                }
+              },
+              "scrolling": {
+                "smoothed": {
+                  "vertical": {
+                    "enabled": true, "preset": "easeInOut", "response": 0.68,
+                    "speed": 1.02, "acceleration": 1.1, "inertia": 0.74
+                  }
+                }
+              }
+            },
+            {
+              "if": { "processName": "eqgame.exe" },
+              "scrolling": { "distance": 1, "reverse": true, "smoothed": { "enabled": false } }
+            }
+          ]
+        }
+        """#.utf8)
+        let mouse = PointingDeviceInfo(
+            id: "hid-mx-master",
+            displayName: "MX Master 3S",
+            category: .mouse,
+            registryID: 1,
+            vendorID: 0x046d,
+            productID: 0xb034,
+            serialNumber: "D6C79C59"
+        )
+
+        let result = try LinearMouseMigration.importedInput(
+            from: data,
+            pointingDevices: [mouse]
+        )
+
+        XCTAssertEqual(result.settings.schemaVersion, 2)
+        XCTAssertTrue(result.settings.universalBackForward)
+        XCTAssertTrue(result.requiresDeviceInventory)
+        XCTAssertFalse(result.hasUnresolvedExactDevice)
+        XCTAssertEqual(result.settings.scrollProfiles.count, 4)
+        XCTAssertEqual(
+            result.settings.scrollProfiles[1].match.applicationBundleIdentifiers,
+            ["com.apple.Safari", "com.apple.mail"]
+        )
+        XCTAssertEqual(result.settings.scrollProfiles[1].vertical.smoothing?.preset, .linear)
+        XCTAssertEqual(result.settings.scrollProfiles[2].match.deviceKey, "hid-mx-master")
+        XCTAssertEqual(result.settings.scrollProfiles[2].match.deviceDisplayName, "MX Master 3S")
+        XCTAssertEqual(result.settings.scrollProfiles[2].vertical.smoothing?.response, 0.68)
+        XCTAssertNil(result.settings.scrollProfiles[2].horizontal.smoothing)
+        XCTAssertEqual(result.settings.scrollProfiles[3].match.processNames, ["eqgame.exe"])
+        XCTAssertEqual(result.settings.scrollProfiles[3].vertical.distance, .lines(1))
+        XCTAssertEqual(result.settings.scrollProfiles[3].vertical.smoothing?.enabled, false)
+    }
+
+    func testLinearMouseMigrationLeavesExactDeviceUnresolvedWhenHardwareIdentityDiffers() throws {
+        let data = Data(#"""
+        {
+          "schemes": [{
+            "if": {
+              "device": {
+                "category": "mouse", "productName": "MX Master 3S",
+                "productID": "0xb034", "vendorID": "0x46d",
+                "serialNumber": "expected-serial"
+              }
+            },
+            "scrolling": { "reverse": true }
+          }]
+        }
+        """#.utf8)
+        let otherMouse = PointingDeviceInfo(
+            id: "other-mouse",
+            displayName: "MX Master 3S",
+            category: .mouse,
+            registryID: 2,
+            vendorID: 0x046d,
+            productID: 0xb034,
+            serialNumber: "different-serial"
+        )
+
+        let result = try LinearMouseMigration.importedInput(
+            from: data,
+            pointingDevices: [otherMouse]
+        )
+
+        XCTAssertTrue(result.requiresDeviceInventory)
+        XCTAssertTrue(result.hasUnresolvedExactDevice)
+        XCTAssertTrue(result.settings.scrollProfiles.isEmpty)
+    }
 }

@@ -326,11 +326,51 @@ struct InputSettingsPane: View {
                             .toggleStyle(.checkbox)
                         Toggle("Reverse trackpad scrolling", isOn: reverseTrackpadBinding)
                             .toggleStyle(.checkbox)
-                        Toggle("Universal Back and Forward", isOn: universalBackForwardBinding)
-                            .toggleStyle(.checkbox)
-                        Text("Back and Forward apply only when Button 4 or 5 uses System Default.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    }
+                }
+                PreferenceRow(label: "Battery:") {
+                    Picker("", selection: batteryDisplayModeBinding) {
+                        ForEach(PointingDeviceBatteryDisplayMode.allCases, id: \.self) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(width: 170, alignment: .leading)
+                }
+
+                Divider()
+
+                HStack {
+                    Text("Scroll Profiles")
+                        .font(.headline)
+                    Spacer()
+                    Button {
+                        addScrollProfile()
+                    } label: {
+                        Label("Add Profile", systemImage: "plus")
+                    }
+                }
+                Text("Profiles can target a device, app, or process. Later matching profiles override earlier values.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if settingsStore.settings.inputCustomization.scrollProfiles.isEmpty {
+                    Text("No custom scroll profiles.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                } else {
+                    VStack(spacing: 8) {
+                        ForEach(Array(settingsStore.settings.inputCustomization.scrollProfiles.enumerated()), id: \.element.id) { index, profile in
+                            ScrollProfileEditor(
+                                profile: scrollProfileBinding(id: profile.id),
+                                devices: displayedDevices,
+                                canMoveUp: index > 0,
+                                canMoveDown: index + 1 < settingsStore.settings.inputCustomization.scrollProfiles.count,
+                                onMoveUp: { moveScrollProfile(at: index, offset: -1) },
+                                onMoveDown: { moveScrollProfile(at: index, offset: 1) },
+                                onDelete: { removeScrollProfile(id: profile.id) }
+                            )
+                        }
                     }
                 }
 
@@ -345,7 +385,9 @@ struct InputSettingsPane: View {
                 PreferenceRow(label: "Button 5:") {
                     actionPicker(selection: buttonFiveBinding)
                 }
-                Text("Move and Resize act while the selected button is dragged. Escape cancels the active window gesture.")
+                Toggle("Universal Back and Forward", isOn: universalBackForwardBinding)
+                    .toggleStyle(.checkbox)
+                Text("Back and Forward apply only when Button 4 or 5 uses System Default. Move and Resize act while the selected button is dragged. Escape cancels the active window gesture.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -499,6 +541,58 @@ struct InputSettingsPane: View {
                 settingsStore.update { $0.inputCustomization.reverseTrackpadScrolling = value }
             }
         )
+    }
+
+    private var batteryDisplayModeBinding: Binding<PointingDeviceBatteryDisplayMode> {
+        Binding(
+            get: { settingsStore.settings.inputCustomization.batteryDisplayMode },
+            set: { value in
+                settingsStore.update { $0.inputCustomization.batteryDisplayMode = value }
+            }
+        )
+    }
+
+    private func scrollProfileBinding(id: String) -> Binding<ScrollProfile> {
+        Binding(
+            get: {
+                settingsStore.settings.inputCustomization.scrollProfiles.first { $0.id == id }
+                    ?? ScrollProfile(name: "Missing Profile")
+            },
+            set: { value in
+                settingsStore.update { settings in
+                    guard let index = settings.inputCustomization.scrollProfiles.firstIndex(
+                        where: { $0.id == id }
+                    ) else { return }
+                    settings.inputCustomization.scrollProfiles[index] = value
+                }
+            }
+        )
+    }
+
+    private func addScrollProfile() {
+        settingsStore.update {
+            $0.inputCustomization.scrollProfiles.append(ScrollProfile(
+                name: "New Mouse Profile",
+                match: ScrollProfileMatch(deviceCategory: .mouse)
+            ))
+        }
+    }
+
+    private func moveScrollProfile(at index: Int, offset: Int) {
+        settingsStore.update { settings in
+            let destination = index + offset
+            guard settings.inputCustomization.scrollProfiles.indices.contains(index),
+                  settings.inputCustomization.scrollProfiles.indices.contains(destination) else {
+                return
+            }
+            settings.inputCustomization.scrollProfiles.swapAt(index, destination)
+        }
+    }
+
+    private func removeScrollProfile(id: String) {
+        settingsStore.update {
+            $0.inputCustomization.scrollProfiles.removeAll { $0.id == id }
+        }
     }
 
     private var universalBackForwardBinding: Binding<Bool> {

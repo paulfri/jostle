@@ -6,6 +6,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let settingsStore = SettingsStore()
     let loginItemController = LoginItemController()
     let pointingDeviceManager = PointingDeviceManager()
+    lazy var pointingDeviceBatteryMonitor = PointingDeviceBatteryMonitor { [weak self] name in
+        self?.pointingDeviceManager.devices.contains {
+            $0.displayName.localizedCaseInsensitiveCompare(name) == .orderedSame
+        } ?? false
+    }
     lazy var keepAwakeController = KeepAwakeController(settingsStore: settingsStore)
     lazy var globalShortcutController = GlobalShortcutController(settingsStore: settingsStore)
     private let updateController: SparkleUpdateController? = {
@@ -25,7 +30,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         safeMode = Self.beginLaunchSafetyTracking()
+        pointingDeviceManager.onDevicesChanged = { [weak self] devices in
+            guard let self else { return }
+            LinearMouseMigration.migrateIfNeeded(
+                settingsStore: self.settingsStore,
+                pointingDevices: devices
+            )
+        }
         pointingDeviceManager.start()
+        LinearMouseMigration.migrateIfNeeded(
+            settingsStore: settingsStore,
+            pointingDevices: pointingDeviceManager.devices
+        )
         let throttleInterval = Self.minimumRefreshIntervalNanoseconds()
         let eventTapController = EventTapController(
             settingsStore: settingsStore,
@@ -58,6 +74,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             keepAwakeController: keepAwakeController,
             loginItemController: loginItemController,
             updateController: updateController,
+            batteryMonitor: pointingDeviceBatteryMonitor,
             onRuntimeRefresh: { [weak self] in
                 self?.refreshRuntimeHealth()
             },
@@ -163,6 +180,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         powerSourceMonitor.stop()
         runtimeHealthTimer?.invalidate()
         eventTapController?.stop()
+        pointingDeviceBatteryMonitor.setEnabled(false)
+        pointingDeviceManager.onDevicesChanged = nil
         pointingDeviceManager.stop()
         keepAwakeController.shutdown()
         Self.finishLaunchSafetyTracking()

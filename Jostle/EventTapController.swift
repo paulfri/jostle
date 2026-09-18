@@ -133,6 +133,7 @@ final class EventTapController {
     private let windowSystem: AccessibilityWindowSystem
     private let screenGeometryProvider: ScreenGeometryProvider
     private let snapPreviewController: SnapPreviewController
+    private let scrollCustomizationController = ScrollCustomizationController()
     private let resizeFeedbackController: ResizeFeedbackController
     private let windowRestoreStore: WindowRestoreStore
     private let gestureConfiguration: GestureConfiguration
@@ -244,6 +245,7 @@ final class EventTapController {
     func stop() {
         stopped = true
         requestedEnabled = false
+        scrollCustomizationController.cancel()
         tearDownEventTap()
     }
 
@@ -316,6 +318,7 @@ final class EventTapController {
 
     private func tearDownEventTap() {
         cancelGestureForInterruption()
+        scrollCustomizationController.cancel()
         cancelPendingFocus(resetLastWindow: true)
         if let source = runLoopSource {
             CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
@@ -331,12 +334,14 @@ final class EventTapController {
         sessionActive = active
         if !active {
             cancelGestureForInterruption()
+            scrollCustomizationController.cancel()
             cancelPendingFocus(resetLastWindow: true)
         }
     }
 
     func pointingDeviceDidDisconnect() {
         cancelGestureForInterruption()
+        scrollCustomizationController.cancel()
         cancelPendingFocus(resetLastWindow: true)
     }
 
@@ -489,19 +494,24 @@ final class EventTapController {
         _ event: CGEvent,
         device: PointingDeviceInfo?
     ) -> Bool {
-        guard inputCustomizationsRequested else { return false }
+        guard inputCustomizationsRequested else {
+            scrollCustomizationController.cancel()
+            return false
+        }
         let category = device?.category
             ?? (event.getIntegerValueField(.scrollWheelEventIsContinuous) != 0
                 ? .trackpad
                 : .mouse)
-        guard settingsStore.settings.inputCustomization.reverseScrolling(
-            forDeviceKey: device?.id,
-            category: category
-        ) else {
-            return false
-        }
-        CGEventScrollAdapter.reverse(event)
-        return false
+        let application = NSWorkspace.shared.frontmostApplication
+        let settings = ScrollProfileResolver.resolve(
+            input: settingsStore.settings.inputCustomization,
+            deviceKey: device?.id,
+            deviceCategory: category,
+            applicationBundleIdentifier: application?.bundleIdentifier,
+            processName: application?.executableURL?.deletingPathExtension().lastPathComponent
+                ?? application?.localizedName
+        )
+        return scrollCustomizationController.handle(event, settings: settings)
     }
 
     private func handleInputButtonEvent(

@@ -417,10 +417,36 @@ final class StatusMenuControllerTests: XCTestCase {
         )
     }
 
+    func testBatteryReadingAppearsWhenDisplayModeAllowsIt() {
+        let store = SettingsStore(userDefaults: userDefaults)
+        store.update {
+            $0.inputCustomization.batteryDisplayMode = .always
+        }
+        let batteryMonitor = TestPointingDeviceBatteryMonitor(readings: [
+            PointingDeviceBatteryReading(
+                id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
+                deviceName: "MX Master 3S",
+                level: 72
+            ),
+        ])
+        let controller = makeController(
+            settingsStore: store,
+            batteryMonitor: batteryMonitor
+        )
+
+        XCTAssertTrue(batteryMonitor.isEnabled)
+        XCTAssertNotNil(
+            commandItems(in: controller).first {
+                $0.title == "MX Master 3S Battery: 72%"
+            }
+        )
+    }
+
     private func makeController(
         settingsStore: SettingsStore? = nil,
         loginItemService: LoginItemServicing? = nil,
         updateController: UpdateControlling? = nil,
+        batteryMonitor: PointingDeviceBatteryMonitoring? = nil,
         currentApplicationProvider: @escaping () -> RunningApplicationInfo? = { nil },
         onRuntimeRefresh: @escaping () -> Void = {},
         onOpenSettings: @escaping () -> Void = {}
@@ -448,6 +474,7 @@ final class StatusMenuControllerTests: XCTestCase {
             keepAwakeController: keepAwakeController,
             loginItemController: loginItemController,
             updateController: updateController,
+            batteryMonitor: batteryMonitor,
             currentApplicationProvider: currentApplicationProvider,
             applicationName: "Jostle",
             onRuntimeRefresh: onRuntimeRefresh,
@@ -457,6 +484,20 @@ final class StatusMenuControllerTests: XCTestCase {
 
     private func commandItems(in controller: StatusMenuController) -> [NSMenuItem] {
         controller.renderedMenu.items.filter { !$0.isSeparatorItem }
+    }
+}
+
+private final class TestPointingDeviceBatteryMonitor: PointingDeviceBatteryMonitoring {
+    var onChange: (() -> Void)?
+    var readings: [PointingDeviceBatteryReading]
+    private(set) var isEnabled = false
+
+    init(readings: [PointingDeviceBatteryReading]) {
+        self.readings = readings
+    }
+
+    func setEnabled(_ enabled: Bool) {
+        isEnabled = enabled
     }
 }
 

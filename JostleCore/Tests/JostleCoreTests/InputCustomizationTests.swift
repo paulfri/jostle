@@ -127,6 +127,89 @@ final class InputCustomizationTests: XCTestCase {
         XCTAssertTrue(settings.deviceRules.isEmpty)
     }
 
+    func testScrollProfilesMergeByDeviceAndApplicationInDefinitionOrder() {
+        let settings = InputCustomizationSettings(
+            isEnabled: true,
+            reverseMouseScrolling: true,
+            scrollProfiles: [
+                ScrollProfile(
+                    name: "Apple apps",
+                    match: ScrollProfileMatch(
+                        deviceCategory: .mouse,
+                        applicationBundleIdentifiers: ["com.apple.Safari"]
+                    ),
+                    vertical: ScrollAxisSettings(
+                        smoothing: ScrollSmoothingSettings(
+                            enabled: true,
+                            preset: .linear,
+                            speed: 0.5,
+                            inertia: 0.3,
+                            bouncing: true
+                        )
+                    )
+                ),
+                ScrollProfile(
+                    name: "Safari bounce",
+                    match: ScrollProfileMatch(
+                        applicationBundleIdentifiers: ["com.apple.Safari"]
+                    ),
+                    vertical: ScrollAxisSettings(
+                        smoothing: ScrollSmoothingSettings(bouncing: false)
+                    )
+                )
+            ]
+        )
+
+        let resolved = ScrollProfileResolver.resolve(
+            input: settings,
+            deviceKey: "mouse-a",
+            deviceCategory: .mouse,
+            applicationBundleIdentifier: "com.apple.Safari",
+            processName: "Safari"
+        )
+
+        XCTAssertTrue(resolved.vertical.reverse)
+        XCTAssertEqual(resolved.vertical.smoothing?.preset, .linear)
+        XCTAssertEqual(resolved.vertical.smoothing?.response, 0.45)
+        XCTAssertEqual(resolved.vertical.smoothing?.speed, 0.5)
+        XCTAssertEqual(resolved.vertical.smoothing?.acceleration, 1.2)
+        XCTAssertEqual(resolved.vertical.smoothing?.inertia, 0.3)
+        XCTAssertEqual(resolved.vertical.smoothing?.bouncing, false)
+    }
+
+    func testProcessProfileCanDisableInheritedSmoothingAndSetLineDistance() {
+        let settings = InputCustomizationSettings(
+            scrollProfiles: [
+                ScrollProfile(
+                    name: "Mouse smoothing",
+                    match: ScrollProfileMatch(deviceCategory: .mouse),
+                    vertical: ScrollAxisSettings(
+                        smoothing: ScrollSmoothingSettings(enabled: true)
+                    )
+                ),
+                ScrollProfile(
+                    name: "EverQuest",
+                    match: ScrollProfileMatch(processNames: ["eqgame.exe"]),
+                    vertical: ScrollAxisSettings(
+                        distance: .lines(1),
+                        smoothing: ScrollSmoothingSettings(enabled: false)
+                    )
+                )
+            ]
+        )
+
+        let resolved = ScrollProfileResolver.resolve(
+            input: settings,
+            deviceKey: nil,
+            deviceCategory: .mouse,
+            applicationBundleIdentifier: nil,
+            processName: "eqgame.exe"
+        )
+
+        XCTAssertEqual(resolved.vertical.distance, .lines(1))
+        XCTAssertNil(resolved.vertical.smoothing)
+    }
+
     func testInputCustomizationRoundTrips() throws {
         let settings = InputCustomizationSettings(
             isEnabled: true,
@@ -142,7 +225,17 @@ final class InputCustomizationTests: XCTestCase {
                     reverseScrolling: .disabled,
                     focusFollowsPointer: .enabled
                 )
-            ]
+            ],
+            scrollProfiles: [
+                ScrollProfile(
+                    name: "Mouse smoothing",
+                    match: ScrollProfileMatch(deviceCategory: .mouse),
+                    vertical: ScrollAxisSettings(
+                        smoothing: ScrollSmoothingSettings(enabled: true, preset: .easeInOut)
+                    )
+                )
+            ],
+            batteryDisplayMode: .belowTwentyPercent
         )
 
         let data = try JSONEncoder().encode(settings)

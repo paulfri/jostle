@@ -11,6 +11,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     private let keepAwakeController: KeepAwakeController
     private let loginItemController: LoginItemController
     private let updateController: UpdateControlling?
+    private let batteryMonitor: PointingDeviceBatteryMonitoring?
     private let currentApplicationProvider: () -> RunningApplicationInfo?
     private let applicationName: String
     private let onRuntimeRefresh: () -> Void
@@ -32,6 +33,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         keepAwakeController: KeepAwakeController,
         loginItemController: LoginItemController,
         updateController: UpdateControlling? = nil,
+        batteryMonitor: PointingDeviceBatteryMonitoring? = nil,
         currentApplicationProvider: @escaping () -> RunningApplicationInfo? = {
             guard let application = NSWorkspace.shared.frontmostApplication,
                   application.bundleIdentifier != Bundle.main.bundleIdentifier else {
@@ -48,6 +50,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         self.keepAwakeController = keepAwakeController
         self.loginItemController = loginItemController
         self.updateController = updateController
+        self.batteryMonitor = batteryMonitor
         self.currentApplicationProvider = currentApplicationProvider
         self.applicationName = applicationName
         self.onRuntimeRefresh = onRuntimeRefresh
@@ -82,6 +85,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         settingsStore.onChange = { [weak self] in self?.refresh() }
         keepAwakeController.onChange = { [weak self] in self?.refresh() }
         loginItemController.onChange = { [weak self] in self?.refresh() }
+        batteryMonitor?.onChange = { [weak self] in self?.refresh() }
         updateCurrentApplication()
         refresh()
     }
@@ -91,6 +95,8 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         settingsStore.onChange = nil
         keepAwakeController.onChange = nil
         loginItemController.onChange = nil
+        batteryMonitor?.onChange = nil
+        batteryMonitor?.setEnabled(false)
         NSStatusBar.system.removeStatusItem(statusItem)
     }
 
@@ -126,9 +132,13 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     func refresh() {
         renderStatusIcon()
         menu.removeAllItems()
+        batteryMonitor?.setEnabled(
+            settingsStore.settings.inputCustomization.batteryDisplayMode != .never
+        )
 
         addRuntimeStatusIfNeeded()
         addWindowGestureItems()
+        addBatteryItems()
         menu.addItem(.separator())
         addKeepAwakeItems()
         menu.addItem(.separator())
@@ -187,6 +197,20 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         inputItem.isEnabled = runtimeAvailability == .ready
             && !eventTapController.isInSafeMode
         menu.addItem(inputItem)
+    }
+
+    private func addBatteryItems() {
+        let mode = settingsStore.settings.inputCustomization.batteryDisplayMode
+        guard mode != .never else { return }
+        for reading in batteryMonitor?.readings ?? [] where mode.shows(level: reading.level) {
+            let item = NSMenuItem(
+                title: "\(reading.deviceName) Battery: \(reading.level)%",
+                action: nil,
+                keyEquivalent: ""
+            )
+            item.isEnabled = false
+            menu.addItem(item)
+        }
     }
 
     private func addKeepAwakeItems() {

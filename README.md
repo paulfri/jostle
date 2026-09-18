@@ -13,7 +13,7 @@
   <a href="LICENSE.txt"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
 </p>
 
-Jostle is a native menu bar utility for controlling windows without hunting for title bars or tiny resize handles, customizing mice and trackpads, and preventing idle sleep when you need your Mac to stay awake. Hold a modifier or an extra mouse button and drag from anywhere inside a window, reverse scrolling per device type, let focus follow the pointer for selected apps and devices, or start a timed Keep Awake session from the same menu bar icon. Jostle stays out of the Dock and offers snapping, per-app and per-device rules, configurable spacing, automation, and optional launch-at-login and update checks.
+Jostle is a native menu bar utility for controlling windows without hunting for title bars or tiny resize handles, customizing mice and trackpads, and preventing idle sleep when you need your Mac to stay awake. Hold a modifier or an extra mouse button and drag from anywhere inside a window, tune scrolling by device and app, let focus follow the pointer, or start a timed Keep Awake session from the same menu bar icon. Jostle stays out of the Dock and offers snapping, contextual input profiles, configurable spacing, automation, and optional launch-at-login and update checks.
 
 ## Controls
 
@@ -34,16 +34,21 @@ The **Apps** settings let you choose the defaults for window controls and Focus 
 
 ## Mouse and trackpad customization
 
-Enable **Input Customizations** from Jostle's menu or its **Input** settings tab. The opt-in MVP provides:
+Enable **Input Customizations** from Jostle's menu or its **Input** settings tab. Jostle provides:
 
 - Independent reverse-scrolling defaults for mice and trackpads
+- Ordered scroll profiles matched by device type, exact device, application bundle ID, or process name
+- Independent vertical and horizontal distance, speed, acceleration, smoothing curve, response, inertia, and bounce controls
 - Button 4 and Button 5 mappings for Back, Forward, move, resize, maximize, left/right tile, next display, and Keep Awake
 - A universal Back/Forward preset that maps otherwise-unassigned side buttons to `⌘[` and `⌘]`
 - Per-device scrolling and Focus Follows Pointer overrides for connected or previously configured pointing devices
+- Optional status-menu battery readings for pointing devices that expose the standard Bluetooth Battery Service
+
+On first launch with an existing `~/.config/linearmouse/linearmouse.json`, Jostle imports the supported scrolling and universal Back/Forward settings once when the referenced pointing device is available. Disabled auto-scroll, disabled gesture actions, Logitech high-resolution-wheel controls, and vendor-specific settings are intentionally not imported.
 
 Button-held move and resize use the same safe window engine as Jostle's modifier gestures. A gesture remains bound to its initiating button through drag and release, and `Escape` cancels it. Input processing is fail-open: unsupported devices and unhandled events keep native macOS behavior.
 
-Input customization requires Accessibility permission. It can be disabled independently of window gestures and Keep Awake. After repeated unclean launches, Jostle starts in Safe Mode with input interception disabled; `--safe-mode` provides the same recovery path explicitly.
+Input customization requires Accessibility permission. Bluetooth battery display requests Bluetooth access only when enabled. Input can be disabled independently of window gestures and Keep Awake. After repeated unclean launches, Jostle starts in Safe Mode with input interception disabled; `--safe-mode` provides the same recovery path explicitly.
 
 ## Keep Awake
 
@@ -94,6 +99,8 @@ Duration parameters may use `hours` and `minutes` together. Values must be great
 - Show the active resize edge while dragging
 - Add gaps between tiled windows and margins around the screen
 - Reverse scrolling independently for mice, trackpads, and individual pointing devices
+- Tune per-axis scroll distance, speed, acceleration, smoothing, inertia, and bounce by device, app, or process
+- Show standard Bluetooth pointing-device battery levels in the status menu
 - Map extra mouse buttons to window, navigation, display, and Keep Awake actions
 - Move and resize windows by holding an extra mouse button
 - Configure window controls and Focus Follows Pointer independently per app and pointing device
@@ -151,7 +158,7 @@ swift test --package-path JostleCore
 
 The repository is split into a small AppKit/SwiftUI menu bar app in `Jostle/` and a deterministic Swift package in `JostleCore/` for event policy, input profiles, gesture state, geometry, snapping, Keep Awake commands, URL parsing, and settings behavior.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidance and [docs/releasing.md](docs/releasing.md) for the signed release process.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidance, [docs/releasing.md](docs/releasing.md) for the signed release process, and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for third-party code provenance and licenses.
 
 ## Heritage and license
 

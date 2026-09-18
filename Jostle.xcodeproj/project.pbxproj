@@ -55,6 +55,12 @@
 		B10000000000000000000014 /* KeepAwakeIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = B20000000000000000000014 /* KeepAwakeIntents.swift */; };
 		B10000000000000000000015 /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B20000000000000000000015 /* AppIntents.framework */; };
 		C10000000000000000000001 /* PointingDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000001 /* PointingDeviceManager.swift */; };
+		C10000000000000000000002 /* ScrollCustomizationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000002 /* ScrollCustomizationController.swift */; };
+		C10000000000000000000003 /* PointingDeviceBatteryMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000003 /* PointingDeviceBatteryMonitor.swift */; };
+		C10000000000000000000004 /* CoreBluetooth.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C20000000000000000000004 /* CoreBluetooth.framework */; };
+		C10000000000000000000005 /* ScrollProfileEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000005 /* ScrollProfileEditor.swift */; };
+		C10000000000000000000006 /* THIRD_PARTY_NOTICES.md in Resources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000006 /* THIRD_PARTY_NOTICES.md */; };
+		C10000000000000000000007 /* LinearMouseMigration.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000007 /* LinearMouseMigration.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -113,6 +119,12 @@
 		B20000000000000000000014 /* KeepAwakeIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepAwakeIntents.swift; sourceTree = "<group>"; };
 		B20000000000000000000015 /* AppIntents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppIntents.framework; path = System/Library/Frameworks/AppIntents.framework; sourceTree = SDKROOT; };
 		C20000000000000000000001 /* PointingDeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointingDeviceManager.swift; sourceTree = "<group>"; };
+		C20000000000000000000002 /* ScrollCustomizationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollCustomizationController.swift; sourceTree = "<group>"; };
+		C20000000000000000000003 /* PointingDeviceBatteryMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointingDeviceBatteryMonitor.swift; sourceTree = "<group>"; };
+		C20000000000000000000004 /* CoreBluetooth.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreBluetooth.framework; path = System/Library/Frameworks/CoreBluetooth.framework; sourceTree = SDKROOT; };
+		C20000000000000000000005 /* ScrollProfileEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollProfileEditor.swift; sourceTree = "<group>"; };
+		C20000000000000000000006 /* THIRD_PARTY_NOTICES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = THIRD_PARTY_NOTICES.md; sourceTree = "<group>"; };
+		C20000000000000000000007 /* LinearMouseMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinearMouseMigration.swift; sourceTree = "<group>"; };
 		A2000000000000000000000C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000000000000000000000D /* Jostle.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Jostle.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2000000000000000000000E /* JostleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JostleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -131,6 +143,7 @@
 				B10000000000000000000008 /* IOKit.framework in Frameworks */,
 				B10000000000000000000009 /* UserNotifications.framework in Frameworks */,
 				B10000000000000000000015 /* AppIntents.framework in Frameworks */,
+				C10000000000000000000004 /* CoreBluetooth.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -154,6 +167,7 @@
 				A50000000000000000000005 /* Products */,
 				A20000000000000000000010 /* README.md */,
 				A20000000000000000000011 /* LICENSE.txt */,
+				C20000000000000000000006 /* THIRD_PARTY_NOTICES.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -188,6 +202,10 @@
 				B20000000000000000000012 /* StatusIconRenderer.swift */,
 				B20000000000000000000014 /* KeepAwakeIntents.swift */,
 				C20000000000000000000001 /* PointingDeviceManager.swift */,
+				C20000000000000000000002 /* ScrollCustomizationController.swift */,
+				C20000000000000000000003 /* PointingDeviceBatteryMonitor.swift */,
+				C20000000000000000000005 /* ScrollProfileEditor.swift */,
+				C20000000000000000000007 /* LinearMouseMigration.swift */,
 				A20000000000000000000008 /* Images.xcassets */,
 				A20000000000000000000007 /* Jostle-Info.plist */,
 				A20000000000000000000009 /* InfoPlist.strings */,
@@ -222,6 +240,7 @@
 				B20000000000000000000008 /* IOKit.framework */,
 				B20000000000000000000009 /* UserNotifications.framework */,
 				B20000000000000000000015 /* AppIntents.framework */,
+				C20000000000000000000004 /* CoreBluetooth.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -321,6 +340,7 @@
 			files = (
 				A10000000000000000000007 /* Images.xcassets in Resources */,
 				A10000000000000000000008 /* InfoPlist.strings in Resources */,
+				C10000000000000000000006 /* THIRD_PARTY_NOTICES.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -366,6 +386,10 @@
 				B10000000000000000000012 /* StatusIconRenderer.swift in Sources */,
 				B10000000000000000000014 /* KeepAwakeIntents.swift in Sources */,
 				C10000000000000000000001 /* PointingDeviceManager.swift in Sources */,
+				C10000000000000000000002 /* ScrollCustomizationController.swift in Sources */,
+				C10000000000000000000003 /* PointingDeviceBatteryMonitor.swift in Sources */,
+				C10000000000000000000005 /* ScrollProfileEditor.swift in Sources */,
+				C10000000000000000000007 /* LinearMouseMigration.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

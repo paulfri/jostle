@@ -86,6 +86,65 @@ final class CGEventInputAdapterTests: XCTestCase {
         }
     }
 
+    func testScrollCustomizationAppliesResolvedReverseAndDistance() throws {
+        let event = try XCTUnwrap(CGEvent(
+            scrollWheelEvent2Source: nil,
+            units: .line,
+            wheelCount: 1,
+            wheel1: 1,
+            wheel2: 0,
+            wheel3: 0
+        ))
+        let controller = ScrollCustomizationController()
+        let axis = EffectiveScrollAxisSettings(
+            reverse: true,
+            distance: .lines(3),
+            acceleration: 1,
+            speed: 0,
+            smoothing: nil
+        )
+        let settings = EffectiveScrollSettings(
+            horizontal: .passthrough,
+            vertical: axis
+        )
+
+        XCTAssertFalse(controller.handle(event, settings: settings))
+        XCTAssertEqual(event.getDoubleValueField(.scrollWheelEventPointDeltaAxis1), -3, accuracy: 0.001)
+        XCTAssertEqual(event.getIntegerValueField(.scrollWheelEventIsContinuous), 0)
+    }
+
+    func testScrollCustomizationSuppressesHandledSmoothedAxis() throws {
+        let event = try XCTUnwrap(CGEvent(
+            scrollWheelEvent2Source: nil,
+            units: .line,
+            wheelCount: 1,
+            wheel1: 1,
+            wheel2: 0,
+            wheel3: 0
+        ))
+        let controller = ScrollCustomizationController()
+        defer { controller.cancel() }
+        let smoothing = EffectiveScrollSmoothingSettings(
+            preset: .easeInOut,
+            response: 0.68,
+            speed: 1.02,
+            acceleration: 1.1,
+            inertia: 0.74,
+            bouncing: true
+        )
+        var vertical = EffectiveScrollAxisSettings.passthrough
+        vertical.smoothing = smoothing
+
+        XCTAssertTrue(controller.handle(
+            event,
+            settings: EffectiveScrollSettings(
+                horizontal: .passthrough,
+                vertical: vertical
+            )
+        ))
+        XCTAssertEqual(event.getDoubleValueField(.scrollWheelEventPointDeltaAxis1), 0, accuracy: 0.001)
+    }
+
     func testPointingDeviceClassifierRejectsKeyboardPrimaryCompositeDevices() {
         XCTAssertNil(PointingDeviceClassifier.category(
             primaryUsagePage: 1,
