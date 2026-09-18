@@ -1,6 +1,6 @@
 # Changelog
 
-## 2026.9.1 — Unreleased
+## 2026.9.1 — 2026-09-18
 
 - Use Control alone as the default activation modifier.
 - Keep the required last modifier visually active in Settings instead of dimming its checkbox.
