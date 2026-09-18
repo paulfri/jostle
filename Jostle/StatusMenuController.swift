@@ -396,7 +396,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
                accessibilityDescription: nil
            )?.withSymbolConfiguration(
                NSImage.SymbolConfiguration(
-                   pointSize: StatusIconRenderer.centerSymbolPointSize,
+                   pointSize: StatusIconRenderer.centerSymbolPointSize(for: symbolName),
                    weight: .semibold
                )
            ) {

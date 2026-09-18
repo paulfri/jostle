@@ -6,7 +6,10 @@ enum StatusIconRenderer {
     static let frameLineWidth: CGFloat = 1.5
     static let frameCenterlineBounds = NSRect(x: 0.75, y: 0.75, width: 14.5, height: 14.5)
     static let centerSymbolSize = NSSize(width: 12, height: 12)
-    static let centerSymbolPointSize: CGFloat = 11
+
+    static func centerSymbolPointSize(for symbolName: String) -> CGFloat {
+        symbolName == "bolt.fill" ? 8.5 : 11
+    }
 
     static func centerSymbolFrame(in imageRect: NSRect) -> NSRect {
         NSRect(
@@ -47,7 +50,7 @@ enum StatusIconRenderer {
         case .awake:
             switch indicatorStyle {
             case .coloredGreen, .coloredBlue:
-                "cup.and.heat.waves"
+                "bolt.fill"
             case .normal, .badgeGreen, .badgeBlue:
                 nil
             }
@@ -73,11 +76,11 @@ enum StatusIconRenderer {
         case .awake:
             switch indicatorStyle {
             case .normal:
-                ("cup.and.heat.waves", .labelColor)
+                ("bolt.fill", .labelColor)
             case .badgeGreen:
-                ("cup.and.heat.waves", .systemGreen)
+                ("bolt.fill", .systemGreen)
             case .badgeBlue:
-                ("cup.and.heat.waves", .systemBlue)
+                ("bolt.fill", .systemBlue)
             case .coloredGreen, .coloredBlue:
                 nil
             }
@@ -103,17 +106,23 @@ enum StatusIconRenderer {
                    accessibilityDescription: nil
                )?.withSymbolConfiguration(
                    NSImage.SymbolConfiguration(
-                       pointSize: centerSymbolPointSize,
+                       pointSize: centerSymbolPointSize(for: embeddedSymbolName),
                        weight: .semibold
                    )
                ) {
+                let symbolRect = NSRect(
+                    x: (canvasSize.width - symbol.size.width) / 2,
+                    y: (canvasSize.height - symbol.size.height) / 2,
+                    width: symbol.size.width,
+                    height: symbol.size.height
+                )
                 symbol.draw(
-                    in: NSRect(x: 2, y: 2, width: 12, height: 12),
+                    in: symbolRect,
                     from: .zero,
                     operation: .sourceOver,
                     fraction: 1,
                     respectFlipped: true,
-                    hints: [.interpolation: NSImageInterpolation.high]
+                    hints: nil
                 )
             }
             return true

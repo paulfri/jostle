@@ -62,7 +62,7 @@ final class SettingsWindowController: NSWindowController {
         let keepAwakeItem = NSTabViewItem(viewController: keepAwakeController)
         keepAwakeItem.label = "Keep Awake"
         keepAwakeItem.image = NSImage(
-            systemSymbolName: "cup.and.heat.waves",
+            systemSymbolName: "bolt.fill",
             accessibilityDescription: "Keep Awake"
         )
         tabController.addTabViewItem(keepAwakeItem)

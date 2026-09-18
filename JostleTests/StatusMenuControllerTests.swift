@@ -240,7 +240,7 @@ final class StatusMenuControllerTests: XCTestCase {
         XCTAssertEqual(commandItems(in: controller)[1].state, .off)
     }
 
-    func testStatusIconUsesCalmFrameTemplateWithStatefulCenter() {
+    func testStatusIconUsesCalmFrameTemplateWithStatefulCenter() throws {
         let idle = StatusIconRenderer.presentation(
             applicationName: "Jostle",
             windowGesturesAvailable: true,
@@ -274,6 +274,19 @@ final class StatusMenuControllerTests: XCTestCase {
             NSRect(origin: .zero, size: StatusIconRenderer.canvasSize)
         )
         XCTAssertEqual(StatusIconRenderer.centerSymbolSize, NSSize(width: 12, height: 12))
+        let awakeSymbol = try XCTUnwrap(
+            NSImage(
+                systemSymbolName: "bolt.fill",
+                accessibilityDescription: nil
+            )?.withSymbolConfiguration(
+                NSImage.SymbolConfiguration(
+                    pointSize: StatusIconRenderer.centerSymbolPointSize(for: "bolt.fill"),
+                    weight: .semibold
+                )
+            )
+        )
+        XCTAssertLessThanOrEqual(awakeSymbol.size.width, StatusIconRenderer.centerSymbolSize.width)
+        XCTAssertLessThanOrEqual(awakeSymbol.size.height, StatusIconRenderer.centerSymbolSize.height)
         XCTAssertEqual(
             StatusIconRenderer.centerSymbolFrame(
                 in: NSRect(x: 10, y: 3, width: 16, height: 16)
@@ -284,7 +297,7 @@ final class StatusMenuControllerTests: XCTestCase {
         XCTAssertNil(idle.iconTintColor)
 
         XCTAssertTrue(awake.image.isTemplate)
-        XCTAssertEqual(awake.overlaySymbolName, "cup.and.heat.waves")
+        XCTAssertEqual(awake.overlaySymbolName, "bolt.fill")
         XCTAssertTrue(awake.overlayTintColor?.isEqual(NSColor.labelColor) == true)
         XCTAssertFalse(awake.shouldDim, "Keep Awake must remain visible without Accessibility")
 
