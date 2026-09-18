@@ -25,7 +25,19 @@ final class SettingsWindowController: NSWindowController {
             .tint(Color(nsColor: AppBrand.accentColor))
         )
         let generalItem = NSTabViewItem(viewController: generalController)
-        generalItem.label = "Gestures"
+        generalItem.label = "General"
+        generalItem.image = NSImage(
+            systemSymbolName: "gearshape",
+            accessibilityDescription: "General Settings"
+        )
+        tabController.addTabViewItem(generalItem)
+
+        let gesturesController = NSHostingController(
+            rootView: GesturesSettingsPane(settingsStore: settingsStore)
+                .tint(Color(nsColor: AppBrand.accentColor))
+        )
+        let gesturesItem = NSTabViewItem(viewController: gesturesController)
+        gesturesItem.label = "Gestures"
         let gesturesImage = (NSImage(named: "MenuIcon")?.copy() as? NSImage)
             ?? NSImage(
                 systemSymbolName: "viewfinder",
@@ -33,8 +45,8 @@ final class SettingsWindowController: NSWindowController {
             )
         gesturesImage?.isTemplate = true
         gesturesImage?.accessibilityDescription = "Jostle Gestures"
-        generalItem.image = gesturesImage
-        tabController.addTabViewItem(generalItem)
+        gesturesItem.image = gesturesImage
+        tabController.addTabViewItem(gesturesItem)
 
         let inputController = NSHostingController(
             rootView: InputSettingsPane(

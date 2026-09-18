@@ -7,6 +7,142 @@ struct GeneralSettingsPane: View {
     @ObservedObject var loginItemController: LoginItemController
     @State private var confirmsReset = false
 
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Startup")
+                .font(.headline)
+
+            PreferenceRow(label: "") {
+                VStack(alignment: .leading, spacing: 6) {
+                    Toggle("Start \(AppBrand.applicationName) at login", isOn: startAtLoginBinding)
+                        .toggleStyle(.checkbox)
+                    if let errorMessage = loginItemController.errorMessage {
+                        Text(errorMessage)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                }
+            }
+
+            Divider()
+
+            Text("Menu Bar")
+                .font(.headline)
+
+            PreferenceRow(label: "Left-click:") {
+                VStack(alignment: .leading, spacing: 5) {
+                    Picker("", selection: leftClickTogglesKeepAwakeBinding) {
+                        Text("Toggle Keep Awake").tag(true)
+                        Text("Open Menu").tag(false)
+                    }
+                    .labelsHidden()
+                    .frame(width: 180, alignment: .leading)
+                    Text(clickBehaviorDescription)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            PreferenceRow(label: "Device battery:") {
+                VStack(alignment: .leading, spacing: 5) {
+                    Picker("", selection: batteryDisplayModeBinding) {
+                        ForEach(PointingDeviceBatteryDisplayMode.allCases, id: \.self) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(width: 180, alignment: .leading)
+                    Text("Show the lowest available pointing-device battery level beside the icon.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            PreferenceRow(label: "Keep Awake icon:") {
+                Picker("", selection: indicatorStyleBinding) {
+                    ForEach(KeepAwakeIndicatorStyle.allCases, id: \.self) { style in
+                        Text(style.title).tag(style)
+                    }
+                }
+                .labelsHidden()
+                .frame(width: 180, alignment: .leading)
+            }
+
+            PreferenceRow(label: "") {
+                Toggle("Dim icon while Keep Awake is inactive", isOn: dimWhenInactiveBinding)
+                    .toggleStyle(.checkbox)
+            }
+
+            Spacer(minLength: 0)
+            Divider()
+
+            HStack {
+                Spacer()
+                Button("Restore Defaults…") {
+                    confirmsReset = true
+                }
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
+        .frame(width: 660, height: 470)
+        .alert("Restore \(AppBrand.applicationName) defaults?", isPresented: $confirmsReset) {
+            Button("Restore", role: .destructive) {
+                settingsStore.reset()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This also clears all app overrides.")
+        }
+    }
+
+    private var clickBehaviorDescription: String {
+        settingsStore.settings.keepAwakeActivateOnLeftClick
+            ? "Right-click opens the menu."
+            : "Right-click toggles Keep Awake."
+    }
+
+    private var startAtLoginBinding: Binding<Bool> {
+        Binding(
+            get: { loginItemController.isEnabled },
+            set: { loginItemController.setEnabled($0) }
+        )
+    }
+
+    private var leftClickTogglesKeepAwakeBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings.keepAwakeActivateOnLeftClick },
+            set: { value in settingsStore.update { $0.keepAwakeActivateOnLeftClick = value } }
+        )
+    }
+
+    private var batteryDisplayModeBinding: Binding<PointingDeviceBatteryDisplayMode> {
+        Binding(
+            get: { settingsStore.settings.inputCustomization.batteryDisplayMode },
+            set: { value in
+                settingsStore.update { $0.inputCustomization.batteryDisplayMode = value }
+            }
+        )
+    }
+
+    private var indicatorStyleBinding: Binding<KeepAwakeIndicatorStyle> {
+        Binding(
+            get: { settingsStore.settings.keepAwakeIndicatorStyle },
+            set: { value in settingsStore.update { $0.keepAwakeIndicatorStyle = value } }
+        )
+    }
+
+    private var dimWhenInactiveBinding: Binding<Bool> {
+        Binding(
+            get: { settingsStore.settings.keepAwakeDimWhenInactive },
+            set: { value in settingsStore.update { $0.keepAwakeDimWhenInactive = value } }
+        )
+    }
+}
+
+struct GesturesSettingsPane: View {
+    @ObservedObject var settingsStore: SettingsStore
+
     private let modifierOptions: [(modifier: JostleCore.Modifier, title: String)] = [
         (.control, "⌃ Control"),
         (.option, "⌥ Option"),
@@ -64,44 +200,11 @@ struct GeneralSettingsPane: View {
                 }
             }
 
-            Divider()
-
-            Text("Startup")
-                .font(.headline)
-
-            PreferenceRow(label: "") {
-                VStack(alignment: .leading, spacing: 6) {
-                    Toggle("Start \(AppBrand.applicationName) at login", isOn: startAtLoginBinding)
-                        .toggleStyle(.checkbox)
-                    if let errorMessage = loginItemController.errorMessage {
-                        Text(errorMessage)
-                            .font(.caption)
-                            .foregroundStyle(.red)
-                    }
-                }
-            }
-
             Spacer(minLength: 0)
-            Divider()
-
-            HStack {
-                Spacer()
-                Button("Restore Defaults…") {
-                    confirmsReset = true
-                }
-            }
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
         .frame(width: 660, height: 470)
-        .alert("Restore \(AppBrand.applicationName) defaults?", isPresented: $confirmsReset) {
-            Button("Restore", role: .destructive) {
-                settingsStore.reset()
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("This also clears all app overrides.")
-        }
     }
 
     private func modifierBinding(_ modifier: JostleCore.Modifier) -> Binding<Bool> {
@@ -149,13 +252,6 @@ struct GeneralSettingsPane: View {
             set: { value in
                 settingsStore.update { $0.resizeFeedbackEnabled = value }
             }
-        )
-    }
-
-    private var startAtLoginBinding: Binding<Bool> {
-        Binding(
-            get: { loginItemController.isEnabled },
-            set: { loginItemController.setEnabled($0) }
         )
     }
 }
@@ -328,16 +424,6 @@ struct InputSettingsPane: View {
                             .toggleStyle(.checkbox)
                     }
                 }
-                PreferenceRow(label: "Battery:") {
-                    Picker("", selection: batteryDisplayModeBinding) {
-                        ForEach(PointingDeviceBatteryDisplayMode.allCases, id: \.self) { mode in
-                            Text(mode.title).tag(mode)
-                        }
-                    }
-                    .labelsHidden()
-                    .frame(width: 170, alignment: .leading)
-                }
-
                 Divider()
 
                 HStack {
@@ -543,15 +629,6 @@ struct InputSettingsPane: View {
         )
     }
 
-    private var batteryDisplayModeBinding: Binding<PointingDeviceBatteryDisplayMode> {
-        Binding(
-            get: { settingsStore.settings.inputCustomization.batteryDisplayMode },
-            set: { value in
-                settingsStore.update { $0.inputCustomization.batteryDisplayMode = value }
-            }
-        )
-    }
-
     private func scrollProfileBinding(id: String) -> Binding<ScrollProfile> {
         Binding(
             get: {
@@ -702,15 +779,8 @@ struct KeepAwakeSettingsPane: View {
                 }
 
                 PreferenceRow(label: "") {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Toggle("Activate Keep Awake when Jostle launches", isOn: activateAtLaunchBinding)
-                            .toggleStyle(.checkbox)
-                        Toggle("Activate Keep Awake on left-click", isOn: activateOnLeftClickBinding)
-                            .toggleStyle(.checkbox)
-                        Text(clickBehaviorDescription)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
+                    Toggle("Activate Keep Awake when Jostle launches", isOn: activateAtLaunchBinding)
+                        .toggleStyle(.checkbox)
                 }
 
                 Divider()
@@ -755,37 +825,11 @@ struct KeepAwakeSettingsPane: View {
                     }
                 }
 
-                Divider()
-
-                Text("Menu Bar")
-                    .font(.headline)
-
-                PreferenceRow(label: "Active indicator:") {
-                    Picker("", selection: indicatorStyleBinding) {
-                        ForEach(KeepAwakeIndicatorStyle.allCases, id: \.self) { style in
-                            Text(style.title).tag(style)
-                        }
-                    }
-                    .labelsHidden()
-                    .frame(width: 180, alignment: .leading)
-                }
-
-                PreferenceRow(label: "") {
-                    Toggle("Dim icon while Keep Awake is inactive", isOn: dimWhenInactiveBinding)
-                        .toggleStyle(.checkbox)
-                }
-
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
         }
         .frame(width: 660, height: 470)
-    }
-
-    private var clickBehaviorDescription: String {
-        settingsStore.settings.keepAwakeActivateOnLeftClick
-            ? "Left-click toggles Keep Awake; right-click opens the menu."
-            : "Right-click toggles Keep Awake; left-click opens the menu."
     }
 
     private var defaultDurationBinding: Binding<KeepAwakeDurationPreset> {
@@ -799,13 +843,6 @@ struct KeepAwakeSettingsPane: View {
         Binding(
             get: { settingsStore.settings.keepAwakeActivateAtLaunch },
             set: { value in settingsStore.update { $0.keepAwakeActivateAtLaunch = value } }
-        )
-    }
-
-    private var activateOnLeftClickBinding: Binding<Bool> {
-        Binding(
-            get: { settingsStore.settings.keepAwakeActivateOnLeftClick },
-            set: { value in settingsStore.update { $0.keepAwakeActivateOnLeftClick = value } }
         )
     }
 
@@ -834,20 +871,6 @@ struct KeepAwakeSettingsPane: View {
         Binding(
             get: { settingsStore.settings.keepAwakeDeactivateOnBattery },
             set: { value in settingsStore.update { $0.keepAwakeDeactivateOnBattery = value } }
-        )
-    }
-
-    private var dimWhenInactiveBinding: Binding<Bool> {
-        Binding(
-            get: { settingsStore.settings.keepAwakeDimWhenInactive },
-            set: { value in settingsStore.update { $0.keepAwakeDimWhenInactive = value } }
-        )
-    }
-
-    private var indicatorStyleBinding: Binding<KeepAwakeIndicatorStyle> {
-        Binding(
-            get: { settingsStore.settings.keepAwakeIndicatorStyle },
-            set: { value in settingsStore.update { $0.keepAwakeIndicatorStyle = value } }
         )
     }
 
