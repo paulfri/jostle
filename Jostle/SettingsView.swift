@@ -46,8 +46,7 @@ struct GeneralSettingsPane: View {
                     Text("Middle Click").tag(true)
                 }
                 .labelsHidden()
-                .frame(width: 170)
-                .offset(x: -24)
+                .frame(width: 170, alignment: .leading)
             }
 
             PreferenceRow(label: "") {

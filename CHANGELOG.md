@@ -4,6 +4,7 @@
 
 - Use Control alone as the default activation modifier.
 - Keep the required last modifier visually active in Settings instead of dimming its checkbox.
+- Correct the spacing between the Resize with label and its button in General Settings.
 
 ## 2026.9.0 — 2026-09-17
 
