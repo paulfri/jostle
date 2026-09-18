@@ -42,7 +42,7 @@ Enable **Input Customizations** from Jostle's menu or its **Input** settings tab
 - Button 4 and Button 5 mappings for Back, Forward, move, resize, maximize, left/right tile, next display, and Keep Awake
 - A universal Back/Forward preset that maps otherwise-unassigned side buttons to `⌘[` and `⌘]`
 - Per-device scrolling and Focus Follows Pointer overrides for connected or previously configured pointing devices
-- Optional status-menu battery readings for pointing devices that expose the standard Bluetooth Battery Service
+- An optional battery percentage beside the menu bar icon, with device details in the menu, for pointing devices that expose the standard Bluetooth Battery Service
 
 On first launch with an existing `~/.config/linearmouse/linearmouse.json`, Jostle imports the supported scrolling and universal Back/Forward settings once when the referenced pointing device is available. Disabled auto-scroll, disabled gesture actions, Logitech high-resolution-wheel controls, and vendor-specific settings are intentionally not imported.
 
@@ -100,7 +100,7 @@ Duration parameters may use `hours` and `minutes` together. Values must be great
 - Add gaps between tiled windows and margins around the screen
 - Reverse scrolling independently for mice, trackpads, and individual pointing devices
 - Tune per-axis scroll distance, speed, acceleration, smoothing, inertia, and bounce by device, app, or process
-- Show standard Bluetooth pointing-device battery levels in the status menu
+- Show standard Bluetooth pointing-device battery levels beside the menu bar icon and in its menu
 - Map extra mouse buttons to window, navigation, display, and Keep Awake actions
 - Move and resize windows by holding an extra mouse button
 - Configure window controls and Focus Follows Pointer independently per app and pointing device

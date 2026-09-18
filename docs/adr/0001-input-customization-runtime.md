@@ -48,7 +48,7 @@ The tap stays on Jostle's existing main run-loop source because window actions s
 
 ### Battery support
 
-Battery monitoring is independent of the event tap. When the selected display mode requires it, Jostle uses CoreBluetooth's public Battery Service (`180F`) and Battery Level characteristic (`2A19`), filters discoveries to names in the pointing-device inventory, and displays supported readings in the status menu. Devices that do not expose the standard service are ignored; Jostle does not implement Logitech HID++ or another vendor protocol.
+Battery monitoring is independent of the event tap. When the selected display mode requires it, Jostle uses CoreBluetooth's public Battery Service (`180F`) and Battery Level characteristic (`2A19`), filters discoveries to names in the pointing-device inventory, and displays the selected percentage beside the menu bar icon with device details in the menu. Devices that do not expose the standard service are ignored; Jostle does not implement Logitech HID++ or another vendor protocol.
 
 ### Adapted smoothing implementation
 

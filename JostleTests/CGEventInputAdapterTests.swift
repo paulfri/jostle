@@ -145,6 +145,44 @@ final class CGEventInputAdapterTests: XCTestCase {
         XCTAssertEqual(event.getDoubleValueField(.scrollWheelEventPointDeltaAxis1), 0, accuracy: 0.001)
     }
 
+    func testSmoothedScrollEmissionDoesNotReuseStaleSourceLocation() throws {
+        let sourceLocation = CGPoint(x: 1, y: 1)
+        let event = try XCTUnwrap(CGEvent(
+            scrollWheelEvent2Source: nil,
+            units: .line,
+            wheelCount: 1,
+            wheel1: 1,
+            wheel2: 0,
+            wheel3: 0
+        ))
+        event.location = sourceLocation
+        var emittedLocation: CGPoint?
+        let controller = ScrollCustomizationController { emittedLocation = $0.location }
+        defer { controller.cancel() }
+        let smoothing = EffectiveScrollSmoothingSettings(
+            preset: .easeInOut,
+            response: 0.68,
+            speed: 1.02,
+            acceleration: 1.1,
+            inertia: 0.74,
+            bouncing: true
+        )
+        var vertical = EffectiveScrollAxisSettings.passthrough
+        vertical.smoothing = smoothing
+
+        XCTAssertTrue(controller.handle(
+            event,
+            settings: EffectiveScrollSettings(
+                horizontal: .passthrough,
+                vertical: vertical
+            )
+        ))
+        controller.tick()
+
+        XCTAssertNotNil(emittedLocation)
+        XCTAssertNotEqual(emittedLocation, sourceLocation)
+    }
+
     func testPointingDeviceClassifierRejectsKeyboardPrimaryCompositeDevices() {
         XCTAssertNil(PointingDeviceClassifier.category(
             primaryUsagePage: 1,

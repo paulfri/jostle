@@ -14,11 +14,15 @@ final class ScrollCustomizationController {
     private var engineSettings: EffectiveScrollSettings?
     private var timer: Timer?
     private var lastFlags: CGEventFlags = []
-    private var lastLocation: CGPoint = .zero
     private var touchSeriesActive = false
     private var momentumSeriesActive = false
     private var horizontalRemainder = 0.0
     private var verticalRemainder = 0.0
+    private let eventSink: (CGEvent) -> Void
+
+    init(eventSink: @escaping (CGEvent) -> Void = { $0.post(tap: .cgSessionEventTap) }) {
+        self.eventSink = eventSink
+    }
 
     /// Mutates the supplied event in place. Returns true only when the original
     /// event should be suppressed because every active axis is emitted later.
@@ -50,7 +54,6 @@ final class ScrollCustomizationController {
         guard handlesHorizontal || handlesVertical else { return false }
 
         lastFlags = event.flags
-        lastLocation = event.location
         engine?.feed(
             deltaX: handlesHorizontal ? deltaX : 0,
             deltaY: handlesVertical ? deltaY : 0,
@@ -150,7 +153,7 @@ final class ScrollCustomizationController {
         RunLoop.main.add(timer, forMode: .common)
     }
 
-    private func tick() {
+    func tick() {
         guard let engine else {
             cancel()
             return
@@ -188,7 +191,9 @@ final class ScrollCustomizationController {
         ) else {
             return
         }
-        event.location = lastLocation
+        // Keep the event factory's current pointer location. Reusing the source
+        // scroll location throughout a momentum tail can repeatedly pull the
+        // cursor toward an obsolete screen position.
         event.flags = lastFlags
         event.setIntegerValueField(.eventSourceUserData, value: EventTapController.syntheticEventMarker)
         event.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
@@ -200,7 +205,7 @@ final class ScrollCustomizationController {
         let hasPhase = event.getIntegerValueField(.scrollWheelEventScrollPhase) != 0
             || event.getIntegerValueField(.scrollWheelEventMomentumPhase) != 0
         guard hasMovement || hasPhase else { return }
-        event.post(tap: .cgSessionEventTap)
+        eventSink(event)
     }
 
     private func applyPhase(_ phase: ScrollSmoothingEngine.Phase, event: CGEvent) {
@@ -266,7 +271,6 @@ final class ScrollCustomizationController {
               ) else {
             return
         }
-        event.location = lastLocation
         event.flags = lastFlags
         event.setIntegerValueField(.eventSourceUserData, value: EventTapController.syntheticEventMarker)
         event.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
@@ -282,7 +286,7 @@ final class ScrollCustomizationController {
                 value: Int64(CGMomentumScrollPhase.end.rawValue)
             )
         }
-        event.post(tap: .cgSessionEventTap)
+        eventSink(event)
     }
 
     private func setSynthetic(axis: Int, value: Double, event: CGEvent) {

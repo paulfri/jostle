@@ -26,6 +26,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
     private var runtimeAvailability = RuntimeAvailability.ready
 
     var renderedMenu: NSMenu { menu }
+    var renderedStatusTitle: String { statusItem.button?.title ?? "" }
 
     init(
         settingsStore: SettingsStore,
@@ -76,7 +77,10 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
             centerStateImageView.setAccessibilityElement(false)
             button.addSubview(centerStateImageView)
             NSLayoutConstraint.activate([
-                centerStateImageView.centerXAnchor.constraint(equalTo: button.centerXAnchor),
+                centerStateImageView.centerXAnchor.constraint(
+                    equalTo: button.leadingAnchor,
+                    constant: NSStatusBar.system.thickness / 2
+                ),
                 centerStateImageView.centerYAnchor.constraint(equalTo: button.centerYAnchor),
                 centerStateImageView.widthAnchor.constraint(equalToConstant: 8),
                 centerStateImageView.heightAnchor.constraint(equalToConstant: 8),
@@ -395,9 +399,12 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         )
 
         if let button = statusItem.button {
+            let batteryTitle = statusBatteryLevel.map { " \($0)%" } ?? ""
             button.appearsDisabled = presentation.shouldDim
             button.contentTintColor = presentation.iconTintColor
             button.image = presentation.image
+            button.title = batteryTitle
+            button.imagePosition = batteryTitle.isEmpty ? .imageOnly : .imageLeft
         }
 
         if let symbolName = presentation.overlaySymbolName,
@@ -415,6 +422,14 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
             centerStateImageView.image = nil
             centerStateImageView.isHidden = true
         }
+    }
+
+    private var statusBatteryLevel: Int? {
+        let mode = settingsStore.settings.inputCustomization.batteryDisplayMode
+        return (batteryMonitor?.readings ?? [])
+            .map(\.level)
+            .filter { mode.shows(level: $0) }
+            .min()
     }
 
     private var statusCenterState: StatusIconRenderer.CenterState {

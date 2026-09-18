@@ -435,6 +435,7 @@ final class StatusMenuControllerTests: XCTestCase {
         )
 
         XCTAssertTrue(batteryMonitor.isEnabled)
+        XCTAssertEqual(controller.renderedStatusTitle, " 72%")
         XCTAssertNotNil(
             commandItems(in: controller).first {
                 $0.title == "MX Master 3S Battery: 72%"
