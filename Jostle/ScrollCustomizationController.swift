@@ -19,9 +19,14 @@ final class ScrollCustomizationController {
     private var horizontalRemainder = 0.0
     private var verticalRemainder = 0.0
     private let eventSink: (CGEvent) -> Void
+    private let onTickDuration: (UInt64) -> Void
 
-    init(eventSink: @escaping (CGEvent) -> Void = { $0.post(tap: .cgSessionEventTap) }) {
+    init(
+        eventSink: @escaping (CGEvent) -> Void = { $0.post(tap: .cgSessionEventTap) },
+        onTickDuration: @escaping (UInt64) -> Void = { _ in }
+    ) {
         self.eventSink = eventSink
+        self.onTickDuration = onTickDuration
     }
 
     /// Mutates the supplied event in place. Returns true only when the original
@@ -154,6 +159,10 @@ final class ScrollCustomizationController {
     }
 
     func tick() {
+        let startedAt = DispatchTime.now().uptimeNanoseconds
+        defer {
+            onTickDuration(DispatchTime.now().uptimeNanoseconds &- startedAt)
+        }
         guard let engine else {
             cancel()
             return

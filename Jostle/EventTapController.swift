@@ -7,6 +7,133 @@ private struct PendingWindowRestore {
     let grabPoint: Point
 }
 
+struct RuntimeTimingSummary: Equatable {
+    let sampleCount: UInt64
+    let averageMicroseconds: Double
+    let p95Microseconds: Double
+    let p99Microseconds: Double
+    let maximumMicroseconds: Double
+}
+
+struct InputRuntimeDiagnosticsSnapshot: Equatable {
+    let eventTap: RuntimeTimingSummary
+    let smoothingTick: RuntimeTimingSummary
+    let tapDisabledByTimeoutCount: UInt64
+    let tapDisabledByUserInputCount: UInt64
+    let jostleSyntheticEventCount: UInt64
+}
+
+final class InputRuntimeDiagnostics {
+    private struct Histogram {
+        static let upperBoundsNanoseconds: [UInt64] = [
+            25_000,
+            50_000,
+            100_000,
+            250_000,
+            500_000,
+            1_000_000,
+            2_000_000,
+            5_000_000,
+            10_000_000,
+        ]
+
+        var sampleCount: UInt64 = 0
+        var totalNanoseconds: UInt64 = 0
+        var maximumNanoseconds: UInt64 = 0
+        var bucketCounts = Array(
+            repeating: UInt64(0),
+            count: upperBoundsNanoseconds.count + 1
+        )
+
+        mutating func record(_ durationNanoseconds: UInt64) {
+            sampleCount &+= 1
+            totalNanoseconds &+= durationNanoseconds
+            maximumNanoseconds = max(maximumNanoseconds, durationNanoseconds)
+            let bucket = Self.upperBoundsNanoseconds.firstIndex {
+                durationNanoseconds <= $0
+            } ?? Self.upperBoundsNanoseconds.count
+            bucketCounts[bucket] &+= 1
+        }
+
+        func summary() -> RuntimeTimingSummary {
+            guard sampleCount > 0 else {
+                return RuntimeTimingSummary(
+                    sampleCount: 0,
+                    averageMicroseconds: 0,
+                    p95Microseconds: 0,
+                    p99Microseconds: 0,
+                    maximumMicroseconds: 0
+                )
+            }
+            return RuntimeTimingSummary(
+                sampleCount: sampleCount,
+                averageMicroseconds: Double(totalNanoseconds) / Double(sampleCount) / 1_000,
+                p95Microseconds: percentileMicroseconds(0.95),
+                p99Microseconds: percentileMicroseconds(0.99),
+                maximumMicroseconds: Double(maximumNanoseconds) / 1_000
+            )
+        }
+
+        private func percentileMicroseconds(_ percentile: Double) -> Double {
+            let target = UInt64(ceil(Double(sampleCount) * percentile))
+            var cumulative: UInt64 = 0
+            for (index, count) in bucketCounts.enumerated() {
+                cumulative &+= count
+                if cumulative >= target {
+                    if index < Self.upperBoundsNanoseconds.count {
+                        return Double(Self.upperBoundsNanoseconds[index]) / 1_000
+                    }
+                    return Double(maximumNanoseconds) / 1_000
+                }
+            }
+            return Double(maximumNanoseconds) / 1_000
+        }
+    }
+
+    private let lock = NSLock()
+    private var eventTapHistogram = Histogram()
+    private var smoothingTickHistogram = Histogram()
+    private var tapDisabledByTimeoutCount: UInt64 = 0
+    private var tapDisabledByUserInputCount: UInt64 = 0
+    private var jostleSyntheticEventCount: UInt64 = 0
+
+    func recordEventTap(
+        durationNanoseconds: UInt64,
+        type: CGEventType,
+        isJostleSynthetic: Bool = false
+    ) {
+        lock.lock()
+        eventTapHistogram.record(durationNanoseconds)
+        if type == .tapDisabledByTimeout {
+            tapDisabledByTimeoutCount &+= 1
+        } else if type == .tapDisabledByUserInput {
+            tapDisabledByUserInputCount &+= 1
+        }
+        if isJostleSynthetic {
+            jostleSyntheticEventCount &+= 1
+        }
+        lock.unlock()
+    }
+
+    func recordSmoothingTick(durationNanoseconds: UInt64) {
+        lock.lock()
+        smoothingTickHistogram.record(durationNanoseconds)
+        lock.unlock()
+    }
+
+    func snapshot() -> InputRuntimeDiagnosticsSnapshot {
+        lock.lock()
+        defer { lock.unlock() }
+        return InputRuntimeDiagnosticsSnapshot(
+            eventTap: eventTapHistogram.summary(),
+            smoothingTick: smoothingTickHistogram.summary(),
+            tapDisabledByTimeoutCount: tapDisabledByTimeoutCount,
+            tapDisabledByUserInputCount: tapDisabledByUserInputCount,
+            jostleSyntheticEventCount: jostleSyntheticEventCount
+        )
+    }
+}
+
 private func jostleEventTapCallback(
     proxy: CGEventTapProxy,
     type: CGEventType,
@@ -15,9 +142,17 @@ private func jostleEventTapCallback(
 ) -> Unmanaged<CGEvent>? {
     guard let userInfo else { return Unmanaged.passUnretained(event) }
     let controller = Unmanaged<EventTapController>.fromOpaque(userInfo).takeUnretainedValue()
-    return controller.handle(type: type, event: event)
-        ? nil
-        : Unmanaged.passUnretained(event)
+    let isJostleSynthetic = event.getIntegerValueField(.eventSourceUserData)
+        == EventTapController.syntheticEventMarker
+    let startedAt = DispatchTime.now().uptimeNanoseconds
+    let handled = controller.handle(type: type, event: event)
+    let finishedAt = DispatchTime.now().uptimeNanoseconds
+    controller.recordEventTapDuration(
+        finishedAt &- startedAt,
+        type: type,
+        isJostleSynthetic: isJostleSynthetic
+    )
+    return handled ? nil : Unmanaged.passUnretained(event)
 }
 
 enum CGEventInputAdapter {
@@ -133,8 +268,9 @@ final class EventTapController {
     private let windowSystem: AccessibilityWindowSystem
     private let screenGeometryProvider: ScreenGeometryProvider
     private let snapPreviewController: SnapPreviewController
-    private let scrollCustomizationController = ScrollCustomizationController()
+    private let scrollCustomizationController: ScrollCustomizationController
     private let resizeFeedbackController: ResizeFeedbackController
+    private let runtimeDiagnostics: InputRuntimeDiagnostics
     private let windowRestoreStore: WindowRestoreStore
     private let gestureConfiguration: GestureConfiguration
     private weak var pointingDeviceProvider: PointingDeviceProviding?
@@ -184,6 +320,19 @@ final class EventTapController {
     }
 
     var isInSafeMode: Bool { safeMode }
+    var diagnosticsSnapshot: InputRuntimeDiagnosticsSnapshot { runtimeDiagnostics.snapshot() }
+
+    fileprivate func recordEventTapDuration(
+        _ durationNanoseconds: UInt64,
+        type: CGEventType,
+        isJostleSynthetic: Bool
+    ) {
+        runtimeDiagnostics.recordEventTap(
+            durationNanoseconds: durationNanoseconds,
+            type: type,
+            isJostleSynthetic: isJostleSynthetic
+        )
+    }
 
     init(
         settingsStore: SettingsStore,
@@ -194,6 +343,7 @@ final class EventTapController {
         windowRestoreStore: WindowRestoreStore = WindowRestoreStore(),
         pointingDeviceProvider: PointingDeviceProviding? = nil,
         safeMode: Bool = false,
+        runtimeDiagnostics: InputRuntimeDiagnostics = InputRuntimeDiagnostics(),
         gestureConfiguration: GestureConfiguration
     ) {
         self.settingsStore = settingsStore
@@ -204,6 +354,10 @@ final class EventTapController {
         self.windowRestoreStore = windowRestoreStore
         self.pointingDeviceProvider = pointingDeviceProvider
         self.safeMode = safeMode
+        self.runtimeDiagnostics = runtimeDiagnostics
+        scrollCustomizationController = ScrollCustomizationController(
+            onTickDuration: runtimeDiagnostics.recordSmoothingTick(durationNanoseconds:)
+        )
         self.gestureConfiguration = gestureConfiguration
     }
 

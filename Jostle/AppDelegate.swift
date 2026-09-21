@@ -2,6 +2,12 @@ import AppKit
 import ApplicationServices
 import JostleCore
 
+enum InputRecoveryAction: Equatable {
+    case none
+    case disable
+    case reset
+}
+
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let settingsStore = SettingsStore()
     let loginItemController = LoginItemController()
@@ -29,6 +35,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var safeMode = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        Self.applyInputRecoveryArguments(
+            ProcessInfo.processInfo.arguments,
+            to: settingsStore
+        )
         safeMode = Self.beginLaunchSafetyTracking()
         pointingDeviceManager.onDevicesChanged = { [weak self] devices in
             guard let self else { return }
@@ -66,7 +76,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             globalShortcutController: globalShortcutController,
             pointingDeviceManager: pointingDeviceManager,
             safeMode: safeMode,
-            updateController: updateController
+            updateController: updateController,
+            diagnosticsReportProvider: { [weak self] in
+                self?.makeDiagnosticsReport() ?? "Diagnostics are unavailable."
+            }
         )
         let statusMenuController = StatusMenuController(
             settingsStore: settingsStore,
@@ -209,6 +222,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         refreshRuntimeHealth()
     }
 
+    private func makeDiagnosticsReport() -> String {
+        let eventTap = eventTapController
+        let connectedDeviceCounts = Dictionary(
+            grouping: pointingDeviceManager.devices,
+            by: \.category
+        ).mapValues(\.count)
+        return InputDiagnosticsReport.make(
+            settings: settingsStore.settings,
+            runtime: eventTap?.diagnosticsSnapshot ?? InputRuntimeDiagnostics().snapshot(),
+            context: InputDiagnosticsReportContext(
+                eventTapRequested: eventTap?.eventTapRequested ?? false,
+                eventTapOperational: eventTap?.isOperational ?? false,
+                inputCustomizationsEnabled: eventTap?.inputCustomizationsEnabled ?? false,
+                safeMode: safeMode,
+                sessionActive: eventTap?.sessionActive ?? false,
+                accessibilityTrusted: AXIsProcessTrusted(),
+                connectedDeviceCounts: connectedDeviceCounts,
+                conflictingUtilities: InputUtilityConflictDetector.currentConflicts()
+            )
+        )
+    }
+
     private func refreshRuntimeHealth() {
         guard let eventTapController, let statusMenuController else { return }
 
@@ -233,6 +268,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true
         ] as CFDictionary
         return AXIsProcessTrustedWithOptions(options)
+    }
+
+    static func inputRecoveryAction(arguments: [String]) -> InputRecoveryAction {
+        if arguments.contains("--reset-input-customizations") {
+            return .reset
+        }
+        if arguments.contains("--disable-input-customizations") {
+            return .disable
+        }
+        return .none
+    }
+
+    static func applyInputRecoveryArguments(
+        _ arguments: [String],
+        to settingsStore: SettingsStore
+    ) {
+        switch inputRecoveryAction(arguments: arguments) {
+        case .none:
+            break
+        case .disable:
+            settingsStore.update { $0.inputCustomization.isEnabled = false }
+        case .reset:
+            settingsStore.resetInputCustomization()
+        }
     }
 
     private static let cleanExitKey = "Jostle.launch.cleanExit"

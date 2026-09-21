@@ -13,7 +13,7 @@
   <a href="LICENSE.txt"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license"></a>
 </p>
 
-Jostle is a native menu bar utility for controlling windows without hunting for title bars or tiny resize handles, customizing mice and trackpads, and preventing idle sleep when you need your Mac to stay awake. Hold a modifier or an extra mouse button and drag from anywhere inside a window, tune scrolling by device and app, let focus follow the pointer, or start a timed Keep Awake session from the same menu bar icon. Jostle stays out of the Dock and offers snapping, contextual input profiles, configurable spacing, automation, and optional launch-at-login and update checks.
+Jostle is a native menu bar utility for controlling windows without hunting for title bars or tiny resize handles, customizing mice and trackpads, and preventing idle sleep when you need your Mac to stay awake. Hold a modifier or an extra mouse button and drag from anywhere inside a window, tune scrolling by device and app, let focus follow the pointer, or start a timed Keep Awake session from the same menu bar icon. Jostle appears in the Dock only while Settings is open and offers snapping, contextual input profiles, configurable spacing, automation, and optional launch-at-login and update checks.
 
 ## Controls
 
@@ -48,13 +48,31 @@ On first launch with an existing `~/.config/linearmouse/linearmouse.json`, Jostl
 
 Button-held move and resize use the same safe window engine as Jostle's modifier gestures. A gesture remains bound to its initiating button through drag and release, and `Escape` cancels it. Input processing is fail-open: unsupported devices and unhandled events keep native macOS behavior.
 
-Input customization requires Accessibility permission. Bluetooth battery display requests Bluetooth access only when enabled. Input can be disabled independently of window gestures and Keep Awake. After repeated unclean launches, Jostle starts in Safe Mode with input interception disabled; `--safe-mode` provides the same recovery path explicitly.
+Input customization requires Accessibility permission. Bluetooth battery display requests Bluetooth access only when enabled. Input can be disabled independently of window gestures and Keep Awake. After repeated unclean launches, Jostle starts in Safe Mode with input interception disabled. See [Input customization support and privacy](docs/input-customization.md) for supported-device boundaries, diagnostics, compatibility warnings, backups, and troubleshooting.
+
+### Input recovery
+
+Hold **Shift-Option** while opening Jostle to enter Safe Mode for one launch. From Terminal, quit the running release app and reopen Settings without input interception:
+
+```sh
+osascript -e 'tell application id "fm.pau.jostle" to quit' 2>/dev/null || pkill -x Jostle
+open -na "/Applications/Jostle.app" --args --safe-mode --show-settings
+```
+
+Replace the app path if Jostle is installed elsewhere. To persistently turn input customization off while preserving its profiles, replace `--safe-mode` with `--disable-input-customizations`. To erase only input customization settings, use `--reset-input-customizations`; window, Keep Awake, login, update, and per-application settings remain unchanged.
+
+For the signed development app used by this repository:
+
+```sh
+osascript -e 'tell application id "fm.pau.jostle.development" to quit' 2>/dev/null || pkill -x "Jostle Development"
+open -na "$HOME/Applications/Jostle Development.app" --args --safe-mode --show-settings
+```
 
 ## Keep Awake
 
 Choose **Keep Awake** in Jostle's menu to prevent idle sleep indefinitely or for 10 or 30 minutes, or 1, 2, 4, 8, or 12 hours. By default, left-clicking the menu bar icon opens the menu and right-clicking toggles Keep Awake using your preferred duration. You can swap those actions or assign a global keyboard shortcut in Settings.
 
-Jostle's four-corner frame stays fixed in the menu bar: its center is empty at rest, shows a cup during Keep Awake, and shows a moon when a session is paused while the screen is locked. This state remains visible even when window gestures are unavailable.
+Jostle's vector-drawn four-corner frame stays fixed in the menu bar: its center is empty at rest, shows a bolt during Keep Awake, and shows a moon when a session is paused while the screen is locked. An available pointing-device battery percentage can appear beside it. This state remains visible even when window gestures are unavailable.
 
 The Keep Awake settings also let you:
 
@@ -62,7 +80,7 @@ The Keep Awake settings also let you:
 - Pause the assertion and countdown while the screen is locked
 - Turn Keep Awake off when the Mac switches from external power to battery
 - Start a session when Jostle launches
-- Choose the branded cup, a green or blue cup, or a fully colored active icon, and optionally dim the icon while inactive
+- Choose a monochrome, green, blue, or fully colored bolt treatment, and optionally dim the icon while inactive
 - Show a notification when a timed session finishes
 
 Timed sessions always use monotonic timing so they remain accurate across sleep and system-clock changes. Keep Awake is independent of Jostle's Accessibility permission, so it remains available even if window controls are disabled.
@@ -85,7 +103,7 @@ Duration parameters may use `hours` and `minutes` together. Values must be great
 ## Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/settings-general.png" width="720" alt="Jostle Gestures settings with the Calm frame identity">
+  <img src="docs/screenshots/settings-general.png" width="720" alt="Jostle General settings">
 </p>
 <p align="center"><sub>Configure Jostle from a native, frame-branded Settings window.</sub></p>
 

@@ -4,6 +4,111 @@ import XCTest
 @testable import Jostle
 
 final class CGEventInputAdapterTests: XCTestCase {
+    func testRuntimeDiagnosticsUsesBoundedHistogramsAndCountsTapRecovery() {
+        let diagnostics = InputRuntimeDiagnostics()
+        diagnostics.recordEventTap(durationNanoseconds: 100_000, type: .mouseMoved)
+        diagnostics.recordEventTap(durationNanoseconds: 200_000, type: .tapDisabledByTimeout)
+        diagnostics.recordEventTap(
+            durationNanoseconds: 5_000_000,
+            type: .tapDisabledByUserInput,
+            isJostleSynthetic: true
+        )
+        diagnostics.recordSmoothingTick(durationNanoseconds: 80_000)
+
+        let snapshot = diagnostics.snapshot()
+        XCTAssertEqual(snapshot.eventTap.sampleCount, 3)
+        XCTAssertEqual(snapshot.eventTap.averageMicroseconds, 1_766.666, accuracy: 0.01)
+        XCTAssertEqual(snapshot.eventTap.p95Microseconds, 5_000)
+        XCTAssertEqual(snapshot.eventTap.p99Microseconds, 5_000)
+        XCTAssertEqual(snapshot.eventTap.maximumMicroseconds, 5_000)
+        XCTAssertEqual(snapshot.smoothingTick.sampleCount, 1)
+        XCTAssertEqual(snapshot.smoothingTick.p95Microseconds, 100)
+        XCTAssertEqual(snapshot.tapDisabledByTimeoutCount, 1)
+        XCTAssertEqual(snapshot.tapDisabledByUserInputCount, 1)
+        XCTAssertEqual(snapshot.jostleSyntheticEventCount, 1)
+    }
+
+    func testInputUtilityConflictDetectorUsesKnownBundleIDsAndNames() {
+        let conflicts = InputUtilityConflictDetector.conflicts(
+            applications: [
+                RunningApplicationIdentity(
+                    bundleIdentifier: "com.lujjjh.LinearMouse",
+                    localizedName: "Renamed Utility"
+                ),
+                RunningApplicationIdentity(
+                    bundleIdentifier: "com.example.unrelated",
+                    localizedName: "Mac Mouse Fix Helper"
+                ),
+                RunningApplicationIdentity(
+                    bundleIdentifier: "fm.pau.jostle.development",
+                    localizedName: "LinearMouse"
+                ),
+                RunningApplicationIdentity(
+                    bundleIdentifier: "com.example.cosmos",
+                    localizedName: "Cosmos"
+                ),
+            ],
+            currentBundleIdentifier: "fm.pau.jostle.development"
+        )
+
+        XCTAssertEqual(conflicts, ["LinearMouse", "Mac Mouse Fix"])
+    }
+
+    func testDiagnosticsReportRedactsApplicationAndDeviceIdentity() {
+        var settings = JostleSettings.defaults
+        settings.applicationRules["com.private.customer"] = ApplicationRule(
+            displayName: "Private Customer App"
+        )
+        settings.inputCustomization.deviceRules["serial-private-123"] = PointingDeviceRule(
+            displayName: "Private Mouse Name",
+            category: .mouse
+        )
+        let runtime = InputRuntimeDiagnosticsSnapshot(
+            eventTap: RuntimeTimingSummary(
+                sampleCount: 10,
+                averageMicroseconds: 20,
+                p95Microseconds: 50,
+                p99Microseconds: 100,
+                maximumMicroseconds: 90
+            ),
+            smoothingTick: RuntimeTimingSummary(
+                sampleCount: 5,
+                averageMicroseconds: 10,
+                p95Microseconds: 25,
+                p99Microseconds: 25,
+                maximumMicroseconds: 22
+            ),
+            tapDisabledByTimeoutCount: 1,
+            tapDisabledByUserInputCount: 0,
+            jostleSyntheticEventCount: 4
+        )
+
+        let report = InputDiagnosticsReport.make(
+            settings: settings,
+            runtime: runtime,
+            context: InputDiagnosticsReportContext(
+                eventTapRequested: true,
+                eventTapOperational: true,
+                inputCustomizationsEnabled: false,
+                safeMode: false,
+                sessionActive: true,
+                accessibilityTrusted: true,
+                connectedDeviceCounts: [.mouse: 1],
+                conflictingUtilities: ["LinearMouse"]
+            ),
+            generatedAt: Date(timeIntervalSince1970: 0)
+        )
+
+        XCTAssertTrue(report.contains("application_override_count: 1"))
+        XCTAssertTrue(report.contains("exact_mouse_rules: 1"))
+        XCTAssertTrue(report.contains("callback_samples: 10"))
+        XCTAssertTrue(report.contains("known_input_utility_conflicts: LinearMouse"))
+        XCTAssertFalse(report.contains("com.private.customer"))
+        XCTAssertFalse(report.contains("Private Customer App"))
+        XCTAssertFalse(report.contains("serial-private-123"))
+        XCTAssertFalse(report.contains("Private Mouse Name"))
+    }
+
     func testMapsEveryObservedMouseEvent() {
         let cases: [(CGEventType, InputEventType, MouseButton)] = [
             (.leftMouseDown, .mouseDown, .left),

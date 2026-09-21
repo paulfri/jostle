@@ -1,10 +1,12 @@
 import AppKit
 import JostleCore
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct GeneralSettingsPane: View {
     @ObservedObject var settingsStore: SettingsStore
     @ObservedObject var loginItemController: LoginItemController
+    let diagnosticsReportProvider: () -> String
     @State private var confirmsReset = false
 
     var body: some View {
@@ -77,6 +79,11 @@ struct GeneralSettingsPane: View {
             Divider()
 
             HStack {
+                Button("Diagnostics…") {
+                    DiagnosticsPreviewPresenter.present(
+                        report: diagnosticsReportProvider()
+                    )
+                }
                 Spacer()
                 Button("Restore Defaults…") {
                     confirmsReset = true
@@ -368,7 +375,11 @@ struct SnappingSettingsPane: View {
 struct InputSettingsPane: View {
     @ObservedObject var settingsStore: SettingsStore
     @ObservedObject var pointingDeviceManager: PointingDeviceManager
+    @ObservedObject var conflictMonitor: InputUtilityConflictMonitor
     let safeMode: Bool
+    @State private var confirmsInputReset = false
+    @State private var configurationStatus: String?
+    @State private var configurationStatusIsError = false
 
     private var displayedDevices: [PointingDeviceInfo] {
         var byID = Dictionary(
@@ -405,6 +416,17 @@ struct InputSettingsPane: View {
                     )
                     .font(.caption)
                     .foregroundStyle(.orange)
+                }
+
+                if !conflictMonitor.conflicts.isEmpty {
+                    Label(
+                        "Also running: \(conflictMonitor.conflicts.joined(separator: ", ")). Overlapping input transformations may conflict.",
+                        systemImage: "exclamationmark.triangle"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("inputUtilityConflictWarning")
                 }
 
                 Text("Window gestures and Keep Awake remain independently available.")
@@ -557,11 +579,112 @@ struct InputSettingsPane: View {
                             .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                     }
                 }
+
+                Divider()
+
+                Text("Configuration")
+                    .font(.headline)
+                HStack {
+                    Button("Export Input Settings…") {
+                        exportInputConfiguration()
+                    }
+                    Button("Import Input Settings…") {
+                        importInputConfiguration()
+                    }
+                    Spacer()
+                    Button("Reset Input Settings…", role: .destructive) {
+                        confirmsInputReset = true
+                    }
+                }
+                Text("These operations affect only scrolling, mouse buttons, device overrides, and input battery presentation.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if let configurationStatus {
+                    Text(configurationStatus)
+                        .font(.caption)
+                        .foregroundStyle(configurationStatusIsError ? .red : .secondary)
+                        .accessibilityIdentifier("inputConfigurationStatus")
+                }
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
         }
         .frame(width: 660, height: 470)
+        .alert("Reset input customizations?", isPresented: $confirmsInputReset) {
+            Button("Reset", role: .destructive) {
+                settingsStore.resetInputCustomization()
+                configurationStatusIsError = false
+                configurationStatus = "Input customization settings were reset."
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Window, Keep Awake, login, update, and application settings will not change.")
+        }
+    }
+
+    private func exportInputConfiguration() {
+        let data: Data
+        do {
+            data = try settingsStore.exportInputCustomization()
+        } catch {
+            configurationStatusIsError = true
+            configurationStatus = "Could not prepare the backup: \(error.localizedDescription)"
+            return
+        }
+
+        let panel = NSSavePanel()
+        panel.title = "Export Input Settings"
+        panel.message = "The backup contains only Jostle input customization settings."
+        panel.nameFieldStringValue = "jostle-input-settings.json"
+        panel.allowedContentTypes = [.json]
+        panel.canCreateDirectories = true
+        present(panel: panel) { response in
+            guard response == .OK, let url = panel.url else { return }
+            do {
+                try data.write(to: url, options: .atomic)
+                configurationStatusIsError = false
+                configurationStatus = "Input settings were exported."
+            } catch {
+                configurationStatusIsError = true
+                configurationStatus = "Could not export input settings: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    private func importInputConfiguration() {
+        let panel = NSOpenPanel()
+        panel.title = "Import Input Settings"
+        panel.message = "This replaces only Jostle input customization settings."
+        panel.prompt = "Import"
+        panel.allowedContentTypes = [.json]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        present(panel: panel) { response in
+            guard response == .OK, let url = panel.url else { return }
+            let accessed = url.startAccessingSecurityScopedResource()
+            defer {
+                if accessed { url.stopAccessingSecurityScopedResource() }
+            }
+            do {
+                try settingsStore.importInputCustomization(from: Data(contentsOf: url))
+                configurationStatusIsError = false
+                configurationStatus = "Input settings were imported."
+            } catch {
+                configurationStatusIsError = true
+                configurationStatus = "Could not import input settings: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    private func present(
+        panel: NSSavePanel,
+        completion: @escaping (NSApplication.ModalResponse) -> Void
+    ) {
+        if let window = NSApp.keyWindow {
+            panel.beginSheetModal(for: window, completionHandler: completion)
+        } else {
+            completion(panel.runModal())
+        }
     }
 
     private func actionPicker(selection: Binding<PointerButtonAction>) -> some View {

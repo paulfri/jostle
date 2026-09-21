@@ -72,6 +72,111 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertEqual(SettingsStore(userDefaults: userDefaults).settings, .defaults)
     }
 
+    func testTerminalRecoveryArgumentsChangeOnlyInputCustomization() {
+        let store = SettingsStore(userDefaults: userDefaults)
+        store.update {
+            $0.resizeOnly = true
+            $0.inputCustomization.isEnabled = true
+            $0.inputCustomization.reverseMouseScrolling = true
+        }
+
+        AppDelegate.applyInputRecoveryArguments(
+            ["Jostle", "--disable-input-customizations"],
+            to: store
+        )
+        XCTAssertTrue(store.settings.resizeOnly)
+        XCTAssertFalse(store.settings.inputCustomization.isEnabled)
+        XCTAssertTrue(store.settings.inputCustomization.reverseMouseScrolling)
+
+        AppDelegate.applyInputRecoveryArguments(
+            ["Jostle", "--disable-input-customizations", "--reset-input-customizations"],
+            to: store
+        )
+        XCTAssertTrue(store.settings.resizeOnly)
+        XCTAssertEqual(store.settings.inputCustomization, .defaults)
+        XCTAssertEqual(
+            AppDelegate.inputRecoveryAction(arguments: ["Jostle", "--safe-mode"]),
+            .none
+        )
+    }
+
+    func testInputBackupRoundTripPreservesUnrelatedSettings() throws {
+        let store = SettingsStore(userDefaults: userDefaults)
+        store.update {
+            $0.resizeOnly = true
+            $0.keepAwakeActivateAtLaunch = true
+            $0.inputCustomization.isEnabled = true
+            $0.inputCustomization.reverseMouseScrolling = true
+            $0.inputCustomization.buttonFourAction = .moveWindow
+        }
+        let exported = try store.exportInputCustomization()
+        let exportedText = try XCTUnwrap(String(data: exported, encoding: .utf8))
+        XCTAssertFalse(exportedText.contains("resizeOnly"))
+        XCTAssertFalse(exportedText.contains("keepAwakeActivateAtLaunch"))
+
+        store.update {
+            $0.resizeOnly = false
+            $0.keepAwakeActivateAtLaunch = false
+            $0.inputCustomization = .defaults
+        }
+        try store.importInputCustomization(from: exported)
+
+        XCTAssertFalse(store.settings.resizeOnly)
+        XCTAssertFalse(store.settings.keepAwakeActivateAtLaunch)
+        XCTAssertTrue(store.settings.inputCustomization.isEnabled)
+        XCTAssertTrue(store.settings.inputCustomization.reverseMouseScrolling)
+        XCTAssertEqual(store.settings.inputCustomization.buttonFourAction, .moveWindow)
+        XCTAssertEqual(SettingsStore(userDefaults: userDefaults).settings, store.settings)
+    }
+
+    func testResetInputCustomizationPreservesEveryOtherSetting() {
+        let store = SettingsStore(userDefaults: userDefaults)
+        store.update {
+            $0.resizeOnly = true
+            $0.keepAwakeActivateAtLaunch = true
+            $0.applicationRules["com.example.Editor"] = ApplicationRule(
+                displayName: "Editor"
+            )
+            $0.inputCustomization.isEnabled = true
+            $0.inputCustomization.reverseTrackpadScrolling = true
+        }
+
+        store.resetInputCustomization()
+
+        XCTAssertTrue(store.settings.resizeOnly)
+        XCTAssertTrue(store.settings.keepAwakeActivateAtLaunch)
+        XCTAssertEqual(store.settings.applicationRules.count, 1)
+        XCTAssertEqual(store.settings.inputCustomization, .defaults)
+    }
+
+    func testInvalidInputBackupDoesNotMutateSettings() throws {
+        let store = SettingsStore(userDefaults: userDefaults)
+        store.update { $0.inputCustomization.reverseMouseScrolling = true }
+        let original = store.settings
+
+        XCTAssertThrowsError(try store.importInputCustomization(from: Data(#"{"format":"wrong","formatVersion":1,"inputCustomization":{}}"#.utf8))) {
+            XCTAssertEqual($0 as? InputCustomizationBackupError, .invalidFormat)
+        }
+        XCTAssertEqual(store.settings, original)
+
+        var futureBackup = InputCustomizationBackup(inputCustomization: .defaults)
+        futureBackup.formatVersion = 99
+        let data = try JSONEncoder().encode(futureBackup)
+        XCTAssertThrowsError(try store.importInputCustomization(from: data)) {
+            XCTAssertEqual($0 as? InputCustomizationBackupError, .unsupportedVersion(99))
+        }
+        XCTAssertEqual(store.settings, original)
+
+        var duplicateBackup = InputCustomizationBackup(inputCustomization: .defaults)
+        let profile = ScrollProfile(name: "Duplicate")
+        duplicateBackup.inputCustomization.scrollProfiles = [profile, profile]
+        let duplicateData = try JSONEncoder().encode(duplicateBackup)
+        XCTAssertThrowsError(try store.importInputCustomization(from: duplicateData)) {
+            XCTAssertEqual($0 as? InputCustomizationBackupError, .duplicateProfileIdentifier)
+        }
+        XCTAssertEqual(store.settings, original)
+    }
+
     func testLinearMouseMigrationImportsContextualScrollBehavior() throws {
         let data = Data(#"""
         {

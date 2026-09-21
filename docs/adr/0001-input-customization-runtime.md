@@ -46,6 +46,30 @@ Input customization is opt-in and has a separate menu toggle. Safe Mode disables
 
 The tap stays on Jostle's existing main run-loop source because window actions synchronously coordinate Accessibility state and AppKit feedback. Scroll mutation is bounded; smoothing advances from a main-run-loop common-mode timer. Moving pure event transformation to a dedicated event thread is deferred until settings/device snapshots and main-actor window commands have a tested synchronization boundary; it must not be achieved by synchronously bouncing every event back to the main thread.
 
+### Runtime measurements and thread boundary
+
+Jostle records bounded, aggregate histograms for complete event-tap callback duration and smoothing-tick duration. The histograms contain only counts and elapsed monotonic time; they do not retain event contents, coordinates, keys, applications, device identifiers, or timestamps. A diagnostics report exposes sample count, average, approximate p95/p99, maximum, and tap-disable recovery counts. Metrics reset when the process exits.
+
+Pure release-build baselines on an Apple-silicon `Mac17,7` running macOS 27.0 measured 100,000 iterations each:
+
+| Path | Average |
+| --- | ---: |
+| `EventPolicy.intent` | 21 ns |
+| `ScrollSmoothingEngine.advance` with periodic input | 74 ns |
+
+Run `swift test --package-path JostleCore -c release --filter InputPerformanceBaselineTests` to reproduce the microbenchmarks. These figures are regression indicators, not end-to-end latency claims; Accessibility, AppKit, IOHID attribution, profile resolution, Core Graphics event mutation, and system load are represented only by runtime callback metrics.
+
+A future dedicated serial event thread may own only:
+
+- event adaptation and synthetic-event rejection;
+- lookup against immutable settings and device snapshots;
+- pure profile resolution, policy decisions, delta mutation, and smoothing state;
+- ordered production of typed window/UI commands.
+
+The main actor must continue to own settings mutation, `NSWorkspace`/AppKit UI, status presentation, Accessibility window queries and writes, and preview/feedback windows. Snapshot publication must be asynchronous and generation-tagged. Event processing must never synchronously dispatch to the main actor; typed commands must be delivered asynchronously while the event path immediately makes a fail-open/pass/suppress decision. Stateful button streams and smoothing ticks must remain serialized with source events, and cancellation must cross the boundary explicitly during tap teardown, sleep, session loss, device removal, and settings disablement.
+
+Thread migration is warranted only after runtime evidence shows repeatable pressure (for example event-tap p99 above 2 ms, smoothing p99 above 1 ms, or any timeout-disable recovery attributable to Jostle), or before adding a feature known to perform unbounded work. It is complete only when ordering/cancellation contract tests, Thread Sanitizer, tap-disable recovery tests, and before/after end-to-end metrics pass without weakening fail-open behavior. Until then, moving threads would add synchronization risk without evidence of a user-visible gain.
+
 ### Battery support
 
 Battery monitoring is independent of the event tap. When the selected display mode requires it, Jostle uses CoreBluetooth's public Battery Service (`180F`) and Battery Level characteristic (`2A19`), filters discoveries to names in the pointing-device inventory, and displays the selected percentage beside the menu bar icon with device details in the menu. Devices that do not expose the standard service are ignored; Jostle does not implement Logitech HID++ or another vendor protocol.

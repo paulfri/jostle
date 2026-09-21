@@ -3,6 +3,7 @@ import SwiftUI
 
 final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private let loginItemController: LoginItemController
+    private let inputUtilityConflictMonitor: InputUtilityConflictMonitor
     private var activationPolicyBeforePresenting: NSApplication.ActivationPolicy?
     private var commandQMonitor: Any?
 
@@ -12,9 +13,12 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         globalShortcutController: GlobalShortcutController,
         pointingDeviceManager: PointingDeviceManager,
         safeMode: Bool = false,
-        updateController: SparkleUpdateController? = nil
+        updateController: SparkleUpdateController? = nil,
+        diagnosticsReportProvider: @escaping () -> String
     ) {
         self.loginItemController = loginItemController
+        let inputUtilityConflictMonitor = InputUtilityConflictMonitor()
+        self.inputUtilityConflictMonitor = inputUtilityConflictMonitor
         let tabController = NSTabViewController()
         tabController.tabStyle = .toolbar
         tabController.transitionOptions = []
@@ -22,7 +26,8 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         let generalController = NSHostingController(
             rootView: GeneralSettingsPane(
                 settingsStore: settingsStore,
-                loginItemController: loginItemController
+                loginItemController: loginItemController,
+                diagnosticsReportProvider: diagnosticsReportProvider
             )
             .tint(Color(nsColor: AppBrand.accentColor))
         )
@@ -54,6 +59,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
             rootView: InputSettingsPane(
                 settingsStore: settingsStore,
                 pointingDeviceManager: pointingDeviceManager,
+                conflictMonitor: inputUtilityConflictMonitor,
                 safeMode: safeMode
             )
             .tint(Color(nsColor: AppBrand.accentColor))
