@@ -411,9 +411,9 @@ private enum OptionalBoolean: String, Hashable {
 
     init(_ value: Bool?) {
         switch value {
-        case true: self = .on
-        case false: self = .off
-        case nil: self = .inherit
+        case .some(true): self = .on
+        case .some(false): self = .off
+        case .none: self = .inherit
         }
     }
 
@@ -433,11 +433,16 @@ private enum DistanceMode: String, Hashable {
     case pixels
 
     init(_ value: ScrollDistance?) {
+        guard let value else {
+            self = .inherit
+            return
+        }
+
         switch value {
-        case nil: self = .inherit
         case .automatic: self = .automatic
         case .lines: self = .lines
         case .pixels: self = .pixels
+        @unknown default: self = .inherit
         }
     }
 }
