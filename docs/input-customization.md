@@ -12,10 +12,13 @@ Jostle currently supports:
 - per-axis scrolling direction, distance, speed, acceleration, smoothing, inertia, and bounce;
 - ordered scroll profiles matched by mouse/trackpad category, exact device, application bundle identifier, or process name;
 - Button 4 and Button 5 navigation, window, display, and Keep Awake actions;
-- per-device Focus Follows Pointer gating; and
+- per-device Focus Follows Pointer gating;
+- per-app Command-key recovery for compatibility layers and remote sessions that miss a key-up while switching; and
 - read-only battery levels from the public Bluetooth Battery Service (`180F`) and Battery Level characteristic (`2A19`).
 
 Exact-device attribution is best effort because macOS does not attach a usable IOHID sender identifier to every Core Graphics event. Jostle uses a bounded recent-device fallback when direct attribution is unavailable. Keyboard-primary composite devices are excluded even if they advertise secondary pointer collections.
+
+Command-key recovery is off by default and configured per app from **Settings → Apps** or the status menu's current-app submenu. After a matching app becomes active, Jostle waits for physically held modifiers to be released, confirms that the same process remains frontmost, and posts one balanced Command down/up sequence directly to that process. It is disabled with Input Customizations and in Safe Mode; it does not send a system-wide shortcut.
 
 Jostle does **not** currently support:
 
@@ -55,7 +58,7 @@ Choose **Settings → General → Diagnostics…** to preview a report before co
 
 Reports deliberately omit keys, pointer coordinates, event timestamps, application names and identifiers, profile names, device names and identifiers, serial numbers, and file-system paths. Runtime timing histograms are in-memory and reset when Jostle exits.
 
-Input-settings backup files are **not** diagnostics reports. A backup contains the full input configuration needed to restore exact-device and application/process profiles. Review it before sharing.
+Input-settings backup files are **not** diagnostics reports. A backup contains the full input configuration needed to restore exact-device and application/process scroll profiles. Per-app window, pointer-focus, and Command-key recovery overrides remain part of the main Jostle settings document and are not included in an input-only backup. Review any backup before sharing.
 
 ## Backup, import, and reset
 
@@ -65,7 +68,7 @@ At the bottom of **Settings → Input**:
 - **Import Input Settings…** validates and replaces only input customization.
 - **Reset Input Settings…** restores only input customization defaults.
 
-These operations do not change window gestures, Keep Awake, login, update, or per-application window/focus settings. Jostle rejects the wrong document type, unsupported future versions, future input schemas, empty profile identifiers, and duplicate profile identifiers without changing current settings.
+These operations do not change window gestures, Keep Awake, login, update, or per-application window, focus, and Command-key recovery settings. Jostle rejects the wrong document type, unsupported future versions, future input schemas, empty profile identifiers, and duplicate profile identifiers without changing current settings.
 
 ## Troubleshooting
 
@@ -87,6 +90,15 @@ Disconnect and reconnect the intended pointing device, then verify its entry und
 ### Scrolling repeats, sticks, or feels delayed
 
 Disable overlapping scroll transformation in other utilities, then temporarily disable smoothing in the effective Jostle profile. Cancel an active interaction with `Escape`. If the issue remains, preview a diagnostics report and check callback/timer p99 and event-tap timeout counts.
+
+### Command remains stuck after switching
+
+1. Add the affected app under **Settings → Apps** or open it and use Jostle's current-app submenu.
+2. Open that app's Input Compatibility menu and enable **Clear Stuck Command after Switching**.
+3. Confirm **Input Customizations Enabled** is selected in Jostle's status menu and that Jostle is not in Safe Mode.
+4. If the app is hosted by Wine or another compatibility layer, verify that its process-name rule matches the active executable.
+
+Jostle skips recovery if another app becomes active first or if physical modifiers remain held for about one second. The sequence is posted only to the configured process.
 
 ### Battery state is unavailable
 

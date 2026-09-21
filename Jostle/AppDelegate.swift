@@ -27,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 #endif
     }()
     private var eventTapController: EventTapController?
+    private var commandKeyRecoveryController: CommandKeyRecoveryController?
     private var statusMenuController: StatusMenuController?
     private var settingsWindowController: SettingsWindowController?
     private var runtimeHealthTimer: Timer?
@@ -62,6 +63,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 resizeThrottleInterval: throttleInterval
             )
         )
+        let commandKeyRecoveryController = CommandKeyRecoveryController(
+            settingsStore: settingsStore,
+            safeMode: safeMode
+        )
+        commandKeyRecoveryController.start()
         let keepAwakeController = self.keepAwakeController
         let globalShortcutController = self.globalShortcutController
         globalShortcutController.onTrigger = { [weak keepAwakeController] in
@@ -105,6 +111,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         self.eventTapController = eventTapController
+        self.commandKeyRecoveryController = commandKeyRecoveryController
         self.statusMenuController = statusMenuController
         self.settingsWindowController = settingsWindowController
         if ProcessInfo.processInfo.arguments.contains("--show-settings") || safeMode {
@@ -192,6 +199,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         screenLockMonitor.stop()
         powerSourceMonitor.stop()
         runtimeHealthTimer?.invalidate()
+        commandKeyRecoveryController?.stop()
         eventTapController?.stop()
         pointingDeviceBatteryMonitor.setEnabled(false)
         pointingDeviceManager.onDevicesChanged = nil
@@ -202,19 +210,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func sessionDidBecomeActive(_ notification: Notification) {
         eventTapController?.setSessionActive(true)
+        commandKeyRecoveryController?.setSessionActive(true)
         refreshRuntimeHealth()
     }
 
     @objc private func sessionDidResignActive(_ notification: Notification) {
         eventTapController?.setSessionActive(false)
+        commandKeyRecoveryController?.setSessionActive(false)
     }
 
     @objc private func systemWillSleep(_ notification: Notification) {
         eventTapController?.setSessionActive(false)
+        commandKeyRecoveryController?.setSessionActive(false)
     }
 
     @objc private func systemDidWake(_ notification: Notification) {
         eventTapController?.setSessionActive(true)
+        commandKeyRecoveryController?.setSessionActive(true)
         refreshRuntimeHealth()
     }
 

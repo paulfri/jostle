@@ -48,7 +48,8 @@ final class SettingsTests: XCTestCase {
                 "com.example.Game": ApplicationRule(
                     displayName: "Game",
                     windowControls: .enabled,
-                    focusFollowsPointer: .disabled
+                    focusFollowsPointer: .disabled,
+                    commandKeyRecovery: true
                 )
             ],
             keepAwakeDefaultDuration: .fourHours,
@@ -133,9 +134,16 @@ final class SettingsTests: XCTestCase {
             forApplicationKey: "com.example.Game",
             displayName: "Renamed Game"
         )
+        settings.setCommandKeyRecovery(
+            true,
+            forApplicationKey: "com.example.Game",
+            displayName: "Renamed Game"
+        )
 
         XCTAssertFalse(settings.windowControlsEnabled(forApplicationKey: "com.example.Game"))
         XCTAssertTrue(settings.focusFollowsPointerEnabled(forApplicationKey: "com.example.Game"))
+        XCTAssertTrue(settings.commandKeyRecoveryEnabled(forApplicationKey: "com.example.Game"))
+        XCTAssertFalse(settings.commandKeyRecoveryEnabled(forApplicationKey: "com.example.Editor"))
         XCTAssertEqual(settings.applicationRules["com.example.Game"]?.displayName, "Renamed Game")
         XCTAssertTrue(settings.windowControlsEnabled(forApplicationKey: "com.example.Editor"))
         XCTAssertFalse(settings.focusFollowsPointerEnabled(forApplicationKey: "com.example.Editor"))
@@ -156,6 +164,31 @@ final class SettingsTests: XCTestCase {
 
         XCTAssertFalse(settings.windowControlsEnabled(forApplicationKey: "com.example.Game"))
         XCTAssertTrue(settings.focusFollowsPointerEnabled(forApplicationKey: "com.example.Game"))
+    }
+
+    func testOlderApplicationRulesDefaultCommandRecoveryOff() throws {
+        let data = Data(#"""
+        {
+          "applicationRules": {
+            "eqgame.exe": {
+              "displayName": "EverQuest",
+              "windowControls": "useDefault",
+              "focusFollowsPointer": "enabled"
+            }
+          }
+        }
+        """#.utf8)
+
+        let settings = try JSONDecoder().decode(JostleSettings.self, from: data)
+
+        XCTAssertFalse(settings.commandKeyRecoveryEnabled(forApplicationKey: "eqgame.exe"))
+        XCTAssertEqual(
+            settings.applicationRules["eqgame.exe"],
+            ApplicationRule(
+                displayName: "EverQuest",
+                focusFollowsPointer: .enabled
+            )
+        )
     }
 
     func testApplicationRuleMutationsAreIdempotent() {

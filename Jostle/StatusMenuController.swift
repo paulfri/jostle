@@ -280,6 +280,18 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         focusItem.state = recentApplicationFocusEnabled ? .on : .off
         appMenu.addItem(focusItem)
 
+        appMenu.addItem(.separator())
+        let commandRecoveryItem = NSMenuItem(
+            title: "Clear Stuck Command after Switching",
+            action: #selector(toggleRecentApplicationCommandKeyRecovery(_:)),
+            keyEquivalent: ""
+        )
+        commandRecoveryItem.target = self
+        commandRecoveryItem.state = recentApplicationCommandKeyRecoveryEnabled ? .on : .off
+        commandRecoveryItem.toolTip = "For apps and compatibility layers that can miss "
+            + "the Command key being released. Requires Input Customizations."
+        appMenu.addItem(commandRecoveryItem)
+
         if hasRecentApplicationOverride {
             appMenu.addItem(.separator())
             let defaultsItem = NSMenuItem(
@@ -356,6 +368,12 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
 
     private var recentApplicationFocusEnabled: Bool {
         settingsStore.settings.focusFollowsPointerEnabled(
+            forApplicationKey: recentApplication?.key
+        )
+    }
+
+    private var recentApplicationCommandKeyRecoveryEnabled: Bool {
+        settingsStore.settings.commandKeyRecoveryEnabled(
             forApplicationKey: recentApplication?.key
         )
     }
@@ -544,6 +562,18 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
         settingsStore.update { settings in
             settings.setFocusFollowsPointer(
                 setting,
+                forApplicationKey: recentApplication.key,
+                displayName: recentApplication.name
+            )
+        }
+    }
+
+    @objc private func toggleRecentApplicationCommandKeyRecovery(_ sender: NSMenuItem) {
+        guard let recentApplication else { return }
+        let enabled = !recentApplicationCommandKeyRecoveryEnabled
+        settingsStore.update { settings in
+            settings.setCommandKeyRecovery(
+                enabled,
                 forApplicationKey: recentApplication.key,
                 displayName: recentApplication.name
             )

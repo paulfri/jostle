@@ -48,6 +48,11 @@ final class SettingsStoreTests: XCTestCase {
                 forApplicationKey: "com.example.Game",
                 displayName: "Game"
             )
+            settings.setCommandKeyRecovery(
+                true,
+                forApplicationKey: "com.example.Game",
+                displayName: "Game"
+            )
         }
 
         XCTAssertEqual(SettingsStore(userDefaults: userDefaults).settings, store.settings)
@@ -56,7 +61,8 @@ final class SettingsStoreTests: XCTestCase {
             ApplicationRule(
                 displayName: "Game",
                 windowControls: .disabled,
-                focusFollowsPointer: .enabled
+                focusFollowsPointer: .enabled,
+                commandKeyRecovery: true
             )
         )
         let persistedKeys = Set(userDefaults.persistentDomain(forName: suiteName)?.keys.map { $0 } ?? [])
@@ -135,7 +141,8 @@ final class SettingsStoreTests: XCTestCase {
             $0.resizeOnly = true
             $0.keepAwakeActivateAtLaunch = true
             $0.applicationRules["com.example.Editor"] = ApplicationRule(
-                displayName: "Editor"
+                displayName: "Editor",
+                commandKeyRecovery: true
             )
             $0.inputCustomization.isEnabled = true
             $0.inputCustomization.reverseTrackpadScrolling = true
@@ -146,6 +153,11 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertTrue(store.settings.resizeOnly)
         XCTAssertTrue(store.settings.keepAwakeActivateAtLaunch)
         XCTAssertEqual(store.settings.applicationRules.count, 1)
+        XCTAssertTrue(
+            store.settings.commandKeyRecoveryEnabled(
+                forApplicationKey: "com.example.Editor"
+            )
+        )
         XCTAssertEqual(store.settings.inputCustomization, .defaults)
     }
 

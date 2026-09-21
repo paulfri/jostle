@@ -202,8 +202,12 @@ final class StatusMenuControllerTests: XCTestCase {
         var focusItem = try XCTUnwrap(
             appItem.submenu?.item(withTitle: "Focus Follows Pointer")
         )
+        var commandRecoveryItem = try XCTUnwrap(
+            appItem.submenu?.item(withTitle: "Clear Stuck Command after Switching")
+        )
         XCTAssertEqual(windowControlsItem.state, .on)
         XCTAssertEqual(focusItem.state, .off)
+        XCTAssertEqual(commandRecoveryItem.state, .off)
 
         XCTAssertTrue(
             NSApplication.shared.sendAction(
@@ -216,6 +220,18 @@ final class StatusMenuControllerTests: XCTestCase {
             settingsStore.settings.applicationRules[application.key]?.focusFollowsPointer,
             .enabled
         )
+        XCTAssertTrue(
+            NSApplication.shared.sendAction(
+                commandRecoveryItem.action!,
+                to: commandRecoveryItem.target,
+                from: commandRecoveryItem
+            )
+        )
+        XCTAssertTrue(
+            settingsStore.settings.commandKeyRecoveryEnabled(
+                forApplicationKey: application.key
+            )
+        )
 
         appItem = try XCTUnwrap(
             commandItems(in: controller).first { $0.title == "App: Example Game" }
@@ -226,8 +242,12 @@ final class StatusMenuControllerTests: XCTestCase {
         focusItem = try XCTUnwrap(
             appItem.submenu?.item(withTitle: "Focus Follows Pointer")
         )
+        commandRecoveryItem = try XCTUnwrap(
+            appItem.submenu?.item(withTitle: "Clear Stuck Command after Switching")
+        )
         XCTAssertEqual(windowControlsItem.state, .on)
         XCTAssertEqual(focusItem.state, .on)
+        XCTAssertEqual(commandRecoveryItem.state, .on)
 
         let defaultsItem = try XCTUnwrap(
             appItem.submenu?.item(withTitle: "Use App Defaults")
@@ -242,6 +262,11 @@ final class StatusMenuControllerTests: XCTestCase {
         XCTAssertNil(settingsStore.settings.applicationRules[application.key])
         XCTAssertFalse(
             settingsStore.settings.focusFollowsPointerEnabled(
+                forApplicationKey: application.key
+            )
+        )
+        XCTAssertFalse(
+            settingsStore.settings.commandKeyRecoveryEnabled(
                 forApplicationKey: application.key
             )
         )

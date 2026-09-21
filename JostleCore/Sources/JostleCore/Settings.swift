@@ -19,15 +19,42 @@ public struct ApplicationRule: Codable, Equatable, Sendable {
     public var displayName: String
     public var windowControls: ApplicationFeatureSetting
     public var focusFollowsPointer: ApplicationFeatureSetting
+    public var commandKeyRecovery: Bool
 
     public init(
         displayName: String,
         windowControls: ApplicationFeatureSetting = .useDefault,
-        focusFollowsPointer: ApplicationFeatureSetting = .useDefault
+        focusFollowsPointer: ApplicationFeatureSetting = .useDefault,
+        commandKeyRecovery: Bool = false
     ) {
         self.displayName = displayName
         self.windowControls = windowControls
         self.focusFollowsPointer = focusFollowsPointer
+        self.commandKeyRecovery = commandKeyRecovery
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case displayName
+        case windowControls
+        case focusFollowsPointer
+        case commandKeyRecovery
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        displayName = try container.decode(String.self, forKey: .displayName)
+        windowControls = try container.decodeIfPresent(
+            ApplicationFeatureSetting.self,
+            forKey: .windowControls
+        ) ?? .useDefault
+        focusFollowsPointer = try container.decodeIfPresent(
+            ApplicationFeatureSetting.self,
+            forKey: .focusFollowsPointer
+        ) ?? .useDefault
+        commandKeyRecovery = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .commandKeyRecovery
+        ) ?? false
     }
 }
 
@@ -137,6 +164,11 @@ public struct JostleSettings: Codable, Equatable, Sendable {
         return rule.focusFollowsPointer.resolve(default: focusFollowsPointerEnabledByDefault)
     }
 
+    public func commandKeyRecoveryEnabled(forApplicationKey key: String?) -> Bool {
+        guard let key else { return false }
+        return applicationRules[key]?.commandKeyRecovery ?? false
+    }
+
     public func focusFollowsPointerEnabled(
         forApplicationKey key: String?,
         deviceKey: String?,
@@ -184,6 +216,16 @@ public struct JostleSettings: Codable, Equatable, Sendable {
     ) {
         updateApplicationRule(key: key, displayName: displayName) {
             $0.focusFollowsPointer = setting
+        }
+    }
+
+    public mutating func setCommandKeyRecovery(
+        _ enabled: Bool,
+        forApplicationKey key: String,
+        displayName: String
+    ) {
+        updateApplicationRule(key: key, displayName: displayName) {
+            $0.commandKeyRecovery = enabled
         }
     }
 

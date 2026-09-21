@@ -35,6 +35,7 @@ The implemented input system includes:
 - Button 4/5 mappings for universal Back/Forward, move, resize, maximize, left/right tile, next display, and Keep Awake;
 - interaction pinning for button-held move/resize, synthetic-event tagging, Escape cancellation, and cleanup on disable, disconnect, session loss, sleep, tap teardown, and quit;
 - per-device gating layered onto existing per-app Focus Follows Pointer policy;
+- opt-in per-app Command-key recovery that waits for physical modifiers to clear and posts a balanced sequence only to the activated process;
 - optional read-only battery reporting through the public Bluetooth Battery Service for supported pointing devices;
 - one menu-bar item with configurable click behavior, a vector state icon, optional pointing-device battery text, an Input settings pane with ordered profile editing, disconnected-device overrides, crash-loop Safe Mode, `--safe-mode`, and Shift-Option launch recovery;
 - a one-time importer for the supported subset of an existing LinearMouse configuration;
@@ -97,6 +98,7 @@ Jostle deliberately does **not** implement pointer acceleration/speed, hardware 
 | Buttons | Auto-scroll | No | Add as an advanced stateful interaction |
 | Buttons | Gesture button | No | Add after the basic mapping engine |
 | Buttons | Assign actions to mouse buttons/wheel | No | Add a recorder and typed action catalog |
+| App compatibility | Clear a stuck Command key after switching | Yes | Implemented as an opt-in per-app recovery action, process-targeted and gated by Input Customizations and Safe Mode |
 | General | Menu bar visibility | Always visible | Persistent hiding is explicitly deferred; recovery paths remain available through reopen-to-Settings and Safe Mode |
 | General | Current device battery | Partial | Public Bluetooth Battery Service implemented; vendor-specific devices remain unsupported |
 | General | Dock visibility | Visible only while Settings is open | Runtime activation-policy switching is implemented; persistent Dock mode is deferred |
@@ -132,7 +134,7 @@ The screenshots are a feature reference, not a requirement to copy LinearMouseâ€
 
 Jostle is already well positioned for this work:
 
-- `EventTapController.swift` owns a `cghidEventTap`, window gestures, focus-follows-pointer, and tap recovery.
+- `EventTapController.swift` owns a `cghidEventTap`, window gestures, focus-follows-pointer, and tap recovery; `CommandKeyRecoveryController.swift` separately handles process-targeted recovery after app activation.
 - `JostleCore` contains deterministic event policy, geometry, gesture, snapping, Keep Awake, and settings behavior with focused tests.
 - `SettingsStore` persists one backward-compatible Codable document.
 - `AppDelegate` composes long-lived controllers.

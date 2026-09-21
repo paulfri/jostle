@@ -1178,6 +1178,7 @@ struct ApplicationsSettingsPane: View {
                         Text("Pointer focus")
                             .frame(width: 120, alignment: .leading)
                         Color.clear.frame(width: 22, height: 1)
+                        Color.clear.frame(width: 22, height: 1)
                     }
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -1207,6 +1208,26 @@ struct ApplicationsSettingsPane: View {
                                         defaultEnabled: settingsStore.settings.focusFollowsPointerEnabledByDefault
                                     )
                                     .frame(width: 120)
+
+                                    Menu {
+                                        Section("Input Compatibility") {
+                                            Toggle(
+                                                "Clear Stuck Command after Switching",
+                                                isOn: commandKeyRecoveryBinding(for: application.key)
+                                            )
+                                        }
+                                    } label: {
+                                        Image(systemName: "ellipsis.circle")
+                                    }
+                                    .menuStyle(.borderlessButton)
+                                    .frame(width: 22)
+                                    .help(
+                                        "Input compatibility options for "
+                                            + application.rule.displayName
+                                    )
+                                    .accessibilityLabel(
+                                        "Input compatibility options for \(application.rule.displayName)"
+                                    )
 
                                     Button {
                                         settingsStore.update {
@@ -1346,6 +1367,24 @@ struct ApplicationsSettingsPane: View {
                 settingsStore.update {
                     $0.setFocusFollowsPointer(
                         value,
+                        forApplicationKey: key,
+                        displayName: rule.displayName
+                    )
+                }
+            }
+        )
+    }
+
+    private func commandKeyRecoveryBinding(for key: String) -> Binding<Bool> {
+        Binding(
+            get: {
+                settingsStore.settings.commandKeyRecoveryEnabled(forApplicationKey: key)
+            },
+            set: { enabled in
+                guard let rule = settingsStore.settings.applicationRules[key] else { return }
+                settingsStore.update {
+                    $0.setCommandKeyRecovery(
+                        enabled,
                         forApplicationKey: key,
                         displayName: rule.displayName
                     )

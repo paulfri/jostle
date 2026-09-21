@@ -57,7 +57,8 @@ final class CGEventInputAdapterTests: XCTestCase {
     func testDiagnosticsReportRedactsApplicationAndDeviceIdentity() {
         var settings = JostleSettings.defaults
         settings.applicationRules["com.private.customer"] = ApplicationRule(
-            displayName: "Private Customer App"
+            displayName: "Private Customer App",
+            commandKeyRecovery: true
         )
         settings.inputCustomization.deviceRules["serial-private-123"] = PointingDeviceRule(
             displayName: "Private Mouse Name",
@@ -100,6 +101,7 @@ final class CGEventInputAdapterTests: XCTestCase {
         )
 
         XCTAssertTrue(report.contains("application_override_count: 1"))
+        XCTAssertTrue(report.contains("command_key_recovery_rules: 1"))
         XCTAssertTrue(report.contains("exact_mouse_rules: 1"))
         XCTAssertTrue(report.contains("callback_samples: 10"))
         XCTAssertTrue(report.contains("known_input_utility_conflicts: LinearMouse"))

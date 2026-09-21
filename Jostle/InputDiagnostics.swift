@@ -240,6 +240,9 @@ enum InputDiagnosticsReport {
         let exactMouseRules = input.deviceRules.values.filter { $0.category == .mouse }.count
         let exactTrackpadRules = input.deviceRules.values.filter { $0.category == .trackpad }.count
         let exactUnknownRules = input.deviceRules.values.filter { $0.category == .unknown }.count
+        let commandKeyRecoveryRules = settings.applicationRules.values
+            .filter(\.commandKeyRecovery)
+            .count
         let conflicts = context.conflictingUtilities.isEmpty
             ? "none detected"
             : context.conflictingUtilities.sorted().joined(separator: ", ")
@@ -301,6 +304,7 @@ enum InputDiagnosticsReport {
 
         Other Configuration
         application_override_count: \(settings.applicationRules.count)
+        command_key_recovery_rules: \(commandKeyRecoveryRules)
         window_controls_default: \(yesNo(settings.windowControlsEnabledByDefault))
         focus_follows_pointer_default: \(yesNo(settings.focusFollowsPointerEnabledByDefault))
         keep_awake_at_launch: \(yesNo(settings.keepAwakeActivateAtLaunch))

@@ -30,7 +30,7 @@ The default modifier is **Control** (`⌃`). Jostle only responds when the exact
 
 The resize button can be changed from right click to middle click. Modifier keys, double-click actions, snapping, resize feedback, tile gaps, and screen margins are all configurable from Settings.
 
-The **Apps** settings let you choose the defaults for window controls and Focus Follows Pointer, then override either behavior for individual applications. This supports include-only setups such as enabling pointer focus for every `eqgame.exe` window while leaving all other applications unchanged. Focus can be immediate or delayed until the pointer rests.
+The **Apps** settings let you choose the defaults for window controls and Focus Follows Pointer, then override either behavior for individual applications. Each app also has an Input Compatibility menu that can clear a stuck Command key after switching—useful for some Wine games, virtual machines, and remote-session clients that miss the key-up event. This supports include-only setups such as enabling pointer focus and Command-key recovery for every `eqgame.exe` window while leaving all other applications unchanged. Focus can be immediate or delayed until the pointer rests.
 
 ## Mouse and trackpad customization
 
@@ -42,6 +42,7 @@ Enable **Input Customizations** from Jostle's menu or its **Input** settings tab
 - Button 4 and Button 5 mappings for Back, Forward, move, resize, maximize, left/right tile, next display, and Keep Awake
 - A universal Back/Forward preset that maps otherwise-unassigned side buttons to `⌘[` and `⌘]`
 - Per-device scrolling and Focus Follows Pointer overrides for connected or previously configured pointing devices
+- Per-app Command-key recovery after switching, delivered only to the configured target process
 - An optional battery percentage beside the menu bar icon, with device details in the menu, for pointing devices that expose the standard Bluetooth Battery Service
 
 On first launch with an existing `~/.config/linearmouse/linearmouse.json`, Jostle imports the supported scrolling and universal Back/Forward settings once when the referenced pointing device is available. Disabled auto-scroll, disabled gesture actions, Logitech high-resolution-wheel controls, and vendor-specific settings are intentionally not imported.
@@ -122,6 +123,7 @@ Duration parameters may use `hours` and `minutes` together. Values must be great
 - Map extra mouse buttons to window, navigation, display, and Keep Awake actions
 - Move and resize windows by holding an extra mouse button
 - Configure window controls and Focus Follows Pointer independently per app and pointing device
+- Clear a stuck Command key when selected apps become active, without firing a system-wide shortcut
 - Match apps without bundle identifiers, including Wine-hosted executables such as `eqgame.exe`
 - Choose immediate pointer focus or a 100, 250, or 500 ms dwell delay
 - Temporarily disable all window features from the menu bar icon

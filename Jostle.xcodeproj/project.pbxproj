@@ -62,6 +62,8 @@
 		C10000000000000000000006 /* THIRD_PARTY_NOTICES.md in Resources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000006 /* THIRD_PARTY_NOTICES.md */; };
 		C10000000000000000000007 /* LinearMouseMigration.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000007 /* LinearMouseMigration.swift */; };
 		D10000000000000000000001 /* InputDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000001 /* InputDiagnostics.swift */; };
+		E10000000000000000000001 /* CommandKeyRecoveryController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000001 /* CommandKeyRecoveryController.swift */; };
+		E10000000000000000000002 /* CommandKeyRecoveryControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000002 /* CommandKeyRecoveryControllerTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -127,6 +129,8 @@
 		C20000000000000000000006 /* THIRD_PARTY_NOTICES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = THIRD_PARTY_NOTICES.md; sourceTree = "<group>"; };
 		C20000000000000000000007 /* LinearMouseMigration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinearMouseMigration.swift; sourceTree = "<group>"; };
 		D20000000000000000000001 /* InputDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputDiagnostics.swift; sourceTree = "<group>"; };
+		E20000000000000000000001 /* CommandKeyRecoveryController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandKeyRecoveryController.swift; sourceTree = "<group>"; };
+		E20000000000000000000002 /* CommandKeyRecoveryControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandKeyRecoveryControllerTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000000C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000000000000000000000D /* Jostle.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Jostle.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2000000000000000000000E /* JostleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JostleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -209,6 +213,7 @@
 				C20000000000000000000005 /* ScrollProfileEditor.swift */,
 				C20000000000000000000007 /* LinearMouseMigration.swift */,
 				D20000000000000000000001 /* InputDiagnostics.swift */,
+				E20000000000000000000001 /* CommandKeyRecoveryController.swift */,
 				A20000000000000000000008 /* Images.xcassets */,
 				A20000000000000000000007 /* Jostle-Info.plist */,
 				A20000000000000000000009 /* InfoPlist.strings */,
@@ -231,6 +236,7 @@
 				A20000000000000000000023 /* AppBrandTests.swift */,
 				B20000000000000000000007 /* KeepAwakeControllerTests.swift */,
 				B20000000000000000000013 /* ShortcutFormatterTests.swift */,
+				E20000000000000000000002 /* CommandKeyRecoveryControllerTests.swift */,
 				A2000000000000000000000C /* Info.plist */,
 			);
 			path = JostleTests;
@@ -394,6 +400,7 @@
 				C10000000000000000000005 /* ScrollProfileEditor.swift in Sources */,
 				C10000000000000000000007 /* LinearMouseMigration.swift in Sources */,
 				D10000000000000000000001 /* InputDiagnostics.swift in Sources */,
+				E10000000000000000000001 /* CommandKeyRecoveryController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -413,6 +420,7 @@
 				A1000000000000000000001E /* AppBrandTests.swift in Sources */,
 				B10000000000000000000007 /* KeepAwakeControllerTests.swift in Sources */,
 				B10000000000000000000013 /* ShortcutFormatterTests.swift in Sources */,
+				E10000000000000000000002 /* CommandKeyRecoveryControllerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
