@@ -282,7 +282,7 @@ final class StatusMenuController: NSObject, NSMenuDelegate {
 
         appMenu.addItem(.separator())
         let commandRecoveryItem = NSMenuItem(
-            title: "Clear Stuck Command after Switching",
+            title: "Reset modifiers when switching",
             action: #selector(toggleRecentApplicationCommandKeyRecovery(_:)),
             keyEquivalent: ""
         )

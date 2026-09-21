@@ -64,6 +64,8 @@
 		D10000000000000000000001 /* InputDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20000000000000000000001 /* InputDiagnostics.swift */; };
 		E10000000000000000000001 /* CommandKeyRecoveryController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000001 /* CommandKeyRecoveryController.swift */; };
 		E10000000000000000000002 /* CommandKeyRecoveryControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000002 /* CommandKeyRecoveryControllerTests.swift */; };
+		F10000000000000000000001 /* RunningApplicationMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000001 /* RunningApplicationMonitor.swift */; };
+		F10000000000000000000002 /* RunningApplicationMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000002 /* RunningApplicationMonitorTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -131,6 +133,8 @@
 		D20000000000000000000001 /* InputDiagnostics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputDiagnostics.swift; sourceTree = "<group>"; };
 		E20000000000000000000001 /* CommandKeyRecoveryController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandKeyRecoveryController.swift; sourceTree = "<group>"; };
 		E20000000000000000000002 /* CommandKeyRecoveryControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandKeyRecoveryControllerTests.swift; sourceTree = "<group>"; };
+		F20000000000000000000001 /* RunningApplicationMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunningApplicationMonitor.swift; sourceTree = "<group>"; };
+		F20000000000000000000002 /* RunningApplicationMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunningApplicationMonitorTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000000C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000000000000000000000D /* Jostle.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Jostle.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2000000000000000000000E /* JostleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JostleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -214,6 +218,7 @@
 				C20000000000000000000007 /* LinearMouseMigration.swift */,
 				D20000000000000000000001 /* InputDiagnostics.swift */,
 				E20000000000000000000001 /* CommandKeyRecoveryController.swift */,
+				F20000000000000000000001 /* RunningApplicationMonitor.swift */,
 				A20000000000000000000008 /* Images.xcassets */,
 				A20000000000000000000007 /* Jostle-Info.plist */,
 				A20000000000000000000009 /* InfoPlist.strings */,
@@ -237,6 +242,7 @@
 				B20000000000000000000007 /* KeepAwakeControllerTests.swift */,
 				B20000000000000000000013 /* ShortcutFormatterTests.swift */,
 				E20000000000000000000002 /* CommandKeyRecoveryControllerTests.swift */,
+				F20000000000000000000002 /* RunningApplicationMonitorTests.swift */,
 				A2000000000000000000000C /* Info.plist */,
 			);
 			path = JostleTests;
@@ -401,6 +407,7 @@
 				C10000000000000000000007 /* LinearMouseMigration.swift in Sources */,
 				D10000000000000000000001 /* InputDiagnostics.swift in Sources */,
 				E10000000000000000000001 /* CommandKeyRecoveryController.swift in Sources */,
+				F10000000000000000000001 /* RunningApplicationMonitor.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -421,6 +428,7 @@
 				B10000000000000000000007 /* KeepAwakeControllerTests.swift in Sources */,
 				B10000000000000000000013 /* ShortcutFormatterTests.swift in Sources */,
 				E10000000000000000000002 /* CommandKeyRecoveryControllerTests.swift in Sources */,
+				F10000000000000000000002 /* RunningApplicationMonitorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

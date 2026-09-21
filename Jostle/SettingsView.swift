@@ -1067,7 +1067,7 @@ struct UpdateSettingsPane: View {
 
 struct ApplicationsSettingsPane: View {
     @ObservedObject var settingsStore: SettingsStore
-    @State private var runningApplications: [RunningApplicationInfo] = []
+    @StateObject private var runningApplicationMonitor = RunningApplicationMonitor()
 
     private let focusDelays: [(value: Double, title: String)] = [
         (0, "Immediate"),
@@ -1088,7 +1088,7 @@ struct ApplicationsSettingsPane: View {
     }
 
     private var availableRunningApplications: [RunningApplicationInfo] {
-        runningApplications.filter {
+        runningApplicationMonitor.applications.filter {
             settingsStore.settings.applicationRules[$0.key] == nil
         }
     }
@@ -1212,7 +1212,7 @@ struct ApplicationsSettingsPane: View {
                                     Menu {
                                         Section("Input Compatibility") {
                                             Toggle(
-                                                "Clear Stuck Command after Switching",
+                                                "Reset modifiers when switching",
                                                 isOn: commandKeyRecoveryBinding(for: application.key)
                                             )
                                         }
@@ -1220,6 +1220,7 @@ struct ApplicationsSettingsPane: View {
                                         Image(systemName: "ellipsis.circle")
                                     }
                                     .menuStyle(.borderlessButton)
+                                    .menuIndicator(.hidden)
                                     .frame(width: 22)
                                     .help(
                                         "Input compatibility options for "
@@ -1265,7 +1266,6 @@ struct ApplicationsSettingsPane: View {
         .padding(.horizontal, 24)
         .padding(.vertical, 16)
         .frame(width: 660, height: 470)
-        .onAppear(perform: refreshRunningApplications)
     }
 
     @ViewBuilder
@@ -1393,18 +1393,6 @@ struct ApplicationsSettingsPane: View {
         )
     }
 
-    private func refreshRunningApplications() {
-        var applicationsByKey: [String: RunningApplicationInfo] = [:]
-        for application in NSWorkspace.shared.runningApplications
-        where application.processIdentifier != ProcessInfo.processInfo.processIdentifier
-            && application.activationPolicy == .regular {
-            guard let info = RunningApplicationInfo(application: application) else { continue }
-            applicationsByKey[info.key] = info
-        }
-        runningApplications = applicationsByKey.values.sorted {
-            $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-        }
-    }
 }
 
 private struct PreferenceRow<Content: View>: View {

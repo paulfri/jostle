@@ -94,7 +94,7 @@ Disable overlapping scroll transformation in other utilities, then temporarily d
 ### Command remains stuck after switching
 
 1. Add the affected app under **Settings → Apps** or open it and use Jostle's current-app submenu.
-2. Open that app's Input Compatibility menu and enable **Clear Stuck Command after Switching**.
+2. Open that app's Input Compatibility menu and enable **Reset modifiers when switching**.
 3. Confirm **Input Customizations Enabled** is selected in Jostle's status menu and that Jostle is not in Safe Mode.
 4. If the app is hosted by Wine or another compatibility layer, verify that its process-name rule matches the active executable.
 

@@ -203,7 +203,7 @@ final class StatusMenuControllerTests: XCTestCase {
             appItem.submenu?.item(withTitle: "Focus Follows Pointer")
         )
         var commandRecoveryItem = try XCTUnwrap(
-            appItem.submenu?.item(withTitle: "Clear Stuck Command after Switching")
+            appItem.submenu?.item(withTitle: "Reset modifiers when switching")
         )
         XCTAssertEqual(windowControlsItem.state, .on)
         XCTAssertEqual(focusItem.state, .off)
@@ -243,7 +243,7 @@ final class StatusMenuControllerTests: XCTestCase {
             appItem.submenu?.item(withTitle: "Focus Follows Pointer")
         )
         commandRecoveryItem = try XCTUnwrap(
-            appItem.submenu?.item(withTitle: "Clear Stuck Command after Switching")
+            appItem.submenu?.item(withTitle: "Reset modifiers when switching")
         )
         XCTAssertEqual(windowControlsItem.state, .on)
         XCTAssertEqual(focusItem.state, .on)
