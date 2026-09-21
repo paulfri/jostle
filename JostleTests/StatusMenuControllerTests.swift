@@ -20,6 +20,20 @@ final class StatusMenuControllerTests: XCTestCase {
         super.tearDown()
     }
 
+    func testSettingsMainMenuContainsCloseCommand() throws {
+        let menu = SettingsWindowController.makeSettingsMainMenu(target: nil)
+        let fileMenu = try XCTUnwrap(
+            menu.items.first { $0.title == "File" }?.submenu
+        )
+        let closeItem = try XCTUnwrap(
+            fileMenu.items.first { $0.title == "Close Settings" }
+        )
+
+        XCTAssertNotNil(closeItem.action)
+        XCTAssertEqual(closeItem.keyEquivalent, "w")
+        XCTAssertEqual(closeItem.keyEquivalentModifierMask, [.command])
+    }
+
     func testCommandQIsReservedForClosingSettings() {
         XCTAssertTrue(
             SettingsWindowController.isCloseSettingsShortcut(

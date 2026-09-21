@@ -5,7 +5,9 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private let loginItemController: LoginItemController
     private let inputUtilityConflictMonitor: InputUtilityConflictMonitor
     private var activationPolicyBeforePresenting: NSApplication.ActivationPolicy?
+    private var mainMenuBeforePresenting: NSMenu?
     private var commandQMonitor: Any?
+    private lazy var settingsMainMenu = Self.makeSettingsMainMenu(target: self)
 
     init(
         settingsStore: SettingsStore,
@@ -158,8 +160,10 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         let application = NSApplication.shared
         if window?.isVisible != true {
             activationPolicyBeforePresenting = application.activationPolicy()
+            mainMenuBeforePresenting = application.mainMenu
         }
         application.setActivationPolicy(.regular)
+        application.mainMenu = settingsMainMenu
         startMonitoringCommandQ()
 
         loginItemController.refresh()
@@ -175,8 +179,85 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
         stopMonitoringCommandQ()
         let application = NSApplication.shared
+        if application.mainMenu === settingsMainMenu {
+            application.mainMenu = mainMenuBeforePresenting
+        }
+        mainMenuBeforePresenting = nil
         application.setActivationPolicy(activationPolicyBeforePresenting ?? .accessory)
         activationPolicyBeforePresenting = nil
+    }
+
+    static func makeSettingsMainMenu(target: AnyObject?) -> NSMenu {
+        let mainMenu = NSMenu(title: "Main Menu")
+
+        let applicationMenuItem = NSMenuItem(title: AppBrand.applicationName, action: nil, keyEquivalent: "")
+        let applicationMenu = NSMenu(title: AppBrand.applicationName)
+        applicationMenu.addItem(
+            NSMenuItem(
+                title: "About \(AppBrand.applicationName)",
+                action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)),
+                keyEquivalent: ""
+            )
+        )
+        applicationMenu.addItem(.separator())
+
+        let settingsItem = NSMenuItem(
+            title: "Settings…",
+            action: #selector(showSettings(_:)),
+            keyEquivalent: ","
+        )
+        settingsItem.target = target
+        settingsItem.keyEquivalentModifierMask = [.command]
+        applicationMenu.addItem(settingsItem)
+        applicationMenu.addItem(.separator())
+
+        let hideItem = NSMenuItem(
+            title: "Hide \(AppBrand.applicationName)",
+            action: #selector(NSApplication.hide(_:)),
+            keyEquivalent: "h"
+        )
+        hideItem.keyEquivalentModifierMask = [.command]
+        applicationMenu.addItem(hideItem)
+
+        let hideOthersItem = NSMenuItem(
+            title: "Hide Others",
+            action: #selector(NSApplication.hideOtherApplications(_:)),
+            keyEquivalent: "h"
+        )
+        hideOthersItem.keyEquivalentModifierMask = [.command, .option]
+        applicationMenu.addItem(hideOthersItem)
+        applicationMenu.addItem(
+            NSMenuItem(
+                title: "Show All",
+                action: #selector(NSApplication.unhideAllApplications(_:)),
+                keyEquivalent: ""
+            )
+        )
+        applicationMenu.addItem(.separator())
+
+        let quitItem = NSMenuItem(
+            title: "Quit \(AppBrand.applicationName)",
+            action: #selector(NSApplication.terminate(_:)),
+            keyEquivalent: ""
+        )
+        applicationMenu.addItem(quitItem)
+        applicationMenuItem.submenu = applicationMenu
+        mainMenu.addItem(applicationMenuItem)
+
+        let fileMenuItem = NSMenuItem(title: "File", action: nil, keyEquivalent: "")
+        let fileMenu = NSMenu(title: "File")
+        let closeSettingsItem = NSMenuItem(
+            title: "Close Settings",
+            action: #selector(closeSettings(_:)),
+            keyEquivalent: "w"
+        )
+        closeSettingsItem.target = target
+        closeSettingsItem.keyEquivalentModifierMask = [.command]
+        fileMenu.addItem(closeSettingsItem)
+        fileMenuItem.submenu = fileMenu
+        mainMenu.addItem(fileMenuItem)
+
+        return mainMenu
     }
 
     static func isCloseSettingsShortcut(
@@ -191,6 +272,14 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         ])
         return charactersIgnoringModifiers?.lowercased() == "q"
             && shortcutModifiers == .command
+    }
+
+    @objc private func showSettings(_ sender: Any?) {
+        present()
+    }
+
+    @objc private func closeSettings(_ sender: Any?) {
+        dismiss()
     }
 
     private func startMonitoringCommandQ() {
