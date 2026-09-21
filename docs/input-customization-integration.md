@@ -30,7 +30,7 @@ The implemented input system includes:
 - backward-compatible typed settings with opt-in defaults;
 - IOHID device inventory, stable privacy-preserving identifiers, mouse/trackpad categorization, sender attribution, and a bounded recent-device fallback;
 - per-axis reverse, automatic/line/pixel distance, speed, acceleration, smoothing, inertia, and bounce controls;
-- ordered scroll profiles matched by device category, exact device, app bundle ID, and process name;
+- ordered scroll profiles matched by device category, exact device, app bundle ID, and process name, with per-profile app and process exclusions;
 - a 120 Hz smoothing engine with marked synthetic events and touch/momentum phases;
 - Button 4/5 mappings for universal Back/Forward, move, resize, maximize, left/right tile, next display, and Keep Awake;
 - interaction pinning for button-held move/resize, synthetic-event tagging, Escape cancellation, and cleanup on disable, disconnect, session loss, sleep, tap teardown, and quit;
@@ -510,7 +510,7 @@ A phase is complete only when its exit criteria pass. Do not hide incomplete ris
 - [ ] Replace toolbar tabs with the sidebar settings shell. **Deferred:** retain the current toolbar until additional context-heavy destinations justify the migration.
 - [x] Preserve all current General, Gestures, Input, Snapping, Applications, Keep Awake, and Updates behavior in the current settings shell.
 - [ ] Add the device/app/display context bar and inherited-value presentation.
-- [x] Provide ordered contextual scroll-profile editing for device category, exact device, app bundle ID, and process name.
+- [x] Provide ordered contextual scroll-profile editing for device category, exact device, app bundle ID, and process name, including per-profile exclusions.
 - [x] Show connected and disconnected saved pointing devices, category defaults, per-device overrides, and override deletion.
 - [ ] Implement `DeviceService` identity, connect/disconnect, sleep/wake, and stale-device handling. **Partial:** `PointingDeviceManager` provides IOHID identity, attribution, connect/disconnect, and disconnected saved-device presentation; the proposed standalone service and complete lifecycle matrix remain open.
 - [ ] Add display identity and frontmost-application snapshots outside the event callback.

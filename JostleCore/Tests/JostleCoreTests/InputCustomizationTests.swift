@@ -5,6 +5,7 @@ final class InputCustomizationTests: XCTestCase {
     func testDefaultsAreOptInAndPreserveNativeBehavior() {
         let settings = InputCustomizationSettings.defaults
 
+        XCTAssertEqual(settings.schemaVersion, 3)
         XCTAssertFalse(settings.isEnabled)
         XCTAssertFalse(settings.reverseScrolling(forDeviceKey: nil, category: .mouse))
         XCTAssertFalse(settings.reverseScrolling(forDeviceKey: nil, category: .trackpad))
@@ -127,6 +128,33 @@ final class InputCustomizationTests: XCTestCase {
         XCTAssertTrue(settings.deviceRules.isEmpty)
     }
 
+    func testLegacyScrollProfileDecodesWithEmptyExclusions() throws {
+        let data = Data(#"""
+        {
+          "schemaVersion": 2,
+          "scrollProfiles": [{
+            "id": "legacy-profile",
+            "name": "Mouse smoothing",
+            "isEnabled": true,
+            "match": {
+              "deviceCategory": "mouse",
+              "applicationBundleIdentifiers": [],
+              "processNames": []
+            },
+            "vertical": {},
+            "horizontal": {}
+          }]
+        }
+        """#.utf8)
+
+        let settings = try JSONDecoder().decode(InputCustomizationSettings.self, from: data)
+        let match = try XCTUnwrap(settings.scrollProfiles.first?.match)
+
+        XCTAssertEqual(settings.schemaVersion, 2)
+        XCTAssertTrue(match.excludedApplicationBundleIdentifiers.isEmpty)
+        XCTAssertTrue(match.excludedProcessNames.isEmpty)
+    }
+
     func testScrollProfilesMergeByDeviceAndApplicationInDefinitionOrder() {
         let settings = InputCustomizationSettings(
             isEnabled: true,
@@ -175,6 +203,61 @@ final class InputCustomizationTests: XCTestCase {
         XCTAssertEqual(resolved.vertical.smoothing?.acceleration, 1.2)
         XCTAssertEqual(resolved.vertical.smoothing?.inertia, 0.3)
         XCTAssertEqual(resolved.vertical.smoothing?.bouncing, false)
+    }
+
+    func testProfileExclusionsPreserveBaseReverseScrolling() {
+        let settings = InputCustomizationSettings(
+            reverseMouseScrolling: true,
+            scrollProfiles: [
+                ScrollProfile(
+                    name: "Mouse smoothing",
+                    match: ScrollProfileMatch(
+                        deviceCategory: .mouse,
+                        excludedProcessNames: ["eqgame.exe"]
+                    ),
+                    vertical: ScrollAxisSettings(
+                        speed: 1.5,
+                        smoothing: ScrollSmoothingSettings(enabled: true)
+                    )
+                )
+            ]
+        )
+
+        let excluded = ScrollProfileResolver.resolve(
+            input: settings,
+            deviceKey: nil,
+            deviceCategory: .mouse,
+            applicationBundleIdentifier: nil,
+            processName: "EQGAME.EXE"
+        )
+        let included = ScrollProfileResolver.resolve(
+            input: settings,
+            deviceKey: nil,
+            deviceCategory: .mouse,
+            applicationBundleIdentifier: nil,
+            processName: "Finder"
+        )
+
+        XCTAssertTrue(excluded.vertical.reverse)
+        XCTAssertEqual(excluded.vertical.speed, 0)
+        XCTAssertNil(excluded.vertical.smoothing)
+        XCTAssertTrue(included.vertical.reverse)
+        XCTAssertEqual(included.vertical.speed, 1.5)
+        XCTAssertNotNil(included.vertical.smoothing)
+    }
+
+    func testProfileExclusionWinsOverApplicationInclude() {
+        let match = ScrollProfileMatch(
+            applicationBundleIdentifiers: ["com.example.Game"],
+            excludedApplicationBundleIdentifiers: ["com.example.game"]
+        )
+
+        XCTAssertFalse(match.matches(
+            deviceKey: nil,
+            deviceCategory: .mouse,
+            applicationBundleIdentifier: "COM.EXAMPLE.GAME",
+            processName: nil
+        ))
     }
 
     func testProcessProfileCanDisableInheritedSmoothingAndSetLineDistance() {
@@ -229,7 +312,11 @@ final class InputCustomizationTests: XCTestCase {
             scrollProfiles: [
                 ScrollProfile(
                     name: "Mouse smoothing",
-                    match: ScrollProfileMatch(deviceCategory: .mouse),
+                    match: ScrollProfileMatch(
+                        deviceCategory: .mouse,
+                        excludedApplicationBundleIdentifiers: ["com.example.Game"],
+                        excludedProcessNames: ["eqgame.exe"]
+                    ),
                     vertical: ScrollAxisSettings(
                         smoothing: ScrollSmoothingSettings(enabled: true, preset: .easeInOut)
                     )

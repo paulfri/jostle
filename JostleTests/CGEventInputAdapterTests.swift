@@ -4,6 +4,20 @@ import XCTest
 @testable import Jostle
 
 final class CGEventInputAdapterTests: XCTestCase {
+    func testFrontmostProcessNamePreservesExecutableExtension() {
+        XCTAssertEqual(
+            EventTapController.processName(
+                executableURL: URL(fileURLWithPath: "/games/eqgame.exe"),
+                localizedName: "EverQuest"
+            ),
+            "eqgame.exe"
+        )
+        XCTAssertEqual(
+            EventTapController.processName(executableURL: nil, localizedName: "EverQuest"),
+            "EverQuest"
+        )
+    }
+
     func testRuntimeDiagnosticsUsesBoundedHistogramsAndCountsTapRecovery() {
         let diagnostics = InputRuntimeDiagnostics()
         diagnostics.recordEventTap(durationNanoseconds: 100_000, type: .mouseMoved)

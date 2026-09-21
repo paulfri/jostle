@@ -30,7 +30,7 @@ enum LinearMouseMigration {
 
         settingsStore.update { settings in
             var input = settings.inputCustomization
-            input.schemaVersion = 2
+            input.schemaVersion = InputCustomizationSettings.defaults.schemaVersion
             input.isEnabled = true
             input.universalBackForward = input.universalBackForward
                 || imported.settings.universalBackForward

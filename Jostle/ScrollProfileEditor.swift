@@ -93,14 +93,29 @@ struct ScrollProfileEditor: View {
                 }
                 .frame(width: 250)
             }
+            Text("Includes")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
             TextField(
                 "Application bundle IDs (comma separated)",
                 text: applicationIdentifiersBinding
             )
             TextField("Process names (comma separated)", text: processNamesBinding)
-            Text("Leave both application fields empty to match every application.")
+            Text("Excludes")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            TextField(
+                "Excluded application bundle IDs (comma separated)",
+                text: excludedApplicationIdentifiersBinding
+            )
+            TextField(
+                "Excluded process names (comma separated)",
+                text: excludedProcessNamesBinding
+            )
+            Text("Leave Includes empty to match every application. Excludes skip this profile; base scrolling direction and other matching profiles still apply.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -114,7 +129,18 @@ struct ScrollProfileEditor: View {
         if !profile.match.processNames.isEmpty {
             parts.append("\(profile.match.processNames.count) process\(profile.match.processNames.count == 1 ? "" : "es")")
         }
-        return parts.isEmpty ? "All input" : parts.joined(separator: " · ")
+        if parts.isEmpty {
+            parts.append("All input")
+        }
+        if !profile.match.excludedApplicationBundleIdentifiers.isEmpty {
+            let count = profile.match.excludedApplicationBundleIdentifiers.count
+            parts.append("except \(count) app\(count == 1 ? "" : "s")")
+        }
+        if !profile.match.excludedProcessNames.isEmpty {
+            let count = profile.match.excludedProcessNames.count
+            parts.append("except \(count) process\(count == 1 ? "" : "es")")
+        }
+        return parts.joined(separator: " · ")
     }
 
     private var deviceCategoryBinding: Binding<String> {
@@ -152,6 +178,20 @@ struct ScrollProfileEditor: View {
         listBinding(
             get: { profile.match.processNames },
             set: { profile.match.processNames = $0 }
+        )
+    }
+
+    private var excludedApplicationIdentifiersBinding: Binding<String> {
+        listBinding(
+            get: { profile.match.excludedApplicationBundleIdentifiers },
+            set: { profile.match.excludedApplicationBundleIdentifiers = $0 }
+        )
+    }
+
+    private var excludedProcessNamesBinding: Binding<String> {
+        listBinding(
+            get: { profile.match.excludedProcessNames },
+            set: { profile.match.excludedProcessNames = $0 }
         )
     }
 

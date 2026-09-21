@@ -78,7 +78,7 @@ public struct InputCustomizationSettings: Codable, Equatable, Sendable {
     public var batteryDisplayMode: PointingDeviceBatteryDisplayMode
 
     public init(
-        schemaVersion: Int = 2,
+        schemaVersion: Int = 3,
         isEnabled: Bool = false,
         reverseMouseScrolling: Bool = false,
         reverseTrackpadScrolling: Bool = false,

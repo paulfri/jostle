@@ -18,7 +18,7 @@ The runtime also needs conservative behavior: existing users must see no change 
 1. Recover a tap disabled by timeout or user input.
 2. Ignore Jostle-tagged synthetic events.
 3. Attribute the event to its IOHID pointing device when possible.
-4. Resolve ordered device-category, exact-device, app-bundle, and process-name scroll profiles.
+4. Resolve ordered device-category, exact-device, app-bundle, and process-name scroll profiles, rejecting a profile when its app or process exclusion matches.
 5. Apply per-axis reverse, distance, acceleration, and speed transforms.
 6. Feed opted-in smoothed axes to the smoothing engine, suppress those source deltas, and emit marked synthetic continuous-scroll events at 120 Hz.
 7. Continue or finish an already-owned extra-button action.
@@ -30,7 +30,7 @@ Synthetic keyboard and scroll events carry a private `eventSourceUserData` marke
 
 ### Profile precedence
 
-Legacy category and exact-device reverse settings form the scrolling baseline. Enabled scroll profiles are then evaluated in definition order. Every matching profile overrides only the values it specifies, so later matching profiles have final priority. A profile may combine device category or exact device with app bundle IDs or process names; bundle and process lists are alternatives within that profile.
+Legacy category and exact-device reverse settings form the scrolling baseline. Enabled scroll profiles are then evaluated in definition order. Every matching profile overrides only the values it specifies, so later matching profiles have final priority. A profile may combine device category or exact device with included app bundle IDs or process names; bundle and process lists are alternatives within that profile. Excluded bundle IDs and process names take priority over includes and skip only that profile, leaving the baseline and other matching profiles intact.
 
 For device focus, an exact stable device rule still takes precedence over the mouse/trackpad category default. Existing per-application rules continue to decide whether Focus Follows Pointer is enabled; the input profile is an additional device gate rather than a replacement for app policy.
 

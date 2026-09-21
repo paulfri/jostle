@@ -182,19 +182,61 @@ public struct ScrollProfileMatch: Codable, Equatable, Sendable {
     public var deviceDisplayName: String?
     public var applicationBundleIdentifiers: [String]
     public var processNames: [String]
+    public var excludedApplicationBundleIdentifiers: [String]
+    public var excludedProcessNames: [String]
 
     public init(
         deviceCategory: PointingDeviceCategory? = nil,
         deviceKey: String? = nil,
         deviceDisplayName: String? = nil,
         applicationBundleIdentifiers: [String] = [],
-        processNames: [String] = []
+        processNames: [String] = [],
+        excludedApplicationBundleIdentifiers: [String] = [],
+        excludedProcessNames: [String] = []
     ) {
         self.deviceCategory = deviceCategory
         self.deviceKey = deviceKey
         self.deviceDisplayName = deviceDisplayName
         self.applicationBundleIdentifiers = applicationBundleIdentifiers
         self.processNames = processNames
+        self.excludedApplicationBundleIdentifiers = excludedApplicationBundleIdentifiers
+        self.excludedProcessNames = excludedProcessNames
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case deviceCategory
+        case deviceKey
+        case deviceDisplayName
+        case applicationBundleIdentifiers
+        case processNames
+        case excludedApplicationBundleIdentifiers
+        case excludedProcessNames
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        deviceCategory = try container.decodeIfPresent(
+            PointingDeviceCategory.self,
+            forKey: .deviceCategory
+        )
+        deviceKey = try container.decodeIfPresent(String.self, forKey: .deviceKey)
+        deviceDisplayName = try container.decodeIfPresent(String.self, forKey: .deviceDisplayName)
+        applicationBundleIdentifiers = try container.decodeIfPresent(
+            [String].self,
+            forKey: .applicationBundleIdentifiers
+        ) ?? []
+        processNames = try container.decodeIfPresent(
+            [String].self,
+            forKey: .processNames
+        ) ?? []
+        excludedApplicationBundleIdentifiers = try container.decodeIfPresent(
+            [String].self,
+            forKey: .excludedApplicationBundleIdentifiers
+        ) ?? []
+        excludedProcessNames = try container.decodeIfPresent(
+            [String].self,
+            forKey: .excludedProcessNames
+        ) ?? []
     }
 
     public func matches(
@@ -209,20 +251,25 @@ public struct ScrollProfileMatch: Codable, Equatable, Sendable {
         if let deviceKey, deviceKey != candidateDeviceKey {
             return false
         }
+        if contains(
+            applicationBundleIdentifier,
+            in: excludedApplicationBundleIdentifiers
+        ) || contains(processName, in: excludedProcessNames) {
+            return false
+        }
+
         let hasApplicationCondition = !applicationBundleIdentifiers.isEmpty || !processNames.isEmpty
         guard hasApplicationCondition else { return true }
 
-        if let applicationBundleIdentifier,
-           applicationBundleIdentifiers.contains(where: {
-               $0.caseInsensitiveCompare(applicationBundleIdentifier) == .orderedSame
-           }) {
-            return true
+        return contains(applicationBundleIdentifier, in: applicationBundleIdentifiers)
+            || contains(processName, in: processNames)
+    }
+
+    private func contains(_ candidate: String?, in values: [String]) -> Bool {
+        guard let candidate else { return false }
+        return values.contains {
+            $0.caseInsensitiveCompare(candidate) == .orderedSame
         }
-        if let processName,
-           processNames.contains(where: { $0.caseInsensitiveCompare(processName) == .orderedSame }) {
-            return true
-        }
-        return false
     }
 }
 

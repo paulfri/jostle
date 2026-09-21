@@ -261,6 +261,13 @@ enum CGEventScrollAdapter {
 final class EventTapController {
     static let syntheticEventMarker: Int64 = 0x4A_4F_53_54_4C_45
 
+    static func processName(executableURL: URL?, localizedName: String?) -> String? {
+        if let name = executableURL?.lastPathComponent, !name.isEmpty {
+            return name
+        }
+        return localizedName.flatMap { $0.isEmpty ? nil : $0 }
+    }
+
     var onRecentApplication: ((RunningApplicationInfo) -> Void)?
     var onToggleKeepAwake: (() -> Void)?
 
@@ -662,8 +669,10 @@ final class EventTapController {
             deviceKey: device?.id,
             deviceCategory: category,
             applicationBundleIdentifier: application?.bundleIdentifier,
-            processName: application?.executableURL?.deletingPathExtension().lastPathComponent
-                ?? application?.localizedName
+            processName: Self.processName(
+                executableURL: application?.executableURL,
+                localizedName: application?.localizedName
+            )
         )
         return scrollCustomizationController.handle(event, settings: settings)
     }

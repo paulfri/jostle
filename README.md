@@ -37,7 +37,7 @@ The **Apps** settings let you choose the defaults for window controls and Focus 
 Enable **Input Customizations** from Jostle's menu or its **Input** settings tab. Jostle provides:
 
 - Independent reverse-scrolling defaults for mice and trackpads
-- Ordered scroll profiles matched by device type, exact device, application bundle ID, or process name
+- Ordered scroll profiles matched by device type, exact device, application bundle ID, or process name, with per-profile app and process exclusions
 - Independent vertical and horizontal distance, speed, acceleration, smoothing curve, response, inertia, and bounce controls
 - Button 4 and Button 5 mappings for Back, Forward, move, resize, maximize, left/right tile, next display, and Keep Awake
 - A universal Back/Forward preset that maps otherwise-unassigned side buttons to `⌘[` and `⌘]`
@@ -118,7 +118,7 @@ Duration parameters may use `hours` and `minutes` together. Values must be great
 - Show the active resize edge while dragging
 - Add gaps between tiled windows and margins around the screen
 - Reverse scrolling independently for mice, trackpads, and individual pointing devices
-- Tune per-axis scroll distance, speed, acceleration, smoothing, inertia, and bounce by device, app, or process
+- Tune per-axis scroll distance, speed, acceleration, smoothing, inertia, and bounce by device, app, or process, while excluding specific apps from broader profiles
 - Show standard Bluetooth pointing-device battery levels beside the menu bar icon and in its menu
 - Map extra mouse buttons to window, navigation, display, and Keep Awake actions
 - Move and resize windows by holding an extra mouse button

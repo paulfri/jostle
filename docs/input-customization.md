@@ -10,7 +10,7 @@ Jostle currently supports:
 - trackpads that report genuine touchpad conformance;
 - USB, Bluetooth, and receiver-connected pointing devices exposed through IOHID;
 - per-axis scrolling direction, distance, speed, acceleration, smoothing, inertia, and bounce;
-- ordered scroll profiles matched by mouse/trackpad category, exact device, application bundle identifier, or process name;
+- ordered scroll profiles matched by mouse/trackpad category, exact device, application bundle identifier, or process name, with per-profile application and process exclusions;
 - Button 4 and Button 5 navigation, window, display, and Keep Awake actions;
 - per-device Focus Follows Pointer gating;
 - per-app Command-key recovery for compatibility layers and remote sessions that miss a key-up while switching; and
@@ -41,7 +41,7 @@ Detection is advisory and based on running application identity. It cannot detec
 
 Input transformation occurs locally. Jostle does not include telemetry or cloud sync and does not record keystrokes, pointer coordinates, window titles, browsing history, or event streams.
 
-Jostle stores its typed settings in the current user's preferences. Exact-device rules can contain a stable, privacy-preserving device key and a display name. Application profiles can contain bundle identifiers or process names. The one-time LinearMouse migration reads `~/.config/linearmouse/linearmouse.json` locally and never modifies that file.
+Jostle stores its typed settings in the current user's preferences. Exact-device rules can contain a stable, privacy-preserving device key and a display name. Application profiles can contain included and excluded bundle identifiers or process names. The one-time LinearMouse migration reads `~/.config/linearmouse/linearmouse.json` locally and never modifies that file.
 
 Bluetooth scanning starts only when the selected battery display mode needs battery information. Jostle filters standard Battery Service discoveries against its pointing-device inventory and does not write device firmware settings.
 
@@ -86,6 +86,8 @@ Window controls and Keep Awake remain available independently when input customi
 ### The wrong device profile applies
 
 Disconnect and reconnect the intended pointing device, then verify its entry under **Device Overrides**. Sender attribution is best effort; receiver-connected devices that share an indistinguishable event source may not support reliable exact-device profiles. Prefer a mouse/trackpad category profile when exact attribution is unstable.
+
+To preserve native scrolling adjustments for one app without creating an override profile, add its bundle ID or executable name under **Excludes** in the broader scroll profile. Exclusions skip only that profile. The base mouse/trackpad direction, exact-device direction, and any other matching profiles still apply—for example, excluding `eqgame.exe` from a smoothing profile retains the global reverse-scrolling setting.
 
 ### Scrolling repeats, sticks, or feels delayed
 

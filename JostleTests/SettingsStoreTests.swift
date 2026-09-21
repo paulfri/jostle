@@ -249,7 +249,7 @@ final class SettingsStoreTests: XCTestCase {
             pointingDevices: [mouse]
         )
 
-        XCTAssertEqual(result.settings.schemaVersion, 2)
+        XCTAssertEqual(result.settings.schemaVersion, 3)
         XCTAssertTrue(result.settings.universalBackForward)
         XCTAssertTrue(result.requiresDeviceInventory)
         XCTAssertFalse(result.hasUnresolvedExactDevice)

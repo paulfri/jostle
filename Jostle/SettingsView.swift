@@ -764,6 +764,10 @@ struct InputSettingsPane: View {
                         where: { $0.id == id }
                     ) else { return }
                     settings.inputCustomization.scrollProfiles[index] = value
+                    settings.inputCustomization.schemaVersion = max(
+                        settings.inputCustomization.schemaVersion,
+                        InputCustomizationSettings.defaults.schemaVersion
+                    )
                 }
             }
         )
