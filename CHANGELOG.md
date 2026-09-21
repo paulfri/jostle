@@ -1,9 +1,11 @@
 # Changelog
 
-## Unreleased
+## 2026.9.3 — 2026-09-21
 
 - Add configurable Focus Follows Pointer with immediate or delayed activation.
 - Replace global app exclusions with independent per-app rules for window controls and pointer focus in the new Apps settings tab.
+- Add device-aware scrolling and button customizations with per-device and per-app profiles.
+- Add a per-app **Reset modifiers when switching** compatibility control and discover Wine-hosted apps such as `eqgame.exe`.
 - Add integrated Keep Awake sessions with preset durations, display-sleep control, lock pausing, battery deactivation, completion notifications, and configurable menu-bar indicators.
 - Introduce Jostle's Calm frame identity across the app icon, menu bar, Settings, and Keep Awake state language.
 - Add configurable menu-bar click behavior and a recordable global Keep Awake shortcut.

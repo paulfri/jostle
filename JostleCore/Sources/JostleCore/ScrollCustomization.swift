@@ -341,13 +341,20 @@ public struct EffectiveScrollSettings: Equatable, Sendable {
     }
 
     public var requiresTransformation: Bool {
-        [vertical, horizontal].contains { axis in
-            axis.reverse
-                || axis.distance != .automatic
-                || axis.acceleration != 1
-                || axis.speed != 0
-                || axis.smoothing != nil
+        let verticalRequiresTransformation = vertical.reverse
+            || vertical.distance != .automatic
+            || vertical.acceleration != 1
+            || vertical.speed != 0
+            || vertical.smoothing != nil
+        if verticalRequiresTransformation {
+            return true
         }
+
+        return horizontal.reverse
+            || horizontal.distance != .automatic
+            || horizontal.acceleration != 1
+            || horizontal.speed != 0
+            || horizontal.smoothing != nil
     }
 }
 
