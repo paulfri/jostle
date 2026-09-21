@@ -12,12 +12,23 @@ ROOT = Path(__file__).resolve().parents[1]
 ASSETS = ROOT / "Jostle/Images.xcassets"
 APP_ICON = ASSETS / "AppIcon.appiconset"
 MENU_ICON = ASSETS / "MenuIcon.imageset"
+ICON_COMPOSER_ICON = ROOT / "Jostle/AppIcon.icon"
 
 TOP = (181, 59, 32, 255)
 BOTTOM = (146, 36, 15, 255)
 BORDER = (205, 81, 50, 190)
 CREAM = (255, 237, 204, 255)
 BLACK = (0, 0, 0, 255)
+
+CALM_FRAME_SVG = """<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <g fill="none" stroke="#ffffff" stroke-width="53" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M292 438V292H438"/>
+    <path d="M586 292H732V438"/>
+    <path d="M732 586V732H586"/>
+    <path d="M438 732H292V586"/>
+  </g>
+</svg>
+"""
 
 
 def rounded_line(
@@ -146,10 +157,49 @@ def app_icon_sizes() -> dict[str, int]:
     return result
 
 
+def srgb(color: tuple[int, int, int, int]) -> str:
+    return "srgb:" + ",".join(f"{component / 255:.5f}" for component in color)
+
+
+def write_icon_composer_source() -> None:
+    assets = ICON_COMPOSER_ICON / "Assets"
+    assets.mkdir(parents=True, exist_ok=True)
+    document = {
+        "fill-specializations": [
+            {"value": {"linear-gradient": [srgb(TOP), srgb(BOTTOM)]}},
+        ],
+        "groups": [
+            {
+                "blur-material": None,
+                "layers": [
+                    {
+                        "glass": True,
+                        "image-name": "CalmFrame.svg",
+                        "name": "Calm Frame",
+                        "fill-specializations": [
+                            {"value": {"solid": srgb(CREAM)}},
+                        ],
+                    },
+                ],
+                "name": "Calm Frame",
+                "shadow": {"kind": "neutral", "opacity": 0.08},
+                "specular": True,
+                "translucency": {"enabled": False, "value": 0.05},
+            },
+        ],
+        "supported-platforms": {"squares": ["macOS"]},
+    }
+    (ICON_COMPOSER_ICON / "icon.json").write_text(
+        json.dumps(document, indent=2) + "\n"
+    )
+    (assets / "CalmFrame.svg").write_text(CALM_FRAME_SVG)
+
+
 def main() -> None:
     for filename, size in sorted(app_icon_sizes().items()):
         render_app_icon(size).save(APP_ICON / filename)
 
+    write_icon_composer_source()
     render_menu_icon(16).save(MENU_ICON / "menu_icon.png")
     render_menu_icon(32).save(MENU_ICON / "menu_icon@2x.png")
 

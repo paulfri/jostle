@@ -66,6 +66,8 @@
 		E10000000000000000000002 /* CommandKeyRecoveryControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000002 /* CommandKeyRecoveryControllerTests.swift */; };
 		F10000000000000000000001 /* RunningApplicationMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000001 /* RunningApplicationMonitor.swift */; };
 		F10000000000000000000002 /* RunningApplicationMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F20000000000000000000002 /* RunningApplicationMonitorTests.swift */; };
+		G10000000000000000000001 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = G20000000000000000000001 /* AppIcon.icon */; };
+		G10000000000000000000002 /* AppIconDevelopment.icon in Resources */ = {isa = PBXBuildFile; fileRef = G20000000000000000000002 /* AppIconDevelopment.icon */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -135,6 +137,8 @@
 		E20000000000000000000002 /* CommandKeyRecoveryControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandKeyRecoveryControllerTests.swift; sourceTree = "<group>"; };
 		F20000000000000000000001 /* RunningApplicationMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunningApplicationMonitor.swift; sourceTree = "<group>"; };
 		F20000000000000000000002 /* RunningApplicationMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunningApplicationMonitorTests.swift; sourceTree = "<group>"; };
+		G20000000000000000000001 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon.icon; sourceTree = "<group>"; };
+		G20000000000000000000002 /* AppIconDevelopment.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIconDevelopment.icon; sourceTree = "<group>"; };
 		A2000000000000000000000C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A2000000000000000000000D /* Jostle.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Jostle.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A2000000000000000000000E /* JostleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JostleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -219,6 +223,8 @@
 				D20000000000000000000001 /* InputDiagnostics.swift */,
 				E20000000000000000000001 /* CommandKeyRecoveryController.swift */,
 				F20000000000000000000001 /* RunningApplicationMonitor.swift */,
+				G20000000000000000000001 /* AppIcon.icon */,
+				G20000000000000000000002 /* AppIconDevelopment.icon */,
 				A20000000000000000000008 /* Images.xcassets */,
 				A20000000000000000000007 /* Jostle-Info.plist */,
 				A20000000000000000000009 /* InfoPlist.strings */,
@@ -354,6 +360,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000007 /* Images.xcassets in Resources */,
+				G10000000000000000000001 /* AppIcon.icon in Resources */,
+				G10000000000000000000002 /* AppIconDevelopment.icon in Resources */,
 				A10000000000000000000008 /* InfoPlist.strings in Resources */,
 				C10000000000000000000006 /* THIRD_PARTY_NOTICES.md in Resources */,
 			);

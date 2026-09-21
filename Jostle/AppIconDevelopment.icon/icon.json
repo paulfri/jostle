@@ -1,0 +1,46 @@
+{
+  "fill-specializations": [
+    {
+      "value": {
+        "linear-gradient": [
+          "srgb:0.12549,0.60392,0.70980,1.00000",
+          "srgb:0.05882,0.49020,0.57255,1.00000"
+        ]
+      }
+    }
+  ],
+  "groups": [
+    {
+      "blur-material": null,
+      "layers": [
+        {
+          "glass": true,
+          "image-name": "CalmFrame.svg",
+          "name": "Calm Frame",
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.80000,0.87059,1.00000,1.00000"
+              }
+            }
+          ]
+        }
+      ],
+      "name": "Calm Frame",
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.08
+      },
+      "specular": true,
+      "translucency": {
+        "enabled": false,
+        "value": 0.05
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": [
+      "macOS"
+    ]
+  }
+}
