@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   build-notarize-release:
-    runs-on: macos-15
+    runs-on: macos-latest
     timeout-minutes: 45
 
     steps:
@@ -22,6 +22,17 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+
+      - name: Require Xcode 26 or newer
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          XCODE_MAJOR="$(xcodebuild -version | awk 'NR == 1 { split($2, version, "."); print version[1] }')"
+          if (( XCODE_MAJOR < 26 )); then
+            echo "Icon Composer release builds require Xcode 26 or newer." >&2
+            exit 1
+          fi
 
       - name: Validate release version and tag
         id: version

@@ -1,11 +1,8 @@
 # Changelog
 
-## Unreleased
-
-- Adopt an Icon Composer app icon that fills the macOS icon canvas without a nested system squircle.
-
 ## 2026.9.3 — 2026-09-21
 
+- Adopt an Icon Composer app icon that fills the macOS icon canvas without a nested system squircle.
 - Add configurable Focus Follows Pointer with immediate or delayed activation.
 - Replace global app exclusions with independent per-app rules for window controls and pointer focus in the new Apps settings tab.
 - Add device-aware scrolling and button customizations with per-device and per-app profiles.
