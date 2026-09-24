@@ -130,6 +130,62 @@ final class GestureEngineTests: XCTestCase {
         )
     }
 
+    func testReconcileShiftsTheAccumulatedFrameByWhatTheAppChanged() {
+        let section = ResizeSection(horizontalEdge: .right, verticalEdge: .bottom)
+        let resizing = GestureEngine.reduce(
+            state: .idle,
+            input: .beginResize(frame: frame, section: section, timestamp: 100),
+            configuration: configuration
+        ).state
+        let dragged = GestureEngine.reduce(
+            state: resizing,
+            input: .resizeBy(deltaX: -20, deltaY: 0, timestamp: 100),
+            configuration: configuration
+        ).state
+        // The app refused the last 10 points of shrinking and nudged the window right.
+        let reconciled = GestureEngine.reduce(
+            state: dragged,
+            input: .reconcileFrame(
+                requested: Frame(x: 100, y: 200, width: 580, height: 300),
+                actual: Frame(x: 104, y: 200, width: 590, height: 300)
+            ),
+            configuration: configuration
+        )
+
+        XCTAssertEqual(reconciled.commands, [])
+        XCTAssertEqual(
+            reconciled.state,
+            .resizing(GestureContext(
+                frame: Frame(x: 104, y: 200, width: 590, height: 300),
+                resizeSection: section,
+                lastWriteTime: 100,
+                geometryDirty: true
+            ))
+        )
+    }
+
+    func testReconcileIsANoOpWhenIdleOrUnchanged() {
+        let unchanged = GestureEngine.reduce(
+            state: .idle,
+            input: .reconcileFrame(requested: frame, actual: frame),
+            configuration: configuration
+        )
+        XCTAssertEqual(unchanged.state, .idle)
+
+        let moving = GestureEngine.reduce(
+            state: .idle,
+            input: .beginMove(frame: frame, timestamp: 100),
+            configuration: configuration
+        ).state
+        let same = GestureEngine.reduce(
+            state: moving,
+            input: .reconcileFrame(requested: frame, actual: frame),
+            configuration: configuration
+        )
+        XCTAssertEqual(same.state, moving)
+        XCTAssertEqual(same.commands, [])
+    }
+
     func testCancelDropsPendingGeometry() {
         let moving = GestureEngine.reduce(
             state: .idle,

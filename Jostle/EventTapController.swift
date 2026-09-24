@@ -273,6 +273,7 @@ final class EventTapController {
 
     private let settingsStore: SettingsStore
     private let windowSystem: AccessibilityWindowSystem
+    private let frameWriter: WindowFrameWriter
     private let screenGeometryProvider: ScreenGeometryProvider
     private let snapPreviewController: SnapPreviewController
     private let scrollCustomizationController: ScrollCustomizationController
@@ -286,6 +287,12 @@ final class EventTapController {
     private var runLoopSource: CFRunLoopSource?
     private var gestureState = GestureState.idle
     private var targetWindow: AccessibilityWindowTarget?
+    /// Frame writes handed to `frameWriter` for the active gesture, oldest first, with the
+    /// frame each asked for and the correction that had been applied when it was submitted.
+    private var inFlightFrameWrites: [InFlightFrameWrite] = []
+    private var frameWriteGeneration: UInt64 = 0
+    /// Sum of every reconciliation applied during the active gesture, as a frame delta.
+    private var frameCorrection = Frame(x: 0, y: 0, width: 0, height: 0)
     private var activeSnapFrame: Frame?
     private var pendingWindowRestore: PendingWindowRestore?
     private var gestureRestoreFrame: Frame?
@@ -355,6 +362,7 @@ final class EventTapController {
     ) {
         self.settingsStore = settingsStore
         self.windowSystem = windowSystem
+        frameWriter = WindowFrameWriter(windowSystem: windowSystem)
         self.screenGeometryProvider = screenGeometryProvider
         self.snapPreviewController = snapPreviewController
         self.resizeFeedbackController = resizeFeedbackController
@@ -366,6 +374,9 @@ final class EventTapController {
             onTickDuration: runtimeDiagnostics.recordSmoothingTick(durationNanoseconds:)
         )
         self.gestureConfiguration = gestureConfiguration
+        frameWriter.onResult = { [weak self] result in
+            self?.handleFrameWriteResult(result)
+        }
     }
 
     deinit {
@@ -972,6 +983,7 @@ final class EventTapController {
         at point: CGPoint,
         settings: JostleSettings
     ) -> (AccessibilityWindowTarget, Frame)? {
+        frameWriter.flush()
         guard let target = windowSystem.window(at: point),
               let frame = windowSystem.frame(of: target) else {
             return nil
@@ -1032,6 +1044,7 @@ final class EventTapController {
         clearResizeFeedback()
 
         if wasMoving, didDrag, let target {
+            frameWriter.flush()
             if let snapTarget,
                windowSystem.setFrame(snapTarget, of: target),
                let restoreFrame {
@@ -1058,10 +1071,12 @@ final class EventTapController {
             currentFrame: pendingWindowRestore.currentFrame,
             grabbedAt: pendingWindowRestore.grabPoint
         )
+        frameWriter.flush()
         guard windowSystem.setFrame(restoredFrame, of: targetWindow) else {
             cancelGesture()
             return false
         }
+        resetFrameWriteTracking()
         gestureState = GestureEngine.reduce(
             state: .idle,
             input: .beginMove(frame: restoredFrame, timestamp: now),
@@ -1092,6 +1107,7 @@ final class EventTapController {
     }
 
     private func beginGesture(at point: CGPoint, resize: Bool) -> Bool {
+        frameWriter.flush()
         guard let target = windowSystem.window(at: point) else {
             cancelGesture()
             return false
@@ -1226,28 +1242,84 @@ final class EventTapController {
         gestureState = transition.state
 
         if !transition.commands.isEmpty {
-            guard let targetWindow,
-                  windowSystem.apply(
-                    transition.commands,
-                    to: targetWindow,
-                    minimumWindowSize: minimumWindowSize
-                  ) else {
+            guard let targetWindow else {
                 cancelGesture()
                 return true
             }
-            if case .resizing = gestureState,
-               let constrainedFrame = windowSystem.frame(of: targetWindow) {
-                gestureState = GestureEngine.reduce(
-                    state: gestureState,
-                    input: .synchronizeFrame(constrainedFrame),
-                    configuration: gestureConfiguration
-                ).state
+            frameWriteGeneration &+= 1
+            if let requested = gestureState.context?.frame {
+                inFlightFrameWrites.append(InFlightFrameWrite(
+                    generation: frameWriteGeneration,
+                    requested: requested,
+                    correctionAtSubmit: frameCorrection
+                ))
             }
+            frameWriter.submit(WindowFrameWriter.Request(
+                generation: frameWriteGeneration,
+                target: targetWindow,
+                commands: transition.commands,
+                minimumWindowSize: minimumWindowSize
+            ))
         }
         if !gestureState.isActive {
             targetWindow = nil
+            resetFrameWriteTracking()
         }
         return true
+    }
+
+    private struct InFlightFrameWrite {
+        var generation: UInt64
+        var requested: Frame
+        var correctionAtSubmit: Frame
+    }
+
+    /// Folds what the app actually did with a write back into the gesture. Only the
+    /// difference from the request matters, so an app that ignores nothing costs nothing,
+    /// and an app that clamps (a minimum size, a screen edge) keeps later deltas anchored
+    /// to the frame it allowed instead of to one it refused.
+    private func handleFrameWriteResult(_ result: WindowFrameWriter.Result) {
+        guard gestureState.isActive,
+              let targetWindow,
+              targetWindow.identity == result.identity else {
+            return
+        }
+        guard let actual = result.actualFrame else {
+            cancelGesture()
+            return
+        }
+        guard let index = inFlightFrameWrites.firstIndex(where: { $0.generation == result.generation }) else {
+            return
+        }
+        let write = inFlightFrameWrites[index]
+        // Older entries were coalesced away by the writer and will never report.
+        inFlightFrameWrites.removeSubrange(...index)
+
+        // Restate the request in terms of the frame as corrected since it was submitted.
+        var requested = write.requested
+        requested.origin.x += frameCorrection.origin.x - write.correctionAtSubmit.origin.x
+        requested.origin.y += frameCorrection.origin.y - write.correctionAtSubmit.origin.y
+        requested.size.width += frameCorrection.size.width - write.correctionAtSubmit.size.width
+        requested.size.height += frameCorrection.size.height - write.correctionAtSubmit.size.height
+        guard requested != actual else { return }
+
+        gestureState = GestureEngine.reduce(
+            state: gestureState,
+            input: .reconcileFrame(requested: requested, actual: actual),
+            configuration: gestureConfiguration
+        ).state
+        frameCorrection.origin.x += actual.origin.x - requested.origin.x
+        frameCorrection.origin.y += actual.origin.y - requested.origin.y
+        frameCorrection.size.width += actual.size.width - requested.size.width
+        frameCorrection.size.height += actual.size.height - requested.size.height
+        if case .resizing = gestureState {
+            updateResizeFeedback(settings: settingsStore.settings)
+        }
+    }
+
+    private func resetFrameWriteTracking() {
+        inFlightFrameWrites.removeAll()
+        frameCorrection = Frame(x: 0, y: 0, width: 0, height: 0)
     }
 
     private func cancelGestureForInterruption() {
@@ -1265,6 +1337,7 @@ final class EventTapController {
         cancelGesture()
 
         if let target, let initialFrame {
+            frameWriter.flush()
             _ = windowSystem.setFrame(initialFrame, of: target)
             if let initialRecord {
                 windowRestoreStore.remember(
@@ -1294,6 +1367,7 @@ final class EventTapController {
         )
         gestureState = transition.state
         targetWindow = nil
+        resetFrameWriteTracking()
         ownedActionButton = nil
         ownedInputActionButtonNumber = nil
         activeInputGestureButtonNumber = nil

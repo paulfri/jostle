@@ -12,6 +12,7 @@
 		A10000000000000000000003 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000003 /* SettingsStore.swift */; };
 		A10000000000000000000004 /* AccessibilityWindowSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000004 /* AccessibilityWindowSystem.swift */; };
 		A10000000000000000000005 /* EventTapController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000005 /* EventTapController.swift */; };
+		A1000000000000000000FF01 /* WindowFrameWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000FF01 /* WindowFrameWriter.swift */; };
 		A10000000000000000000006 /* StatusMenuController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000006 /* StatusMenuController.swift */; };
 		A1000000000000000000000D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000012 /* SettingsView.swift */; };
 		A1000000000000000000000F /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000014 /* SettingsWindowController.swift */; };
@@ -30,6 +31,7 @@
 		A10000000000000000000015 /* ScreenGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001A /* ScreenGeometryTests.swift */; };
 		A10000000000000000000017 /* WindowRestoreStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001C /* WindowRestoreStoreTests.swift */; };
 		A10000000000000000000018 /* AccessibilityWindowSystemTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001D /* AccessibilityWindowSystemTests.swift */; };
+		A1000000000000000000FF02 /* WindowFrameWriterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000FF02 /* WindowFrameWriterTests.swift */; };
 		A10000000000000000000019 /* ResizeFeedbackController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001E /* ResizeFeedbackController.swift */; };
 		A1000000000000000000001A /* ResizeIndicatorGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000001F /* ResizeIndicatorGeometryTests.swift */; };
 		A1000000000000000000001B /* RuntimeHealth.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* RuntimeHealth.swift */; };
@@ -86,6 +88,7 @@
 		A20000000000000000000003 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
 		A20000000000000000000004 /* AccessibilityWindowSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityWindowSystem.swift; sourceTree = "<group>"; };
 		A20000000000000000000005 /* EventTapController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTapController.swift; sourceTree = "<group>"; };
+		A2000000000000000000FF01 /* WindowFrameWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowFrameWriter.swift; sourceTree = "<group>"; };
 		A20000000000000000000006 /* StatusMenuController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusMenuController.swift; sourceTree = "<group>"; };
 		A20000000000000000000012 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A20000000000000000000014 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
@@ -103,6 +106,7 @@
 		A2000000000000000000001A /* ScreenGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenGeometryTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000001C /* WindowRestoreStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowRestoreStoreTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000001D /* AccessibilityWindowSystemTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityWindowSystemTests.swift; sourceTree = "<group>"; };
+		A2000000000000000000FF02 /* WindowFrameWriterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowFrameWriterTests.swift; sourceTree = "<group>"; };
 		A2000000000000000000001E /* ResizeFeedbackController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResizeFeedbackController.swift; sourceTree = "<group>"; };
 		A2000000000000000000001F /* ResizeIndicatorGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResizeIndicatorGeometryTests.swift; sourceTree = "<group>"; };
 		A20000000000000000000020 /* RuntimeHealth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeHealth.swift; sourceTree = "<group>"; };
@@ -193,6 +197,7 @@
 				A20000000000000000000003 /* SettingsStore.swift */,
 				A20000000000000000000004 /* AccessibilityWindowSystem.swift */,
 				A20000000000000000000005 /* EventTapController.swift */,
+				A2000000000000000000FF01 /* WindowFrameWriter.swift */,
 				A20000000000000000000006 /* StatusMenuController.swift */,
 				A20000000000000000000012 /* SettingsView.swift */,
 				A20000000000000000000014 /* SettingsWindowController.swift */,
@@ -242,6 +247,7 @@
 				A2000000000000000000001A /* ScreenGeometryTests.swift */,
 				A2000000000000000000001C /* WindowRestoreStoreTests.swift */,
 				A2000000000000000000001D /* AccessibilityWindowSystemTests.swift */,
+				A2000000000000000000FF02 /* WindowFrameWriterTests.swift */,
 				A2000000000000000000001F /* ResizeIndicatorGeometryTests.swift */,
 				A20000000000000000000021 /* RuntimeHealthTests.swift */,
 				A20000000000000000000023 /* AppBrandTests.swift */,
@@ -386,6 +392,7 @@
 				A10000000000000000000003 /* SettingsStore.swift in Sources */,
 				A10000000000000000000004 /* AccessibilityWindowSystem.swift in Sources */,
 				A10000000000000000000005 /* EventTapController.swift in Sources */,
+				A1000000000000000000FF01 /* WindowFrameWriter.swift in Sources */,
 				A10000000000000000000006 /* StatusMenuController.swift in Sources */,
 				A1000000000000000000000D /* SettingsView.swift in Sources */,
 				A1000000000000000000000F /* SettingsWindowController.swift in Sources */,
@@ -430,6 +437,7 @@
 				A10000000000000000000015 /* ScreenGeometryTests.swift in Sources */,
 				A10000000000000000000017 /* WindowRestoreStoreTests.swift in Sources */,
 				A10000000000000000000018 /* AccessibilityWindowSystemTests.swift in Sources */,
+				A1000000000000000000FF02 /* WindowFrameWriterTests.swift in Sources */,
 				A1000000000000000000001A /* ResizeIndicatorGeometryTests.swift in Sources */,
 				A1000000000000000000001C /* RuntimeHealthTests.swift in Sources */,
 				A1000000000000000000001E /* AppBrandTests.swift in Sources */,

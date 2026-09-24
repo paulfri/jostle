@@ -44,6 +44,9 @@ public enum GestureInput: Equatable, Sendable {
     case moveBy(deltaX: Double, deltaY: Double, timestamp: MonotonicTime)
     case resizeBy(deltaX: Double, deltaY: Double, timestamp: MonotonicTime)
     case synchronizeFrame(Frame)
+    /// A write that asked for `requested` left the window at `actual`: shift the
+    /// accumulated frame by the difference so later deltas build on what the app allowed.
+    case reconcileFrame(requested: Frame, actual: Frame)
     case end(timestamp: MonotonicTime)
     case cancel(timestamp: MonotonicTime)
 }
@@ -161,6 +164,21 @@ public enum GestureEngine {
             case var .resizing(context):
                 context.frame = frame
                 context.geometryDirty = false
+                return GestureTransition(state: .resizing(context), commands: [])
+            }
+
+        case let .reconcileFrame(requested, actual):
+            guard var context = state.context, requested != actual else {
+                return GestureTransition(state: state, commands: [])
+            }
+            context.frame.origin.x += actual.origin.x - requested.origin.x
+            context.frame.origin.y += actual.origin.y - requested.origin.y
+            context.frame.size.width += actual.size.width - requested.size.width
+            context.frame.size.height += actual.size.height - requested.size.height
+            switch state {
+            case .moving:
+                return GestureTransition(state: .moving(context), commands: [])
+            default:
                 return GestureTransition(state: .resizing(context), commands: [])
             }
 
