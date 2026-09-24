@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026.9.4 — 2026-09-24
+
+- Apply window move and resize writes off the event tap, so a window whose app lays out slowly follows the pointer at its own rate instead of stalling mouse input for the whole drag.
+- Add per-profile app and process exclusions to scroll profiles.
+- Add a Settings window menu with the standard close shortcut.
+
 ## 2026.9.3 — 2026-09-21
 
 - Adopt an Icon Composer app icon that fills the macOS icon canvas without a nested system squircle.
